@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Turnos del día: {{ fecha }}</h2>
+
+  {% if cupo %}
+    <p>Cupo total: {{ cupo.cantidad_total }} — Disponibles: {{ disponibles }}</p>
+  {% else %}
+    <p><strong>No hay cupo configurado para esta fecha.</strong> Pide al admin que lo cree.</p>
+  {% endif %}
+
+  <ul>
+    {% for t in turnos %}
+      <li>{{ t.nombre }} — DNI: {{ t.dni }} — {{ t.determinaciones }}</li>
+    {% empty %}
+      <li>No hay turnos cargados.</li>
+    {% endfor %}
+  </ul>
+
+  <h3>Agregar turno</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Guardar</button>
+    {% if form.non_field_errors %}
+      <div style="color:red;">{{ form.non_field_errors }}</div>
+    {% endif %}
+  </form>
+
+  <p><a href="{% url 'turnos:calendario' %}">Volver al calendario</a></p>
+{% endblock %}

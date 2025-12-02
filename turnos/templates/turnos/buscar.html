@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Buscar por DNI</h2>
+  <form method="get">
+    <input type="text" name="q" placeholder="DNI" value="{{ q }}">
+    <button>Buscar</button>
+  </form>
+
+  <ul>
+  {% for r in resultados %}
+    <li>{{ r.fecha }} — {{ r.nombre }} — DNI: {{ r.dni }} — {{ r.determinaciones }}</li>
+  {% empty %}
+    <li>No se encontraron resultados.</li>
+  {% endfor %}
+  </ul>
+{% endblock %}
