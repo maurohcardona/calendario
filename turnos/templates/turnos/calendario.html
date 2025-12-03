@@ -1,52 +1,99 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Calendario de turnos</title>
+{% extends "base.html" %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h2 style="margin: 0;">📅 Calendario de turnos</h2>
+    </div>
+    {% if user.is_superuser %}
+    <a href="{% url 'turnos:nuevo_cupo' %}" style="background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">⚙️ Administrar cupos</a>
+    {% endif %}
+</div>
 
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/main.min.css' rel='stylesheet' />
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/main.min.js'></script>
+<div style="background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 2rem; color: #b0e0ff;">
+    <strong>💡 Información:</strong>
+    <ul style="margin: 0.5rem 0 0 1.5rem;">
+        <li><span style="color: #4caf50;">🟢 Verde</span>: hay turnos disponibles</li>
+        <li><span style="color: #f44336;">🔴 Rojo</span>: está completo</li>
+        <li>Haz click en cualquier día para agendar un turno</li>
+    </ul>
+</div>
 
-    <style>
-        body {
-            font-family: Arial;
-            padding: 20px;
-        }
-        #calendar {
-            max-width: 900px;
-            margin: auto;
-        }
-    </style>
-</head>
-<body>
-
-<h2>Calendario de turnos</h2>
-
-<div id="calendar"></div>
+<div id="calendar" style="background: rgba(26, 26, 46, 0.6); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 212, 255, 0.2);"></div>
 
 <!-- JSON seguro -->
 {{ eventos|json_script:"eventos-data" }}
 
+<style>
+    #calendar {
+        --fc-border-color: rgba(0, 212, 255, 0.2);
+        --fc-button-bg-color: #00d4ff;
+        --fc-button-border-color: #00d4ff;
+        --fc-button-hover-bg-color: #00a8cc;
+        --fc-button-hover-border-color: #00a8cc;
+        --fc-button-active-bg-color: #00a8cc;
+        --fc-daygrid-day-frame-color: rgba(0, 212, 255, 0.15);
+        --fc-page-bg-color: transparent;
+        --fc-event-bg-color: #00d4ff;
+        --fc-event-border-color: #00d4ff;
+        --fc-event-text-color: #000;
+        --fc-highlight-color: rgba(0, 212, 255, 0.1);
+        --fc-today-highlight-color: rgba(0, 212, 255, 0.15);
+    }
+    .fc .fc-button-primary:disabled {
+        color: #9e9e9e;
+    }
+    .fc .fc-daygrid-day-number,
+    .fc .fc-daygrid-day-frame,
+    .fc .fc-col-header-cell {
+        color: #e0e0e0;
+    }
+    .fc .fc-daygrid-day:hover {
+        background-color: rgba(0, 212, 255, 0.15);
+        cursor: pointer;
+    }
+    .fc .fc-event-title {
+        font-weight: bold;
+        padding: 2px 4px;
+    }
+    .fc-button-primary {
+        box-shadow: 0 2px 8px rgba(0, 212, 255, 0.2);
+    }
+    .fc-button-primary:hover {
+        box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+    }
+</style>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/main.min.js'></script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     var calendarEl = document.getElementById("calendar");
-
     var eventos = JSON.parse(document.getElementById("eventos-data").textContent);
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
+        locale: "es",
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,listMonth'
+        },
         events: eventos,
-
+        eventClick: function(info) {
+            const fecha = info.event.extendedProps.fecha;
+            if (info.event.extendedProps.disponibles === 0) {
+                alert('⚠️ Esta fecha está completa. No hay turnos disponibles.');
+                return;
+            }
+            window.location.href = "{% url 'turnos:dia' '0000-00-00' %}".replace('0000-00-00', fecha);
+        },
         dateClick: function(info) {
-            const fecha = info.dateStr;  // YYYY-MM-DD
-            window.location.href = "/turnos/dia/" + fecha + "/";
+            const fecha = info.dateStr;
+            window.location.href = "{% url 'turnos:dia' '0000-00-00' %}".replace('0000-00-00', fecha);
         }
     });
 
     calendar.render();
 });
 </script>
-
-
-</body>
-</html>
+{% endblock %}

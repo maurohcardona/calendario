@@ -4,69 +4,159 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Iniciar sesión</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Iniciar sesión - Agendador</title>
 
     <!-- Bootstrap CDN -->
     <link rel="stylesheet" 
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
     <style>
+        :root {
+            --dark-bg: #1a1a2e;
+            --darker-bg: #0f0f23;
+            --accent: #00d4ff;
+            --accent-hover: #00a8cc;
+            --text-light: #e0e0e0;
+            --danger: #f44336;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            height: 100%;
+        }
         body {
-            background: #f3f4f6;
+            background: linear-gradient(135deg, var(--darker-bg) 0%, var(--dark-bg) 100%);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
         }
         .login-card {
-            max-width: 380px;
-            margin: 80px auto;
-            padding: 25px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 420px;
+            width: 100%;
+            padding: 2.5rem;
+            background: rgba(26, 26, 46, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            backdrop-filter: blur(10px);
         }
-        nav a {
-            margin-right: 15px;
+        .login-card h2 {
+            color: var(--accent);
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+        .form-label {
+            color: var(--text-light);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--text-light);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent);
+            color: var(--text-light);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+        }
+        .form-control::placeholder {
+            color: rgba(224, 224, 224, 0.5);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1.5rem;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
+        }
+        .alert-danger {
+            background: rgba(244, 67, 54, 0.15);
+            border: 1px solid var(--danger);
+            color: #ff6b6b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .logo-section h1 {
+            color: var(--accent);
+            font-size: 2.5rem;
+            margin: 0;
+        }
+        .logo-section p {
+            color: rgba(224, 224, 224, 0.7);
+            margin-top: 0.5rem;
         }
     </style>
 </head>
 
 <body>
-
-    <!-- Navbar simple -->
-    <nav class="navbar navbar-light bg-light px-3">
-        <a class="navbar-brand" href="/">Agenda</a>
-
-        <!-- Opciones visibles solo si el usuario está logueado -->
-        {% if user.is_authenticated %}
-            <a href="/buscar/">Buscar por DNI</a>
-            <a href="/accounts/logout/">Logout</a>
-        {% endif %}
-    </nav>
-
-    <div class="login-card">
-        <h3 class="text-center mb-3">Ingresar</h3>
-
-        <!-- Mensajes de error -->
-        {% if form.errors %}
-            <div class="alert alert-danger">
-                Usuario o contraseña incorrectos.
-            </div>
-        {% endif %}
-
-        <form method="post">
-            {% csrf_token %}
-
-            <div class="mb-3">
-                <label class="form-label">Nombre de usuario</label>
-                {{ form.username }}
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-section">
+                <h1>📅</h1>
+                <h2 style="color: var(--accent); margin-top: 1rem; font-size: 1.8rem;">Agendador</h2>
+                <p>Sistema de citas y turnos</p>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Contraseña</label>
-                {{ form.password }}
-            </div>
+            <!-- Mensajes de error -->
+            {% if form.errors %}
+                <div class="alert-danger">
+                    <strong>⚠️ Error</strong><br>
+                    Usuario o contraseña incorrectos.
+                </div>
+            {% endif %}
 
-            <button type="submit" class="btn btn-primary w-100">Entrar</button>
-        </form>
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="id_username" class="form-label">👤 Usuario</label>
+                    {{ form.username }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_password" class="form-label">🔒 Contraseña</label>
+                    {{ form.password }}
+                </div>
+
+                <button type="submit" class="btn-login">🔓 Iniciar sesión</button>
+            </form>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

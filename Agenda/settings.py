@@ -54,14 +54,30 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Agenda.wsgi.application'
 
 # Base de datos
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+import os
 
-# Si luego querés PostgreSQL, lo cambiamos.
+# Database configuration via environment variables.
+# Set DB_ENGINE to 'postgres' (or 'postgresql') to use PostgreSQL, otherwise falls back to SQLite.
+DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite')
+if DB_ENGINE.startswith('postgres') or DB_ENGINE.startswith('postgresql'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'agenda_db'),
+            'USER': os.getenv('DB_USER', 'agenda_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
 
 # Contraseñas
 AUTH_PASSWORD_VALIDATORS = [
@@ -87,3 +103,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Redirigir al login después del logout
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+# Redirigir al calendario después del login por defecto
+LOGIN_REDIRECT_URL = '/turnos/calendario/'
