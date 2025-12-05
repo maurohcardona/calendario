@@ -154,6 +154,19 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
+    // Auto-refresh: Recargar eventos cada 30 segundos
+    setInterval(function() {
+        fetch('/turnos/eventos/')
+            .then(response => response.json())
+            .then(data => {
+                // Actualizar eventos del calendario sin recargar la página
+                calendar.removeAllEvents();
+                calendar.addEventSource(data);
+                console.log('Calendario actualizado automáticamente');
+            })
+            .catch(error => console.error('Error actualizando calendario:', error));
+    }, 30000); // 30000 ms = 30 segundos
+
 });
 </script>
 {% endblock %}

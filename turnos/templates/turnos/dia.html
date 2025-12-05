@@ -376,6 +376,37 @@ function eliminarItem(index) {
 
 // Cargar determinaciones al cargar la página
 cargarDeterminaciones();
+
+// Auto-refresh: Recargar listado de turnos cada 15 segundos
+setInterval(function() {
+    // Obtener la URL actual con el parámetro agenda
+    const urlParams = new URLSearchParams(window.location.search);
+    const agendaParam = urlParams.get('agenda') ? '?agenda=' + urlParams.get('agenda') : '';
+    
+    // Recargar solo la sección de turnos sin afectar el formulario
+    fetch(window.location.pathname + agendaParam)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const nuevoListado = doc.querySelector('h3 + .div, h3'); // Buscar listado de turnos
+            
+            // Buscar el elemento h3 "Turnos agendados" y su contenedor
+            const currentH3 = Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent.includes('Turnos agendados'));
+            const newH3 = Array.from(doc.querySelectorAll('h3')).find(h3 => h3.textContent.includes('Turnos agendados'));
+            
+            if (currentH3 && newH3) {
+                // Reemplazar el h3 y el div siguiente (el listado)
+                const currentDiv = currentH3.nextElementSibling;
+                const newDiv = newH3.nextElementSibling;
+                if (currentDiv && newDiv) {
+                    currentDiv.innerHTML = newDiv.innerHTML;
+                    console.log('Listado de turnos actualizado automáticamente');
+                }
+            }
+        })
+        .catch(error => console.error('Error actualizando turnos:', error));
+}, 15000); // 15000 ms = 15 segundos
 </script>
 
 {% endblock %}

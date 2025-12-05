@@ -4,9 +4,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Configuración básica
-SECRET_KEY = 'estufa10'
-DEBUG = True
-ALLOWED_HOSTS = ['*']  # Permite acceso desde cualquier IP
+SECRET_KEY = 'django-insecure-pq8xm2k9v5w7n4j3h6r8t1y9u0i2o5p7a9s1d3f5g7h9j2k4'
+DEBUG = False
+ALLOWED_HOSTS = ['192.168.1.250', 'localhost', '127.0.0.1']
 
 # Apps instaladas
 INSTALLED_APPS = [
@@ -82,6 +82,7 @@ USE_TZ = True
 # Archivos estáticos (CSS, JS, imágenes)
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]  # Carpeta /static/ en el proyecto
+STATIC_ROOT = BASE_DIR / 'staticfiles_collected'  # Para producción
 
 # Archivos subidos (si los usás)
 MEDIA_URL = '/media/'
