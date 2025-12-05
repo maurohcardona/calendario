@@ -86,13 +86,9 @@
             <!-- Determinaciones -->
             <div style="margin-bottom: 1.5rem;">
                 <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Determinaciones</label>
-                <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <input type="text" id="inputCodigo" placeholder="Código" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
-                    <div style="position: relative;">
-                        <input type="text" id="inputNombre" placeholder="Buscar por nombre..." autocomplete="off" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
-                        <div id="autocompleteLista" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; margin-top: 0.25rem; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
-                    </div>
-                    <button type="button" id="btnAgregarDet" style="padding: 0.75rem 1.5rem; background: #4caf50; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;">➕ Agregar</button>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="inputCodigo" placeholder="Código" style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
+                    <button type="button" id="btnAgregarDet" style="padding: 0.75rem 1.5rem; background: #4caf50; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">➕ Agregar</button>
                 </div>
                 <div id="detStatus" style="margin-bottom: 0.5rem; font-size: 0.9rem;"></div>
                 <div id="listaDeterminaciones" style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; min-height: 100px; max-height: 300px; overflow-y: auto;">
@@ -139,78 +135,6 @@
 
 <script>
 let determinaciones = [];
-let determinacionesCache = null;
-
-// Cargar todas las determinaciones y perfiles al inicio
-async function cargarDeterminaciones() {
-    if (determinacionesCache) return determinacionesCache;
-    
-    try {
-        const response = await fetch('/turnos/api/listar-determinaciones/');
-        determinacionesCache = await response.json();
-        return determinacionesCache;
-    } catch (error) {
-        console.error('Error cargando determinaciones:', error);
-        return [];
-    }
-}
-
-// Autocompletado por nombre
-document.getElementById('inputNombre').addEventListener('input', async function() {
-    const texto = this.value.trim().toLowerCase();
-    const lista = document.getElementById('autocompleteLista');
-    
-    if (texto.length < 2) {
-        lista.style.display = 'none';
-        return;
-    }
-    
-    const items = await cargarDeterminaciones();
-    const coincidencias = items.filter(d => 
-        d.nombre.toLowerCase().includes(texto)
-    ).slice(0, 20);
-    
-    if (coincidencias.length === 0) {
-        lista.style.display = 'none';
-        return;
-    }
-    
-    lista.innerHTML = coincidencias.map(item => {
-        const tipoBadge = item.tipo === 'perfil' 
-            ? '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL</span>'
-            : '';
-        return `
-            <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(0, 212, 255, 0.1); transition: background 0.2s;">
-                <span style="color: #00d4ff; font-weight: bold;">${item.codigo}</span> - <span style="color: var(--text-light);">${item.nombre}</span>${tipoBadge}
-            </div>
-        `;
-    }).join('');
-    
-    lista.style.display = 'block';
-    
-    lista.querySelectorAll('.autocomplete-item').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            this.style.background = 'rgba(0, 212, 255, 0.2)';
-        });
-        item.addEventListener('mouseleave', function() {
-            this.style.background = 'transparent';
-        });
-        item.addEventListener('click', function() {
-            const codigo = this.dataset.codigo;
-            const nombre = this.dataset.nombre;
-            document.getElementById('inputCodigo').value = codigo;
-            document.getElementById('inputNombre').value = nombre;
-            lista.style.display = 'none';
-        });
-    });
-});
-
-// Cerrar autocompletado al hacer clic fuera
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('#inputNombre') && !e.target.closest('#autocompleteLista')) {
-        document.getElementById('autocompleteLista').style.display = 'none';
-    }
-});
 
 // Buscar paciente por DNI
 document.getElementById('btnBuscarPaciente').addEventListener('click', async function() {
@@ -248,7 +172,7 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
     }
 });
 
-// Agregar determinación o perfil
+// Agregar determinación
 document.getElementById('btnAgregarDet').addEventListener('click', async function() {
     const codigo = document.getElementById('inputCodigo').value.trim();
     const status = document.getElementById('detStatus');
@@ -261,44 +185,20 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
     status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
     
     try {
-        const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+        const response = await fetch(`/turnos/api/buscar-determinacion/?codigo=${codigo}`);
         const data = await response.json();
         
         if (data.found) {
-            if (data.tipo === 'perfil') {
-                // Agregar perfil completo
-                const yaExiste = determinaciones.find(d => d.tipo === 'perfil' && d.codigo === data.codigo);
-                if (yaExiste) {
-                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Perfil ya agregado</span>';
-                    return;
-                }
-                
-                determinaciones.push({
-                    tipo: 'perfil',
-                    codigo: data.codigo,
-                    nombre: data.nombre,
-                    determinaciones: data.determinaciones
-                });
-                status.innerHTML = '<span style="color: #4caf50;">✅ Perfil agregado (' + data.determinaciones.length + ' determinaciones)</span>';
-            } else {
-                // Agregar determinación individual
-                const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
-                if (yaExiste) {
-                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Ya agregada</span>';
-                    return;
-                }
-                
-                determinaciones.push({
-                    tipo: 'determinacion',
-                    codigo: data.codigo,
-                    nombre: data.nombre
-                });
-                status.innerHTML = '<span style="color: #4caf50;">✅ Determinación agregada</span>';
+            // Verificar si ya está agregada
+            if (determinaciones.find(d => d.codigo === data.codigo)) {
+                status.innerHTML = '<span style="color: #ff9999;">⚠️ Ya agregada</span>';
+                return;
             }
             
+            determinaciones.push(data);
             actualizarListaDeterminaciones();
             document.getElementById('inputCodigo').value = '';
-            document.getElementById('inputNombre').value = '';
+            status.innerHTML = '<span style="color: #4caf50;">✅ Agregada</span>';
             setTimeout(() => status.innerHTML = '', 2000);
         } else {
             status.innerHTML = '<span style="color: #ff9999;">❌ Código no encontrado</span>';
@@ -316,66 +216,30 @@ document.getElementById('inputCodigo').addEventListener('keypress', function(e) 
     }
 });
 
-document.getElementById('inputNombre').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('btnAgregarDet').click();
-    }
-});
-
 function actualizarListaDeterminaciones() {
     const lista = document.getElementById('listaDeterminaciones');
     
     if (determinaciones.length === 0) {
         lista.innerHTML = '<p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>';
     } else {
-        lista.innerHTML = determinaciones.map((item, index) => {
-            if (item.tipo === 'perfil') {
-                return `
-                    <div style="background: rgba(76, 175, 80, 0.15); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">PERFIL</span>
-                                <strong style="color: #4caf50; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: var(--text-light);">${item.nombre}</span>
-                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(224, 224, 224, 0.7);">${item.determinaciones.length} determinaciones</div>
-                            </div>
-                            <button type="button" onclick="eliminarItem(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(0, 212, 255, 0.1); border-radius: 6px; margin-bottom: 0.5rem;">
-                        <div>
-                            <strong style="color: #00d4ff;">${item.codigo}</strong> - <span style="color: var(--text-light);">${item.nombre}</span>
-                        </div>
-                        <button type="button" onclick="eliminarItem(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
-                    </div>
-                `;
-            }
-        }).join('');
+        lista.innerHTML = determinaciones.map((det, index) => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(0, 212, 255, 0.1); border-radius: 6px; margin-bottom: 0.5rem;">
+                <div>
+                    <strong style="color: #00d4ff;">${det.codigo}</strong> - <span style="color: var(--text-light);">${det.nombre}</span>
+                </div>
+                <button type="button" onclick="eliminarDeterminacion(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+            </div>
+        `).join('');
     }
     
-    // Actualizar campo oculto con códigos
-    // Para perfiles: código del perfil, para determinaciones: código individual
-    const codigos = [];
-    determinaciones.forEach(item => {
-        if (item.tipo === 'perfil') {
-            codigos.push(item.codigo);
-        } else {
-            codigos.push(item.codigo.toString());
-        }
-    });
-    document.getElementById('id_determinaciones').value = codigos.join(',');
+    // Actualizar campo oculto con códigos separados por coma
+    document.getElementById('id_determinaciones').value = determinaciones.map(d => d.codigo).join(',');
 }
 
-function eliminarItem(index) {
+function eliminarDeterminacion(index) {
     determinaciones.splice(index, 1);
     actualizarListaDeterminaciones();
 }
-
-// Cargar determinaciones al cargar la página
-cargarDeterminaciones();
 </script>
 
 {% endblock %}

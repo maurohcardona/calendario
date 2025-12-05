@@ -4,19 +4,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Configuración básica
-SECRET_KEY = 'cambia-esto-por-una-secret-key'
+SECRET_KEY = 'estufa10'
 DEBUG = True
-import os
-
-# ALLOWED_HOSTS: lee la variable de entorno ALLOWED_HOSTS como una lista separada por comas.
-# Ejemplo: set ALLOWED_HOSTS=127.0.0.1,192.168.18.62
-raw_allowed = os.getenv('ALLOWED_HOSTS', '')
-if raw_allowed:
-    ALLOWED_HOSTS = [h.strip() for h in raw_allowed.split(',') if h.strip()]
-else:
-    # Valores por defecto para desarrollo
-    # Añadir la IP del servidor en la LAN para facilitar acceso desde otras máquinas
-    ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.18.62']
+ALLOWED_HOSTS = ['*']  # Permite acceso desde cualquier IP
 
 # Apps instaladas
 INSTALLED_APPS = [
@@ -64,30 +54,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Agenda.wsgi.application'
 
 # Base de datos
-import os
-
-# Database configuration via environment variables.
-# Set DB_ENGINE to 'postgres' (or 'postgresql') to use PostgreSQL, otherwise falls back to SQLite.
-DB_ENGINE = os.getenv('DB_ENGINE', 'postgresql')
-if DB_ENGINE.startswith('postgres') or DB_ENGINE.startswith('postgresql'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'Laboratorio'),
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'estufa10'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "Laboratorio",
+        "USER": "postgres",
+        "PASSWORD": "estufa10",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-
+}
 
 # Contraseñas
 AUTH_PASSWORD_VALIDATORS = [
@@ -111,14 +87,5 @@ STATICFILES_DIRS = [BASE_DIR / "static"]  # Carpeta /static/ en el proyecto
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Directorio donde se colocarán los archivos estáticos cuando se ejecute
-# `python manage.py collectstatic`. Usar en despliegue (Nginx/servir estáticos).
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
 # Default primary key type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Redirigir al login después del logout
-LOGOUT_REDIRECT_URL = '/accounts/login/'
-# Redirigir al calendario después del login por defecto
-LOGIN_REDIRECT_URL = '/turnos/calendario/'
