@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <h2>🗓️ Generador de Cupos Masivo</h2>
+    <p style="color: rgba(224, 224, 224, 0.7); margin-bottom: 2rem;">
+        Genera cupos automáticamente para un rango de fechas. Solo días hábiles (Lunes a Viernes) o un día específico.
+    </p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="
+                background: {% if message.tags == 'success' %}rgba(76, 175, 80, 0.2){% elif message.tags == 'error' %}rgba(244, 67, 54, 0.2){% else %}rgba(0, 212, 255, 0.2){% endif %}; 
+                border: 1px solid {% if message.tags == 'success' %}rgba(76, 175, 80, 0.5){% elif message.tags == 'error' %}rgba(244, 67, 54, 0.5){% else %}rgba(0, 212, 255, 0.5){% endif %}; 
+                border-radius: 8px; 
+                padding: 1rem; 
+                margin-bottom: 1.5rem;
+                color: {% if message.tags == 'success' %}#4caf50{% elif message.tags == 'error' %}#f44336{% else %}#00d4ff{% endif %};
+            ">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" style="background: rgba(0, 212, 255, 0.05); border-radius: 12px; padding: 2rem; border: 1px solid rgba(0, 212, 255, 0.2);">
+        {% csrf_token %}
+        
+        <!-- Agenda -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+                📌 Agenda *
+            </label>
+            <select name="agenda" required style="
+                width: 100%;
+                padding: 0.75rem;
+                background: rgba(30, 30, 30, 0.8);
+                border: 1px solid rgba(0, 212, 255, 0.3);
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 1rem;
+            ">
+                <option value="">Seleccione una agenda</option>
+                {% for agenda in agendas %}
+                    <option value="{{ agenda.id }}">{{ agenda.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Checkbox: Por día de semana -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="por_dia_semana" name="por_dia_semana" style="margin-right: 0.5rem; width: 18px; height: 18px; cursor: pointer;" onchange="toggleDiaSemana()">
+                <span style="color: #00d4ff; font-weight: 500;">📅 Por día de semana específico</span>
+            </label>
+            <small style="color: rgba(224, 224, 224, 0.6); display: block; margin-top: 0.25rem;">
+                Si está activado, solo se crearán cupos para el día seleccionado. Si no, se crearán para todos los días hábiles (Lun-Vie).
+            </small>
+        </div>
+
+        <!-- Día de la semana (deshabilitado por defecto) -->
+        <div id="dia_semana_container" style="margin-bottom: 1.5rem; opacity: 0.5; pointer-events: none;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+                📆 Día de la semana
+            </label>
+            <select name="dia_semana" id="dia_semana_select" disabled style="
+                width: 100%;
+                padding: 0.75rem;
+                background: rgba(30, 30, 30, 0.8);
+                border: 1px solid rgba(0, 212, 255, 0.3);
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 1rem;
+            ">
+                <option value="">Seleccione un día</option>
+                <option value="0">Lunes</option>
+                <option value="1">Martes</option>
+                <option value="2">Miércoles</option>
+                <option value="3">Jueves</option>
+                <option value="4">Viernes</option>
+            </select>
+        </div>
+
+        <!-- Rango de fechas -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+                    📅 Desde *
+                </label>
+                <input type="date" name="desde_fecha" required style="
+                    width: 100%;
+                    padding: 0.75rem;
+                    background: rgba(30, 30, 30, 0.8);
+                    border: 1px solid rgba(0, 212, 255, 0.3);
+                    border-radius: 6px;
+                    color: #e0e0e0;
+                    font-size: 1rem;
+                ">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+                    📅 Hasta *
+                </label>
+                <input type="date" name="hasta_fecha" required style="
+                    width: 100%;
+                    padding: 0.75rem;
+                    background: rgba(30, 30, 30, 0.8);
+                    border: 1px solid rgba(0, 212, 255, 0.3);
+                    border-radius: 6px;
+                    color: #e0e0e0;
+                    font-size: 1rem;
+                ">
+            </div>
+        </div>
+
+        <!-- Cantidad de cupos -->
+        <div style="margin-bottom: 2rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+                🔢 Cantidad de cupos por día *
+            </label>
+            <input type="number" name="cantidad" min="1" required style="
+                width: 100%;
+                padding: 0.75rem;
+                background: rgba(30, 30, 30, 0.8);
+                border: 1px solid rgba(0, 212, 255, 0.3);
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 1rem;
+            " placeholder="Ej: 10">
+            <small style="color: rgba(224, 224, 224, 0.6); display: block; margin-top: 0.25rem;">
+                Esta cantidad se aplicará a cada día que se genere en el rango.
+            </small>
+        </div>
+
+        <!-- Botones -->
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" style="
+                flex: 1;
+                background: linear-gradient(135deg, #00d4ff, #00a8cc);
+                color: #000;
+                padding: 1rem;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0, 212, 255, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                ✅ Generar Cupos
+            </button>
+            <a href="{% url 'turnos:calendario' %}" style="
+                flex: 1;
+                background: rgba(244, 67, 54, 0.2);
+                color: #f44336;
+                padding: 1rem;
+                border: 1px solid rgba(244, 67, 54, 0.5);
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                text-decoration: none;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            " onmouseover="this.style.background='rgba(244, 67, 54, 0.3)';" onmouseout="this.style.background='rgba(244, 67, 54, 0.2)';">
+                ❌ Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleDiaSemana() {
+    const checkbox = document.getElementById('por_dia_semana');
+    const container = document.getElementById('dia_semana_container');
+    const select = document.getElementById('dia_semana_select');
+    
+    if (checkbox.checked) {
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto';
+        select.disabled = false;
+        select.required = true;
+    } else {
+        container.style.opacity = '0.5';
+        container.style.pointerEvents = 'none';
+        select.disabled = true;
+        select.required = false;
+        select.value = '';
+    }
+}
+
+// Inicializar estado al cargar
+document.addEventListener('DOMContentLoaded', toggleDiaSemana);
+</script>
+
+<!-- SEPARADOR -->
+<div style="border-top: 2px solid rgba(244, 67, 54, 0.3); margin: 3rem 0;"></div>
+
+<!-- FORMULARIO PARA BORRAR CUPOS -->
+<div style="max-width: 800px; margin: 0 auto;">
+    <h2 style="color: #f44336;">🗑️ Borrar Cupos Masivamente</h2>
+    <p style="color: rgba(224, 224, 224, 0.7); margin-bottom: 2rem;">
+        Elimina cupos para un rango de fechas. <strong style="color: #f44336;">IMPORTANTE:</strong> Los turnos agendados NO se borrarán.
+    </p>
+
+    <form method="post" action="{% url 'turnos:borrar_cupos_masivo' %}" onsubmit="return confirmarBorrado()" style="background: rgba(244, 67, 54, 0.05); border-radius: 12px; padding: 2rem; border: 1px solid rgba(244, 67, 54, 0.3);">
+        {% csrf_token %}
+        
+        <!-- Agenda -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+                📌 Agenda *
+            </label>
+            <select name="agenda" id="delete_agenda" required style="
+                width: 100%;
+                padding: 0.75rem;
+                background: rgba(30, 30, 30, 0.8);
+                border: 1px solid rgba(244, 67, 54, 0.3);
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 1rem;
+            ">
+                <option value="">Seleccione una agenda</option>
+                {% for agenda in agendas %}
+                    <option value="{{ agenda.id }}">{{ agenda.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Checkbox: Por día de semana -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="delete_por_dia_semana" name="por_dia_semana" style="margin-right: 0.5rem; width: 18px; height: 18px; cursor: pointer;" onchange="toggleDeleteDiaSemana()">
+                <span style="color: #f44336; font-weight: 500;">📅 Por día de semana específico</span>
+            </label>
+            <small style="color: rgba(224, 224, 224, 0.6); display: block; margin-top: 0.25rem;">
+                Si está activado, solo se borrarán cupos del día seleccionado. Si no, se borrarán todos los días hábiles (Lun-Vie).
+            </small>
+        </div>
+
+        <!-- Día de la semana -->
+        <div id="delete_dia_semana_container" style="margin-bottom: 1.5rem; opacity: 0.5; pointer-events: none;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+                📆 Día de la semana
+            </label>
+            <select name="dia_semana" id="delete_dia_semana_select" disabled style="
+                width: 100%;
+                padding: 0.75rem;
+                background: rgba(30, 30, 30, 0.8);
+                border: 1px solid rgba(244, 67, 54, 0.3);
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 1rem;
+            ">
+                <option value="">Seleccione un día</option>
+                <option value="0">Lunes</option>
+                <option value="1">Martes</option>
+                <option value="2">Miércoles</option>
+                <option value="3">Jueves</option>
+                <option value="4">Viernes</option>
+            </select>
+        </div>
+
+        <!-- Rango de fechas -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+                    📅 Desde *
+                </label>
+                <input type="date" name="desde_fecha" required style="
+                    width: 100%;
+                    padding: 0.75rem;
+                    background: rgba(30, 30, 30, 0.8);
+                    border: 1px solid rgba(244, 67, 54, 0.3);
+                    border-radius: 6px;
+                    color: #e0e0e0;
+                    font-size: 1rem;
+                ">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+                    📅 Hasta *
+                </label>
+                <input type="date" name="hasta_fecha" required style="
+                    width: 100%;
+                    padding: 0.75rem;
+                    background: rgba(30, 30, 30, 0.8);
+                    border: 1px solid rgba(244, 67, 54, 0.3);
+                    border-radius: 6px;
+                    color: #e0e0e0;
+                    font-size: 1rem;
+                ">
+            </div>
+        </div>
+
+        <!-- Cantidad a borrar -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+                🔢 Cantidad de cupos a eliminar (opcional)
+            </label>
+            <input type="number" name="cantidad_a_borrar" min="1" style="
+                width: 100%;
+                padding: 0.75rem;
+                background: rgba(30, 30, 30, 0.8);
+                border: 1px solid rgba(244, 67, 54, 0.3);
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 1rem;
+            " placeholder="Dejar vacío para eliminar todos los cupos del día">
+            <small style="color: #888; display: block; margin-top: 0.5rem;">
+                Si se especifica una cantidad, se reducirá el total de cupos sin eliminarlos completamente.
+            </small>
+        </div>
+
+        <!-- Advertencia -->
+        <div style="background: rgba(255, 152, 0, 0.15); border: 1px solid rgba(255, 152, 0, 0.4); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; color: #ffab40;">
+            <strong>⚠️ Advertencia:</strong><br>
+            Esta acción eliminará los cupos del rango seleccionado. Los turnos ya agendados NO se borrarán y permanecerán en el sistema.
+        </div>
+
+        <!-- Botones -->
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" style="
+                flex: 1;
+                background: linear-gradient(135deg, #f44336, #d32f2f);
+                color: #fff;
+                padding: 1rem;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(244, 67, 54, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                🗑️ Borrar Cupos
+            </button>
+            <a href="{% url 'turnos:calendario' %}" style="
+                flex: 1;
+                background: rgba(158, 158, 158, 0.2);
+                color: #9e9e9e;
+                padding: 1rem;
+                border: 1px solid rgba(158, 158, 158, 0.5);
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                text-decoration: none;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            " onmouseover="this.style.background='rgba(158, 158, 158, 0.3)';" onmouseout="this.style.background='rgba(158, 158, 158, 0.2)';">
+                ❌ Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleDeleteDiaSemana() {
+    const checkbox = document.getElementById('delete_por_dia_semana');
+    const container = document.getElementById('delete_dia_semana_container');
+    const select = document.getElementById('delete_dia_semana_select');
+    
+    if (checkbox.checked) {
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto';
+        select.disabled = false;
+        select.required = true;
+    } else {
+        container.style.opacity = '0.5';
+        container.style.pointerEvents = 'none';
+        select.disabled = true;
+        select.required = false;
+        select.value = '';
+    }
+}
+
+function confirmarBorrado() {
+    return confirm('¿Está seguro de borrar los cupos?\n\nIMPORTANTE: Los turnos agendados NO se borrarán.');
+}
+
+// Inicializar estado al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    toggleDiaSemana();
+    toggleDeleteDiaSemana();
+});
+</script>
+{% endblock %}

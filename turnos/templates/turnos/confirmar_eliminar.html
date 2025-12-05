@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px;">
+    <h2>🗑️ Confirmar eliminación</h2>
+
+    <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px; padding: 2rem; margin: 2rem 0; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+        <p style="font-size: 1.2rem; margin-bottom: 1rem; color: #ff9999;">
+            ¿Estás seguro de que quieres eliminar este turno?
+        </p>
+        <p style="color: rgba(224, 224, 224, 0.7); margin-bottom: 2rem;">
+            Esta acción no se puede deshacer.
+        </p>
+
+        <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid rgba(0, 212, 255, 0.2); text-align: left;">
+            <p><strong>Nombre:</strong> {{ turno.nombre }}</p>
+            <p><strong>DNI:</strong> {{ turno.dni }}</p>
+            <p><strong>Determinaciones:</strong> {{ turno.determinaciones }}</p>
+            <p><strong>Fecha:</strong> {{ turno.fecha }}</p>
+            <p><strong>Agenda:</strong> {{ turno.agenda.name }}</p>
+        </div>
+
+        <form method="post" style="display: flex; gap: 1rem; justify-content: center;">
+            {% csrf_token %}
+            <button type="submit" style="padding: 0.75rem 2rem; background: #f44336; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#d32f2f'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#f44336'; this.style.transform='translateY(0)';">🗑️ Sí, eliminar</button>
+            <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" style="padding: 0.75rem 2rem; background: rgba(224, 224, 224, 0.1); color: var(--text-light); border: 1px solid rgba(224, 224, 224, 0.2); border-radius: 8px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.background='rgba(224, 224, 224, 0.15)';" onmouseout="this.style.background='rgba(224, 224, 224, 0.1)';">Cancelar</a>
+        </form>
+    </div>
+
+    <!-- Botón volver -->
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block;" onmouseover="this.style.background='rgba(0, 212, 255, 0.1)';" onmouseout="this.style.background='transparent';">← Volver al calendario</a>
+    </div>
+</div>
+{% endblock %}

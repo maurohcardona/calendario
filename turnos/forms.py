@@ -1,10 +1,12 @@
 from django import forms
-from .models import Turno, Cupo
+from .models import Turno, Cupo, Agenda
 
 class TurnoForm(forms.ModelForm):
+    agenda = forms.ModelChoiceField(queryset=Agenda.objects.all(), required=True)
+
     class Meta:
         model = Turno
-        fields = ['nombre','dni','determinaciones','fecha']
+        fields = ['agenda','nombre','dni','determinaciones','fecha']
         widgets = {
             'fecha': forms.DateInput(attrs={'type':'date'})
         }
@@ -13,7 +15,7 @@ class TurnoForm(forms.ModelForm):
 class CupoForm(forms.ModelForm):
     class Meta:
         model = Cupo
-        fields = ['fecha', 'cantidad_total']
+        fields = ['agenda','fecha', 'cantidad_total']
         widgets = {
             'fecha': forms.DateInput(attrs={'type':'date'})
         }

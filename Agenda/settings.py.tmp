@@ -1,0 +1,9 @@
+# cambios a settings.py:
+# Línea ~72: cambiar DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite') 
+# a: DB_ENGINE = os.getenv('DB_ENGINE', 'postgresql')
+# Línea ~76: cambiar 'NAME': os.getenv('DB_NAME', 'agenda_db')
+# a: 'NAME': os.getenv('DB_NAME', 'Laboratorio')
+# Línea ~77: cambiar 'USER': os.getenv('DB_USER', 'agenda_user')
+# a: 'USER': os.getenv('DB_USER', 'postgres')
+# Línea ~78: cambiar 'PASSWORD': os.getenv('DB_PASSWORD', '')
+# a: 'PASSWORD': os.getenv('DB_PASSWORD', 'estufa10')

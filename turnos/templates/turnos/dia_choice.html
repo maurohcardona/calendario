@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 700px;">
+    <h2>📌 Elige la agenda para {{ fecha }}</h2>
+    <p style="color: rgba(224,224,224,0.7);">Selecciona en cuál de las agendas disponibles quieres ver/agendar turnos:</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        {% for o in opciones %}
+        <a href="{% url 'turnos:dia' fecha %}?agenda={{ o.agenda_id }}" style="display:block; padding:1rem; border-radius:8px; text-decoration:none; color:inherit; border:1px solid rgba(0,212,255,0.12); background: rgba(26,26,46,0.6);">
+            <h3 style="margin:0 0 0.5rem 0;">{{ o.agenda_name }}</h3>
+            <div style="font-size: 0.95rem; color: rgba(224,224,224,0.7);">Disponibles: <strong style="color: #00d4ff;">{{ o.disponibles }}</strong> / {{ o.total }}</div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top:1.5rem;">
+        <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none;">← Volver al calendario</a>
+    </div>
+</div>
+{% endblock %}

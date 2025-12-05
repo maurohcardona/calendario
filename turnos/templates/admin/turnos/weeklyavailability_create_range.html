@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{{ title }}</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="hidden" name="apply" value="1" />
+    <button type="submit" class="default">Aplicar</button>
+    <a href="../">Cancelar</a>
+  </form>
+{% endblock %}

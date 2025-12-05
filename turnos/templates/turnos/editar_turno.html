@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px;">
+    <h2>✏️ Editar turno</h2>
+
+    <form method="post" style="background: rgba(26, 26, 46, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem;">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); color: #ff9999; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.name == 'fecha' %}
+                    <input type="date" id="{{ field.id_for_label }}" name="{{ field.html_name }}" value="{{ turno.fecha|date:'Y-m-d' }}" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
+                {% elif field.field.widget.input_type == 'textarea' %}
+                    <textarea id="{{ field.id_for_label }}" name="{{ field.html_name }}" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" rows="4">{{ field.value }}</textarea>
+                {% else %}
+                    {{ field }}
+                {% endif %}
+                {% if field.errors %}
+                    <span style="color: #ff9999; font-size: 0.9rem; display: block; margin-top: 0.25rem;">{{ field.errors }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <style>
+            #id_fecha, #id_nombre, #id_dni, #id_determinaciones, #id_agenda {
+                width: 100% !important;
+                background: rgba(255, 255, 255, 0.05) !important;
+                border: 1px solid rgba(0, 212, 255, 0.3) !important;
+                color: var(--text-light) !important;
+                padding: 0.75rem !important;
+                border-radius: 8px !important;
+                font-size: 1rem !important;
+                font-family: inherit !important;
+                box-sizing: border-box !important;
+            }
+            #id_fecha:focus, #id_nombre:focus, #id_dni:focus, #id_determinaciones:focus, #id_agenda:focus {
+                background: rgba(255, 255, 255, 0.08) !important;
+                border-color: var(--accent) !important;
+                box-shadow: 0 0 12px rgba(0, 212, 255, 0.2) !important;
+            }
+            #id_fecha::placeholder, #id_nombre::placeholder, #id_dni::placeholder, #id_determinaciones::placeholder {
+                color: rgba(224, 224, 224, 0.5) !important;
+            }
+        </style>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button type="submit" style="flex: 1; padding: 0.75rem; background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">💾 Guardar cambios</button>
+            <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" style="flex: 1; padding: 0.75rem; background: rgba(224, 224, 224, 0.1); color: var(--text-light); border: 1px solid rgba(224, 224, 224, 0.2); border-radius: 8px; font-weight: 600; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(224, 224, 224, 0.15)';" onmouseout="this.style.background='rgba(224, 224, 224, 0.1)';">Cancelar</a>
+        </div>
+    </form>
+
+    <!-- Botón volver -->
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block;" onmouseover="this.style.background='rgba(0, 212, 255, 0.1)';" onmouseout="this.style.background='transparent';">← Volver al calendario</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{{ title }}</h1>
+    
+    <p style="margin-bottom: 1.5rem; color: #666;">
+        Crea cupos automáticamente en un rango de fechas (solo de lunes a viernes).
+    </p>
+
+    <form method="post" style="background: #f8f9fa; padding: 2rem; border-radius: 8px; max-width: 500px;">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                    <small style="display: block; color: #666; margin-top: 0.25rem;">{{ field.help_text|safe }}</small>
+                {% endif %}
+                {% if field.errors %}
+                    <div style="color: #721c24; margin-top: 0.25rem;">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <style>
+            input[type="date"],
+            input[type="number"],
+            select {
+                width: 100%;
+                padding: 0.75rem;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 1rem;
+                font-family: inherit;
+                box-sizing: border-box;
+            }
+            
+            input[type="date"]:focus,
+            input[type="number"]:focus,
+            select:focus {
+                border-color: #0066cc;
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+            }
+        </style>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" name="apply" class="button default" style="padding: 0.75rem 1.5rem; background-color: #417690; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                ✅ Crear Cupos
+            </button>
+            <a href="{% url 'admin:turnos_cupo_changelist' %}" class="button" style="padding: 0.75rem 1.5rem; background-color: #f1f1f1; color: #333; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; display: inline-block;">
+                ❌ Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
