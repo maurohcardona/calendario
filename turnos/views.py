@@ -301,7 +301,7 @@ def dia(request, fecha):
                     paciente_existe = cursor.fetchone()
                     
                     if paciente_existe:
-                        # Actualizar paciente
+                        # Actualizar paciente (no actualizamos usuario en updates)
                         cursor.execute("""
                             UPDATE pacientes 
                             SET nombre = %s, apellido = %s, fecha_nacimiento = %s, sexo = %s, observaciones = %s,
@@ -311,9 +311,9 @@ def dia(request, fecha):
                     else:
                         # Crear nuevo paciente
                         cursor.execute("""
-                            INSERT INTO pacientes (nombre, apellido, dni, fecha_nacimiento, sexo, observaciones, telefono, email)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        """, (nombre, apellido, dni, fecha_nacimiento, sexo, observaciones_pac, telefono, email))
+                            INSERT INTO pacientes (nombre, apellido, dni, fecha_nacimiento, sexo, observaciones, telefono, email, usuario)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (nombre, apellido, dni, fecha_nacimiento, sexo, observaciones_pac, telefono, email, request.user.username))
                     
                     conn.commit()
                     cursor.close()
@@ -344,6 +344,7 @@ def dia(request, fecha):
                         nuevo.fecha = fecha
                         nuevo.medico = medico
                         nuevo.nota_interna = nota_interna
+                        nuevo.usuario = request.user.username
                         nuevo.full_clean()
                         nuevo.save()
                         return redirect(f"{reverse('turnos:dia', args=[fecha])}?agenda={agenda_form.id}")
@@ -664,7 +665,7 @@ def generar_cupos_masivo(request):
                 cupo, created = Cupo.objects.get_or_create(
                     agenda=agenda,
                     fecha=fecha_actual,
-                    defaults={'cantidad_total': cantidad_int}
+                    defaults={'cantidad_total': cantidad_int, 'usuario': request.user.username}
                 )
                 
                 if created:
@@ -1158,7 +1159,8 @@ def coordinar_turno(request, turno_id):
             nombre=nombre,
             apellido=apellido,
             dni=dni,
-            determinaciones=turno.determinaciones
+            determinaciones=turno.determinaciones,
+            usuario=request.user.username
         )
         
         return JsonResponse({

@@ -9,6 +9,7 @@ class Agenda(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True)
     color = models.CharField(max_length=7, default="#00d4ff", help_text="Color HEX para el calendario (ej. #00d4ff)")
+    usuario = models.CharField(max_length=150, blank=True, default='')
 
     class Meta:
         verbose_name = "Agenda"
@@ -23,6 +24,7 @@ class Cupo(models.Model):
     agenda = models.ForeignKey(Agenda, on_delete=models.CASCADE, related_name='cupos')
     fecha = models.DateField()
     cantidad_total = models.PositiveIntegerField()
+    usuario = models.CharField(max_length=150, blank=True, default='')
 
     class Meta:
         unique_together = (('agenda', 'fecha'),)
@@ -44,6 +46,7 @@ class Turno(models.Model):
     fecha = models.DateField()
     medico = models.CharField(max_length=200, blank=True, default='')
     nota_interna = models.TextField(blank=True, default='')
+    usuario = models.CharField(max_length=150, blank=True, default='')
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -75,6 +78,7 @@ class CapacidadDia(models.Model):
     agenda = models.ForeignKey(Agenda, on_delete=models.CASCADE, related_name='capacidades')
     fecha = models.DateField()
     capacidad = models.PositiveIntegerField(default=20)
+    usuario = models.CharField(max_length=150, blank=True, default='')
 
     class Meta:
         unique_together = (('agenda', 'fecha'),)
@@ -102,6 +106,7 @@ class WeeklyAvailability(models.Model):
     active = models.BooleanField(default=True)
     desde_fecha = models.DateField(null=True, blank=True, help_text="Fecha desde la cual aplicar esta disponibilidad (opcional)")
     hasta_fecha = models.DateField(null=True, blank=True, help_text="Fecha hasta la cual aplicar esta disponibilidad (opcional)")
+    usuario = models.CharField(max_length=150, blank=True, default='')
 
     class Meta:
         unique_together = (('agenda', 'weekday'),)
@@ -121,6 +126,7 @@ class TurnoMensual(models.Model):
     hasta_fecha = models.DateField(help_text="Fecha de fin del rango")
     cantidad = models.PositiveIntegerField(default=5, help_text="Cantidad de cupos para cada día de lunes a viernes")
     aplicado = models.BooleanField(default=False, help_text="Si está aplicado, los cupos ya fueron creados")
+    usuario = models.CharField(max_length=150, blank=True, default='')
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -191,6 +197,7 @@ class Coordinados(models.Model):
     dni = models.CharField(max_length=20, verbose_name='DNI')
     fecha_coordinacion = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Coordinación')
     determinaciones = models.TextField(blank=True, verbose_name='Determinaciones')
+    usuario = models.CharField(max_length=150, blank=True, default='')
 
     class Meta:
         verbose_name = 'Turno Coordinado'
