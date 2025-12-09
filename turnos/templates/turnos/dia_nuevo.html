@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 800px;">
+    <h2>📅 Turnos del día: <span style="color: #4caf50;">{{ fecha }}</span>
+    {% if agenda_name %}
+        <small style="font-size:0.9rem; color: rgba(224,224,224,0.7);"> — {{ agenda_name }}</small>
+    {% endif %}
+    </h2>
+
+    <!-- Información de cupo -->
+    {% if modo_vista == 'agenda_seleccionada' %}
+        {% if disponibles > 0 or cupo %}
+            <div style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(0, 212, 255, 0.15)); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Cupo total</span>
+                        <div style="font-size: 1.5rem; color: #00d4ff; font-weight: bold;">{% if cupo %}{{ cupo.cantidad_total }}{% else %}{{ disponibles|add:turnos|length }}{% endif %}</div>
+                    </div>
+                    <div>
+                        <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Disponibles</span>
+                        <div style="font-size: 1.5rem; color: {% if disponibles > 0 %}#4caf50{% else %}#f44336{% endif %}; font-weight: bold;">{{ disponibles }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Formulario de agregar turno -->
+    {% if modo_vista == 'agenda_seleccionada' and show_form %}
+        <h3 style="margin-top: 2rem;">➕ Agendar turno</h3>
+        <form method="post" id="turnoForm" style="background: rgba(26, 26, 46, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); color: #ff9999; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- Campo DNI -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">DNI</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="id_dni" name="dni" required style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
+                    <button type="button" id="btnBuscarPaciente" style="padding: 0.75rem 1.5rem; background: #00d4ff; color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">🔍 Buscar</button>
+                </div>
+                <div id="pacienteStatus" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <!-- Campo Nombre -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Nombre</label>
+                <input type="text" id="id_nombre" name="nombre" required style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
+            </div>
+
+            <!-- Campo Apellido -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Apellido</label>
+                <input type="text" id="id_apellido" name="apellido" required style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
+            </div>
+
+            <!-- Campo Fecha de Nacimiento -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Fecha de Nacimiento</label>
+                <input type="date" id="id_fecha_nacimiento" name="fecha_nacimiento" required style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
+            </div>
+
+            <!-- Campo Sexo -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Sexo</label>
+                <select id="id_sexo" name="sexo" required style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;">
+                    <option value="">Seleccione...</option>
+                    <option value="Hombre">Hombre</option>
+                    <option value="Mujer">Mujer</option>
+                    <option value="Generico">Genérico</option>
+                    <option value="Desconocido">Desconocido</option>
+                </select>
+            </div>
+
+            <!-- Campo Observaciones Paciente -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Observaciones del Paciente</label>
+                <textarea id="id_observaciones_paciente" name="observaciones_paciente" rows="3" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;"></textarea>
+            </div>
+
+            <!-- Determinaciones -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Determinaciones</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="inputCodigo" placeholder="Código" style="flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
+                    <button type="button" id="btnAgregarDet" style="padding: 0.75rem 1.5rem; background: #4caf50; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">➕ Agregar</button>
+                </div>
+                <div id="detStatus" style="margin-bottom: 0.5rem; font-size: 0.9rem;"></div>
+                <div id="listaDeterminaciones" style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; min-height: 100px; max-height: 300px; overflow-y: auto;">
+                    <p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>
+                </div>
+                <input type="hidden" id="id_determinaciones" name="determinaciones" value="" />
+            </div>
+
+            <!-- Campos ocultos -->
+            <input type="hidden" name="agenda" value="{{ form.agenda.value }}" />
+            <input type="hidden" name="fecha" value="{{ fecha|date:'Y-m-d' }}" />
+
+            <button type="submit" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; margin-top: 1rem;">💾 Guardar turno</button>
+        </form>
+    {% endif %}
+
+    <!-- Lista de turnos -->
+    <h3 style="margin-top: 2rem;">📋 Turnos agendados</h3>
+    <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1rem; margin-bottom: 2rem; border: 1px solid rgba(0, 212, 255, 0.2);">
+        {% if turnos %}
+            <ul style="margin: 0; padding-left: 0; list-style: none;">
+                {% for t in turnos %}
+                    <li style="padding: 1rem 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>{{ t.nombre }}</strong><br>
+                            <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">DNI: {{ t.dni }}</span> | <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Det: {{ t.determinaciones }}</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #00d4ff; color: #000; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem;">✏️ Editar</a>
+                            <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #f44336; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem;">🗑️ Eliminar</a>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="margin: 0; color: rgba(224, 224, 224, 0.7);">No hay turnos agendados.</p>
+        {% endif %}
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 500;">← Volver al calendario</a>
+    </div>
+</div>
+
+<script>
+let determinaciones = [];
+
+// Buscar paciente por DNI
+document.getElementById('btnBuscarPaciente').addEventListener('click', async function() {
+    const dni = document.getElementById('id_dni').value.trim();
+    const status = document.getElementById('pacienteStatus');
+    
+    if (!dni) {
+        status.innerHTML = '<span style="color: #ff9999;">⚠️ Ingrese un DNI</span>';
+        return;
+    }
+    
+    status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
+    
+    try {
+        const response = await fetch(`/turnos/api/buscar-paciente/?dni=${dni}`);
+        const data = await response.json();
+        
+        if (data.found) {
+            status.innerHTML = '<span style="color: #4caf50;">✅ Paciente encontrado</span>';
+            document.getElementById('id_nombre').value = data.nombre;
+            document.getElementById('id_apellido').value = data.apellido;
+            document.getElementById('id_fecha_nacimiento').value = data.fecha_nacimiento;
+            document.getElementById('id_sexo').value = data.sexo;
+            document.getElementById('id_observaciones_paciente').value = data.observaciones;
+        } else {
+            status.innerHTML = '<span style="color: #ff9999;">❌ Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
+            document.getElementById('id_nombre').value = '';
+            document.getElementById('id_apellido').value = '';
+            document.getElementById('id_fecha_nacimiento').value = '';
+            document.getElementById('id_sexo').value = '';
+            document.getElementById('id_observaciones_paciente').value = '';
+        }
+    } catch (error) {
+        status.innerHTML = '<span style="color: #ff9999;">❌ Error al buscar</span>';
+    }
+});
+
+// Agregar determinación
+document.getElementById('btnAgregarDet').addEventListener('click', async function() {
+    const codigo = document.getElementById('inputCodigo').value.trim();
+    const status = document.getElementById('detStatus');
+    
+    if (!codigo) {
+        status.innerHTML = '<span style="color: #ff9999;">⚠️ Ingrese un código</span>';
+        return;
+    }
+    
+    status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
+    
+    try {
+        const response = await fetch(`/turnos/api/buscar-determinacion/?codigo=${codigo}`);
+        const data = await response.json();
+        
+        if (data.found) {
+            // Verificar si ya está agregada
+            if (determinaciones.find(d => d.codigo === data.codigo)) {
+                status.innerHTML = '<span style="color: #ff9999;">⚠️ Ya agregada</span>';
+                return;
+            }
+            
+            determinaciones.push(data);
+            actualizarListaDeterminaciones();
+            document.getElementById('inputCodigo').value = '';
+            status.innerHTML = '<span style="color: #4caf50;">✅ Agregada</span>';
+            setTimeout(() => status.innerHTML = '', 2000);
+        } else {
+            status.innerHTML = '<span style="color: #ff9999;">❌ Código no encontrado</span>';
+        }
+    } catch (error) {
+        status.innerHTML = '<span style="color: #ff9999;">❌ Error al buscar</span>';
+    }
+});
+
+// Enter para agregar determinación
+document.getElementById('inputCodigo').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btnAgregarDet').click();
+    }
+});
+
+function actualizarListaDeterminaciones() {
+    const lista = document.getElementById('listaDeterminaciones');
+    
+    if (determinaciones.length === 0) {
+        lista.innerHTML = '<p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>';
+    } else {
+        lista.innerHTML = determinaciones.map((det, index) => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(0, 212, 255, 0.1); border-radius: 6px; margin-bottom: 0.5rem;">
+                <div>
+                    <strong style="color: #00d4ff;">${det.codigo}</strong> - <span style="color: var(--text-light);">${det.nombre}</span>
+                </div>
+                <button type="button" onclick="eliminarDeterminacion(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+            </div>
+        `).join('');
+    }
+    
+    // Actualizar campo oculto con códigos separados por coma
+    document.getElementById('id_determinaciones').value = determinaciones.map(d => d.codigo).join(',');
+}
+
+function eliminarDeterminacion(index) {
+    determinaciones.splice(index, 1);
+    actualizarListaDeterminaciones();
+}
+</script>
+
+{% endblock %}

@@ -1,11 +1,21 @@
 from django.contrib import admin
-from .models import Cupo, Turno, CapacidadDia, Agenda, TurnoMensual
+from .models import Cupo, Turno, CapacidadDia, Agenda, TurnoMensual, Coordinados
 
 
 @admin.register(Agenda)
 class AgendaAdmin(admin.ModelAdmin):
 	list_display = ('name', 'slug', 'color')
 	prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(Coordinados)
+class CoordinadosAdmin(admin.ModelAdmin):
+	list_display = ('id_turno', 'apellido', 'nombre', 'dni', 'fecha_coordinacion')
+	list_filter = ('fecha_coordinacion',)
+	search_fields = ('dni', 'nombre', 'apellido')
+	readonly_fields = ('fecha_coordinacion',)
+	ordering = ('-fecha_coordinacion',)
+
 
 
 @admin.register(Cupo)

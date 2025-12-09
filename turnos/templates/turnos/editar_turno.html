@@ -1,64 +1,373 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width: 600px;">
-    <h2>✏️ Editar turno</h2>
+<div style="max-width: 800px;">
+    <h2>✏️ Editar Turno</h2>
 
-    <form method="post" style="background: rgba(26, 26, 46, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem;">
+    <form method="post" style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
         {% csrf_token %}
         
-        {% if form.non_field_errors %}
-            <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); color: #ff9999; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                {{ form.non_field_errors }}
-            </div>
-        {% endif %}
+        <!-- Agenda -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Agenda</label>
+            <select name="agenda" id="id_agenda" required style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;">
+                {% for agenda in agendas %}
+                    <option value="{{ agenda.id }}" {% if agenda.id == turno.agenda.id %}selected{% endif %}>{{ agenda.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-        {% for field in form %}
-            <div style="margin-bottom: 1.5rem;">
-                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {% if field.name == 'fecha' %}
-                    <input type="date" id="{{ field.id_for_label }}" name="{{ field.html_name }}" value="{{ turno.fecha|date:'Y-m-d' }}" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
-                {% elif field.field.widget.input_type == 'textarea' %}
-                    <textarea id="{{ field.id_for_label }}" name="{{ field.html_name }}" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" rows="4">{{ field.value }}</textarea>
-                {% else %}
-                    {{ field }}
-                {% endif %}
-                {% if field.errors %}
-                    <span style="color: #ff9999; font-size: 0.9rem; display: block; margin-top: 0.25rem;">{{ field.errors }}</span>
-                {% endif %}
-            </div>
-        {% endfor %}
+        <!-- DNI (No editable) -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">DNI</label>
+            <input type="text" value="{% if paciente %}{{ paciente.dni }}{% else %}{{ turno.dni }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+        </div>
 
-        <style>
-            #id_fecha, #id_nombre, #id_dni, #id_determinaciones, #id_agenda {
-                width: 100% !important;
-                background: rgba(255, 255, 255, 0.05) !important;
-                border: 1px solid rgba(0, 212, 255, 0.3) !important;
-                color: var(--text-light) !important;
-                padding: 0.75rem !important;
-                border-radius: 8px !important;
-                font-size: 1rem !important;
-                font-family: inherit !important;
-                box-sizing: border-box !important;
-            }
-            #id_fecha:focus, #id_nombre:focus, #id_dni:focus, #id_determinaciones:focus, #id_agenda:focus {
-                background: rgba(255, 255, 255, 0.08) !important;
-                border-color: var(--accent) !important;
-                box-shadow: 0 0 12px rgba(0, 212, 255, 0.2) !important;
-            }
-            #id_fecha::placeholder, #id_nombre::placeholder, #id_dni::placeholder, #id_determinaciones::placeholder {
-                color: rgba(224, 224, 224, 0.5) !important;
-            }
-        </style>
+        <!-- Campos Apellido y Nombre en la misma fila -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Apellido</label>
+                <input type="text" value="{% if paciente %}{{ paciente.apellido }}{% else %}{{ turno.apellido }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+            </div>
+            <div>
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nombre</label>
+                <input type="text" value="{% if paciente %}{{ paciente.nombre }}{% else %}{{ turno.nombre }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+            </div>
+        </div>
+
+        <!-- Campos Fecha de Nacimiento y Sexo en la misma fila -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Fecha de Nacimiento</label>
+                <input type="date" value="{% if paciente %}{{ paciente.fecha_nacimiento|date:'Y-m-d' }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+            </div>
+            <div>
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Sexo</label>
+                <input type="text" value="{% if paciente %}{{ paciente.sexo }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+            </div>
+        </div>
+
+        <!-- Campos Teléfono, Email y Médico en una fila -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Teléfono</label>
+                <input type="tel" name="telefono" value="{% if paciente %}{{ paciente.telefono }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+            </div>
+            <div>
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Email</label>
+                <input type="email" name="email" value="{% if paciente %}{{ paciente.email }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+            </div>
+            <div>
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
+                <input type="text" name="medico" value="{% if paciente %}{{ paciente.medico }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+            </div>
+        </div>
+
+        <!-- Campo Observaciones Paciente -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones del Paciente</label>
+            <textarea name="observaciones_paciente" rows="2" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;">{% if paciente %}{{ paciente.observaciones }}{% endif %}</textarea>
+        </div>
+
+        <!-- Campo Observaciones del Turno -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones del Turno</label>
+            <textarea name="observaciones_turno" rows="2" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; resize: vertical;">{{ turno.observaciones|default:"" }}</textarea>
+        </div>
+
+        <!-- Fecha del Turno (Editable) -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Fecha del Turno</label>
+            <input type="date" name="fecha" id="id_fecha" value="{{ turno.fecha|date:'Y-m-d' }}" required style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+        </div>
+
+        <!-- Determinaciones -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Determinaciones</label>
+            <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <input type="text" id="inputCodigo" placeholder="Código" style="background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                <div style="position: relative;">
+                    <input type="text" id="inputNombre" placeholder="Buscar por nombre..." autocomplete="off" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                    <div id="autocompleteLista" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);"></div>
+                </div>
+                <button type="button" id="btnAgregarDet" style="padding: 0.75rem 1.5rem; background: #4caf50; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; font-size: 1rem;">➕ Agregar</button>
+            </div>
+            <div id="detStatus" style="margin-bottom: 0.5rem; font-size: 0.9rem;"></div>
+            <div id="listaDeterminaciones" style="background: rgba(255, 255, 255, 0.15); border: 2px solid var(--accent); border-radius: 8px; padding: 1rem; min-height: 100px; max-height: 300px; overflow-y: auto;">
+                <p style="color: rgba(200, 155, 143, 0.7); text-align: center; margin: 0;">No hay determinaciones agregadas</p>
+            </div>
+            <input type="hidden" id="id_determinaciones" name="determinaciones" value="{{ turno.determinaciones }}" />
+        </div>
 
         <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-            <button type="submit" style="flex: 1; padding: 0.75rem; background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">💾 Guardar cambios</button>
-            <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" style="flex: 1; padding: 0.75rem; background: rgba(224, 224, 224, 0.1); color: var(--text-light); border: 1px solid rgba(224, 224, 224, 0.2); border-radius: 8px; font-weight: 600; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(224, 224, 224, 0.15)';" onmouseout="this.style.background='rgba(224, 224, 224, 0.1)';">Cancelar</a>
+            <button type="submit" style="flex: 1; padding: 0.875rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(200, 155, 143, 0.3);">💾 Guardar cambios</button>
+            <a href="{% url 'turnos:eliminar_turno' turno.id %}" style="flex: 1; padding: 0.875rem; background: #ff7066; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease; line-height: 1.5; box-shadow: 0 2px 8px rgba(255, 112, 102, 0.3);">🗑️ Eliminar Turno</a>
+            <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" style="flex: 1; padding: 0.875rem; background: rgba(200, 155, 143, 0.3); color: var(--text-light); border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease; line-height: 1.5;">Cancelar</a>
         </div>
     </form>
 
-    <!-- Botón volver -->
     <div style="margin-top: 2rem;">
-        <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block;" onmouseover="this.style.background='rgba(0, 212, 255, 0.1)';" onmouseout="this.style.background='transparent';">← Volver al calendario</a>
+        <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 600; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 8px; display: inline-block; background: rgba(200, 155, 143, 0.1);">← Volver al calendario</a>
     </div>
 </div>
+
+<style>
+    #autocompleteLista div {
+        padding: 0.75rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        border-bottom: 1px solid rgba(200, 155, 143, 0.2);
+    }
+    #autocompleteLista div:hover {
+        background: rgba(200, 155, 143, 0.3);
+    }
+    #autocompleteLista div:last-child {
+        border-bottom: none;
+    }
+    button[type="submit"]:hover {
+        background: #b78b7f;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(200, 155, 143, 0.4);
+    }
+    a[href*="eliminar"]:hover {
+        background: #ff5044;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 112, 102, 0.4);
+    }
+    a[href*="dia"]:hover, a[href*="calendario"]:hover {
+        background: rgba(200, 155, 143, 0.4);
+    }
+</style>
+
+<script>
+let determinaciones = [];
+let determinacionesCache = null;
+
+// Cargar determinaciones existentes del turno
+window.addEventListener('DOMContentLoaded', async function() {
+    const codigosExistentes = '{{ turno.determinaciones }}'.split(',').map(c => c.trim()).filter(c => c);
+    
+    if (codigosExistentes.length > 0) {
+        for (const codigo of codigosExistentes) {
+            try {
+                const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+                const data = await response.json();
+                
+                if (data.found) {
+                    if (data.tipo === 'perfil') {
+                        determinaciones.push({
+                            tipo: 'perfil',
+                            codigo: data.codigo,
+                            nombre: data.nombre,
+                            determinaciones: data.determinaciones
+                        });
+                    } else {
+                        determinaciones.push({
+                            tipo: 'determinacion',
+                            codigo: data.codigo,
+                            nombre: data.nombre
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error cargando determinación:', codigo, error);
+            }
+        }
+        actualizarListaDeterminaciones();
+    }
+});
+
+// Cargar todas las determinaciones y perfiles al inicio
+async function cargarDeterminaciones() {
+    if (determinacionesCache) return determinacionesCache;
+    
+    try {
+        const response = await fetch('/turnos/api/listar-determinaciones/');
+        determinacionesCache = await response.json();
+        return determinacionesCache;
+    } catch (error) {
+        console.error('Error cargando determinaciones:', error);
+        return [];
+    }
+}
+
+// Autocompletado por nombre
+document.getElementById('inputNombre').addEventListener('input', async function() {
+    const texto = this.value.trim().toLowerCase();
+    const lista = document.getElementById('autocompleteLista');
+    
+    if (texto.length < 2) {
+        lista.style.display = 'none';
+        return;
+    }
+    
+    const items = await cargarDeterminaciones();
+    const coincidencias = items.filter(d => 
+        d.nombre.toLowerCase().includes(texto)
+    ).slice(0, 20);
+    
+    if (coincidencias.length === 0) {
+        lista.style.display = 'none';
+        return;
+    }
+    
+    lista.innerHTML = coincidencias.map(item => {
+        const tipoBadge = item.tipo === 'perfil' 
+            ? '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>'
+            : '';
+        return `
+            <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}">
+                <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}
+            </div>
+        `;
+    }).join('');
+    
+    lista.style.display = 'block';
+    
+    lista.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const codigo = this.dataset.codigo;
+            const nombre = this.dataset.nombre;
+            document.getElementById('inputCodigo').value = codigo;
+            document.getElementById('inputNombre').value = nombre;
+            lista.style.display = 'none';
+        });
+    });
+});
+
+// Cerrar autocompletado al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#inputNombre') && !e.target.closest('#autocompleteLista')) {
+        document.getElementById('autocompleteLista').style.display = 'none';
+    }
+});
+
+// Agregar determinación o perfil
+document.getElementById('btnAgregarDet').addEventListener('click', async function() {
+    const codigo = document.getElementById('inputCodigo').value.trim();
+    const status = document.getElementById('detStatus');
+    
+    if (!codigo) {
+        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ingrese un código</span>';
+        return;
+    }
+    
+    status.innerHTML = '<span style="color: var(--accent); font-weight: 600;">⏳ Buscando...</span>';
+    
+    try {
+        const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+        const data = await response.json();
+        
+        if (data.found) {
+            if (data.tipo === 'perfil') {
+                // Agregar perfil completo
+                const yaExiste = determinaciones.find(d => d.tipo === 'perfil' && d.codigo === data.codigo);
+                if (yaExiste) {
+                    status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Perfil ya agregado</span>';
+                    return;
+                }
+                
+                determinaciones.push({
+                    tipo: 'perfil',
+                    codigo: data.codigo,
+                    nombre: data.nombre,
+                    determinaciones: data.determinaciones
+                });
+                status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (' + data.determinaciones.length + ' determinaciones)</span>';
+            } else {
+                // Agregar determinación individual
+                const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
+                if (yaExiste) {
+                    status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ya agregada</span>';
+                    return;
+                }
+                
+                determinaciones.push({
+                    tipo: 'determinacion',
+                    codigo: data.codigo,
+                    nombre: data.nombre
+                });
+                status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Determinación agregada</span>';
+            }
+            
+            actualizarListaDeterminaciones();
+            document.getElementById('inputCodigo').value = '';
+            document.getElementById('inputNombre').value = '';
+            setTimeout(() => status.innerHTML = '', 2000);
+        } else {
+            status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Código no encontrado</span>';
+        }
+    } catch (error) {
+        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Error al buscar</span>';
+    }
+});
+
+// Enter para agregar determinación
+document.getElementById('inputCodigo').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btnAgregarDet').click();
+    }
+});
+
+document.getElementById('inputNombre').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btnAgregarDet').click();
+    }
+});
+
+function actualizarListaDeterminaciones() {
+    const lista = document.getElementById('listaDeterminaciones');
+    
+    if (determinaciones.length === 0) {
+        lista.innerHTML = '<p style="color: rgba(200, 155, 143, 0.7); text-align: center; margin: 0; font-weight: 600;">No hay determinaciones agregadas</p>';
+    } else {
+        lista.innerHTML = determinaciones.map((item, index) => {
+            if (item.tipo === 'perfil') {
+                return `
+                    <div style="background: rgba(76, 175, 80, 0.15); border: 2px solid rgba(76, 175, 80, 0.4); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="background: #4caf50; color: #fff; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">PERFIL</span>
+                                <strong style="color: #4caf50; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
+                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(200, 155, 143, 0.8); font-weight: 600;">${item.determinaciones.length} determinaciones</div>
+                            </div>
+                            <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(200, 155, 143, 0.15); border: 2px solid rgba(200, 155, 143, 0.3); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <div>
+                            <strong style="color: var(--accent); font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
+                        </div>
+                        <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
+                    </div>
+                `;
+            }
+        }).join('');
+    }
+    
+    // Actualizar campo oculto con códigos
+    const codigos = [];
+    determinaciones.forEach(item => {
+        if (item.tipo === 'perfil') {
+            codigos.push(item.codigo);
+        } else {
+            codigos.push(item.codigo.toString());
+        }
+    });
+    document.getElementById('id_determinaciones').value = codigos.join(',');
+}
+
+function eliminarItem(index) {
+    determinaciones.splice(index, 1);
+    actualizarListaDeterminaciones();
+}
+
+// Cargar determinaciones al cargar la página
+cargarDeterminaciones();
+</script>
+
 {% endblock %}

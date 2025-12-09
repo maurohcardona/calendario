@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px;">
+    <h2>📅 Turnos del día: <span style="color: #4caf50;">{{ fecha }}</span>
+    {% if agenda_name %}
+        <small style="font-size:0.9rem; color: rgba(224,224,224,0.7);"> — {{ agenda_name }}</small>
+    {% endif %}
+    </h2>
+
+    <!-- Información de cupo (solo en modo agenda seleccionada) -->
+    {% if modo_vista == 'agenda_seleccionada' %}
+        {% if disponibles > 0 or cupo %}
+            <div style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(0, 212, 255, 0.15)); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Cupo total</span>
+                        <div style="font-size: 1.5rem; color: #00d4ff; font-weight: bold;">{% if cupo %}{{ cupo.cantidad_total }}{% else %}{{ disponibles|add:turnos|length }}{% endif %}</div>
+                    </div>
+                    <div>
+                        <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Disponibles</span>
+                        <div style="font-size: 1.5rem; color: {% if disponibles > 0 %}#4caf50{% else %}#f44336{% endif %}; font-weight: bold;">{{ disponibles }}</div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; color: #ff9999;">
+                <strong>⚠️ Sin cupo</strong><br>
+                No hay cupo configurado para esta fecha. Solicita al administrador que lo cree.
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Lista de turnos agendados -->
+    <h3 style="margin-top: 2rem;">📋 Turnos agendados</h3>
+    
+    {% if modo_vista == 'todas_agendas' %}
+        <!-- Vista agrupada por agenda -->
+        {% if turnos_por_agenda %}
+            {% for agenda_id, grupo in turnos_por_agenda.items %}
+                <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid rgba(0, 212, 255, 0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h4 style="margin: 0; color: #00d4ff;">📌 {{ grupo.agenda.name }}</h4>
+                        <div style="font-size: 0.9rem;">
+                            <span style="color: rgba(224, 224, 224, 0.7);">Capacidad: </span>
+                            <strong style="color: #00d4ff;">{{ grupo.capacidad }}</strong>
+                            <span style="color: rgba(224, 224, 224, 0.7);"> | Disponibles: </span>
+                            <strong style="color: {% if grupo.disponibles > 0 %}#4caf50{% else %}#f44336{% endif %};">{{ grupo.disponibles }}</strong>
+                        </div>
+                    </div>
+                    {% if grupo.turnos %}
+                        <ul style="margin: 0; padding-left: 0; list-style: none;">
+                            {% for t in grupo.turnos %}
+                                <li style="padding: 1rem 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>{{ t.nombre }}</strong><br>
+                                        <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">DNI: {{ t.dni }}</span> | <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">{{ t.determinaciones }}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #00d4ff; color: #000; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#00a8cc'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#00d4ff'; this.style.transform='translateY(0)';">✏️ Editar</a>
+                                        <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #f44336; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#d32f2f'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#f44336'; this.style.transform='translateY(0)';">🗑️ Eliminar</a>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p style="margin: 0; color: rgba(224, 224, 224, 0.7);">No hay turnos agendados para esta agenda en esta fecha.</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1rem; margin-bottom: 2rem; border: 1px solid rgba(0, 212, 255, 0.2);">
+                <p style="margin: 0; color: rgba(224, 224, 224, 0.7);">No hay turnos agendados para esta fecha.</p>
+            </div>
+        {% endif %}
+    {% else %}
+        <!-- Vista para una agenda específica -->
+        <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1rem; margin-bottom: 2rem; border: 1px solid rgba(0, 212, 255, 0.2);">
+            {% if turnos %}
+                <ul style="margin: 0; padding-left: 0; list-style: none;">
+                    {% for t in turnos %}
+                        <li style="padding: 1rem 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>{{ t.nombre }}</strong><br>
+                                <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">DNI: {{ t.dni }}</span> | <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">{{ t.determinaciones }}</span>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #00d4ff; color: #000; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#00a8cc'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#00d4ff'; this.style.transform='translateY(0)';">✏️ Editar</a>
+                                <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #f44336; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#d32f2f'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#f44336'; this.style.transform='translateY(0)';">🗑️ Eliminar</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p style="margin: 0; color: rgba(224, 224, 224, 0.7);">No hay turnos agendados para esta fecha.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Formulario de agregar turno -->
+    {% if modo_vista == 'agenda_seleccionada' %}
+        <h3 style="margin-top: 2rem;">➕ Agendar turno</h3>
+        {% if show_form %}
+        <form method="post" style="background: rgba(26, 26, 46, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem;">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); color: #ff9999; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            {% for field in form %}
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% if field.name == 'fecha' %}
+                        <input type="date" id="{{ field.id_for_label }}" name="{{ field.html_name }}" value="{{ fecha|date:'Y-m-d' }}" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
+                    {% elif field.field.widget.input_type == 'textarea' %}
+                        <textarea id="{{ field.id_for_label }}" name="{{ field.html_name }}" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" rows="4"></textarea>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                    {% if field.errors %}
+                        <span style="color: #ff9999; font-size: 0.9rem; display: block; margin-top: 0.25rem;">{{ field.errors }}</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <style>
+                #id_fecha, #id_nombre, #id_dni, #id_determinaciones {
+                    width: 100% !important;
+                    background: rgba(255, 255, 255, 0.05) !important;
+                    border: 1px solid rgba(0, 212, 255, 0.3) !important;
+                    color: var(--text-light) !important;
+                    padding: 0.75rem !important;
+                    border-radius: 8px !important;
+                    font-size: 1rem !important;
+                    font-family: inherit !important;
+                }
+                #id_fecha:focus, #id_nombre:focus, #id_dni:focus, #id_determinaciones:focus {
+                    background: rgba(255, 255, 255, 0.08) !important;
+                    border-color: var(--accent) !important;
+                    box-shadow: 0 0 12px rgba(0, 212, 255, 0.2) !important;
+                }
+                #id_fecha::placeholder, #id_nombre::placeholder, #id_dni::placeholder, #id_determinaciones::placeholder {
+                    color: rgba(224, 224, 224, 0.5) !important;
+                }
+            </style>
+
+            <button type="submit" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; margin-top: 1rem;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">💾 Guardar turno</button>
+        </form>
+        {% else %}
+            <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px; padding: 1.5rem; color: #ff9999;">
+                <strong>❌ No se puede agendar</strong><br>
+                {% if cupo %}
+                    La fecha está completa — no se pueden agendar más turnos.
+                {% else %}
+                    No hay cupo configurado para esta fecha.
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div style="background: rgba(0, 212, 255, 0.15); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 1.5rem; color: #b0e0ff; margin-top: 2rem;">
+            <strong>💡 Información:</strong>
+            Para agendar un turno, haz click en una de las agendas del calendario.
+        </div>
+    {% endif %}
+
+    <!-- Botón volver -->
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block;" onmouseover="this.style.background='rgba(0, 212, 255, 0.1)';" onmouseout="this.style.background='transparent';">← Volver al calendario</a>
+    </div>
+</div>
+{% endblock %}

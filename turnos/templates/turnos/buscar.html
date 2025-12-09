@@ -1,16 +1,201 @@
 {% extends "base.html" %}
 {% block content %}
-  <h2>Buscar por DNI</h2>
-  <form method="get">
-    <input type="text" name="q" placeholder="DNI" value="{{ q }}">
-    <button>Buscar</button>
+<div style="max-width: 1000px;">
+  <h2>🔍 Buscar Paciente por DNI</h2>
+  
+  <form method="get" style="background: rgba(26, 26, 46, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: flex; gap: 0.5rem;">
+      <input type="text" name="q" placeholder="Ingrese DNI del paciente" value="{{ q }}" style="flex: 1; background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(0, 212, 255, 0.3); color: #000000; padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;">
+      <button type="submit" style="padding: 0.75rem 2rem; background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none;'">🔍 Buscar</button>
+    </div>
   </form>
 
-  <ul>
-  {% for r in resultados %}
-    <li>{{ r.fecha }} — {{ r.nombre }} — DNI: {{ r.dni }} — {{ r.determinaciones }}</li>
-  {% empty %}
-    <li>No se encontraron resultados.</li>
-  {% endfor %}
-  </ul>
+  {% if q %}
+    <!-- Turnos Pendientes -->
+    <div style="margin-bottom: 2rem;">
+      <h3 style="color: #000000; margin-bottom: 1rem;">📅 Turnos Pendientes</h3>
+      {% if turnos_pendientes %}
+        <div style="display: grid; gap: 1rem;">
+          {% for turno in turnos_pendientes %}
+            <div style="background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem;">
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start;">
+                <div>
+                  <div style="font-size: 1.1rem; font-weight: bold; color: #000000; margin-bottom: 0.5rem;">
+                    {{ turno.apellido }} {{ turno.nombre }}
+                  </div>
+                  <div style="color: #000000; font-size: 0.95rem; margin-bottom: 0.25rem;">
+                    <strong>DNI:</strong> {{ turno.dni }}
+                  </div>
+                  <div style="color: #000000; font-size: 0.95rem; margin-bottom: 0.25rem;">
+                    <strong>Fecha:</strong> <span style="color: #4caf50; font-weight: 600;">{{ turno.fecha }}</span>
+                  </div>
+                  <div style="color: #000000; font-size: 0.95rem; margin-bottom: 0.25rem;">
+                    <strong>Agenda:</strong> {{ turno.agenda.name }}
+                  </div>
+                  <div style="color: #000000; font-size: 0.95rem;">
+                    <strong>Determinaciones:</strong> {{ turno.determinaciones_nombres|default:turno.determinaciones }}
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 200px;">
+                  {% if turno.esta_coordinado %}
+                    <!-- Turno ya coordinado - botones deshabilitados -->
+                    <div style="padding: 0.75rem; background: rgba(76, 175, 80, 0.2); border: 1px solid rgba(76, 175, 80, 0.5); border-radius: 6px; text-align: center; color: #4caf50; font-weight: 600;">
+                      ✅ Turno Coordinado
+                    </div>
+                    <div style="padding: 0.5rem 1rem; background: rgba(128, 128, 128, 0.2); color: rgba(255, 255, 255, 0.4); border-radius: 6px; text-align: center; font-weight: 500; cursor: not-allowed;">
+                      ✏️ Editar Turno
+                    </div>
+                    <div style="padding: 0.75rem 1rem; background: rgba(128, 128, 128, 0.2); color: rgba(255, 255, 255, 0.4); border-radius: 6px; font-weight: 600; font-size: 1rem; text-align: center; cursor: not-allowed;">
+                      📋 Coordinar Turno
+                    </div>
+                  {% else %}
+                    <!-- Turno no coordinado - botones activos -->
+                    <a href="{% url 'turnos:editar_turno' turno.id %}" style="padding: 0.5rem 1rem; background: #00d4ff; color: #000; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#00a8cc';" onmouseout="this.style.background='#00d4ff';">
+                      ✏️ Editar Turno
+                    </a>
+                    {% if turno.fecha == hoy %}
+                    <button onclick="confirmarCoordinar({{ turno.id }}, '{{ turno.nombre }}', '{{ turno.fecha }}')" style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(244, 67, 54, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(244, 67, 54, 0.3)';">
+                      📋 Coordinar Turno
+                    </button>
+                    {% else %}
+                    <div style="padding: 0.75rem 1rem; background: rgba(128, 128, 128, 0.3); color: rgba(255, 255, 255, 0.4); border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; text-align: center; cursor: not-allowed;">
+                      📋 Coordinar Turno
+                    </div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem; text-align: center; color: rgba(224, 224, 224, 0.7);">
+          No hay turnos pendientes
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Turnos Previos -->
+    <div>
+      <h3 style="color: #000000; margin-bottom: 1rem;">📋 Turnos Previos</h3>
+      {% if turnos_previos %}
+        <div style="display: grid; gap: 1rem;">
+          {% for turno in turnos_previos %}
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                  <div style="font-weight: bold; color: #000000; margin-bottom: 0.5rem;">
+                    {{ turno.nombre }}
+                  </div>
+                  <div style="color: #000000; font-size: 0.9rem;">
+                    <strong>DNI:</strong> {{ turno.dni }} | <strong>Fecha:</strong> <span style="color: #4caf50; font-weight: 600;">{{ turno.fecha }}</span> | <strong>Agenda:</strong> {{ turno.agenda.name }}
+                  </div>
+                  <div style="color: #000000; font-size: 0.9rem;">
+                    <strong>Determinaciones:</strong> {{ turno.determinaciones }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1.5rem; text-align: center; color: rgba(224, 224, 224, 0.5);">
+          No hay turnos previos
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div style="margin-top: 2rem;">
+    <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block;" onmouseover="this.style.background='rgba(0, 212, 255, 0.1)';" onmouseout="this.style.background='transparent';">← Volver al calendario</a>
+  </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div id="modalConfirmar" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(18, 18, 36, 0.95)); border: 2px solid rgba(244, 67, 54, 0.5); border-radius: 12px; padding: 2rem; max-width: 500px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
+    <h3 style="color: #f44336; margin-bottom: 1rem; font-size: 1.5rem;">⚠️ Confirmar Coordinación</h3>
+    <p style="color: var(--text-light); margin-bottom: 1.5rem; font-size: 1.1rem;">
+      ¿Está seguro de coordinar este turno?
+    </p>
+    <div id="modalDetalles" style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; color: rgba(224, 224, 224, 0.8);"></div>
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button onclick="cerrarModal()" style="padding: 0.75rem 1.5rem; background: rgba(255, 255, 255, 0.1); color: var(--text-light); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255, 255, 255, 0.15)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)';">
+        Cancelar
+      </button>
+      <button id="btnConfirmarCoordinar" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(244, 67, 54, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+        Sí, Coordinar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let turnoIdActual = null;
+
+function confirmarCoordinar(turnoId, nombre, fecha) {
+  turnoIdActual = turnoId;
+  document.getElementById('modalDetalles').innerHTML = `
+    <div><strong>Paciente:</strong> ${nombre}</div>
+    <div><strong>Fecha:</strong> ${fecha}</div>
+  `;
+  document.getElementById('modalConfirmar').style.display = 'flex';
+}
+
+function cerrarModal() {
+  document.getElementById('modalConfirmar').style.display = 'none';
+  turnoIdActual = null;
+}
+
+document.getElementById('btnConfirmarCoordinar').addEventListener('click', function() {
+  if (turnoIdActual) {
+    // Enviar petición POST para coordinar turno
+    fetch(`/turnos/turno/${turnoIdActual}/coordinar/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(data.mensaje);
+        cerrarModal();
+        // Recargar la página para actualizar el listado
+        location.reload();
+      } else {
+        alert('Error: ' + (data.error || 'No se pudo coordinar el turno'));
+      }
+    })
+    .catch(error => {
+      alert('Error al coordinar turno: ' + error);
+    });
+  }
+});
+
+// Función para obtener CSRF token
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('modalConfirmar').addEventListener('click', function(e) {
+  if (e.target === this) {
+    cerrarModal();
+  }
+});
+</script>
+
 {% endblock %}

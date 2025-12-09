@@ -38,6 +38,7 @@ class Cupo(models.Model):
 class Turno(models.Model):
     agenda = models.ForeignKey(Agenda, on_delete=models.PROTECT, related_name='turnos')
     dni = models.CharField(max_length=20)
+    apellido = models.CharField(max_length=200, default='')
     nombre = models.CharField(max_length=200)
     determinaciones = models.TextField(blank=True)
     fecha = models.DateField()
@@ -178,4 +179,22 @@ def _agenda_get_capacity(self, fecha):
     return agenda_get_capacity_for_date(self, fecha)
 
 Agenda.get_capacity_for_date = _agenda_get_capacity
-# Create your models here.
+
+
+class Coordinados(models.Model):
+    """Registro de turnos coordinados (enviados al equipo)"""
+    id_turno = models.IntegerField(unique=True, verbose_name='ID del Turno')
+    nombre = models.CharField(max_length=200, verbose_name='Nombre')
+    apellido = models.CharField(max_length=200, verbose_name='Apellido')
+    dni = models.CharField(max_length=20, verbose_name='DNI')
+    fecha_coordinacion = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Coordinación')
+    determinaciones = models.TextField(blank=True, verbose_name='Determinaciones')
+
+    class Meta:
+        verbose_name = 'Turno Coordinado'
+        verbose_name_plural = 'Turnos Coordinados'
+        ordering = ['-fecha_coordinacion']
+
+    def __str__(self):
+        return f"Turno #{self.id_turno} - {self.apellido}, {self.nombre} - {self.fecha_coordinacion.strftime('%Y-%m-%d %H:%M')}"
+

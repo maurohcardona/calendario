@@ -1,173 +1,592 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width: 600px;">
-    <h2>📅 Turnos del día: <span style="color: #4caf50;">{{ fecha }}</span>
+<div style="max-width: 800px;">
+    <h2>📅 Turnos del día: <span style="color: #8fb88f; font-weight: bold;">{{ fecha }}</span>
     {% if agenda_name %}
-        <small style="font-size:0.9rem; color: rgba(224,224,224,0.7);"> — {{ agenda_name }}</small>
+        <small style="font-size:0.9rem; color: var(--text-medium);"> — {{ agenda_name }}</small>
     {% endif %}
     </h2>
 
-    <!-- Información de cupo (solo en modo agenda seleccionada) -->
+    <!-- Información de cupo -->
     {% if modo_vista == 'agenda_seleccionada' %}
         {% if disponibles > 0 or cupo %}
-            <div style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(0, 212, 255, 0.15)); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: linear-gradient(135deg, rgba(143, 184, 143, 0.15), rgba(200, 155, 143, 0.15)); border: 2px solid rgba(143, 184, 143, 0.5); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div>
-                        <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Cupo total</span>
-                        <div style="font-size: 1.5rem; color: #00d4ff; font-weight: bold;">{% if cupo %}{{ cupo.cantidad_total }}{% else %}{{ disponibles|add:turnos|length }}{% endif %}</div>
+                        <span style="color: var(--text-light); font-size: 0.95rem; font-weight: 600;">Cupo total</span>
+                        <div style="font-size: 1.5rem; color: var(--accent); font-weight: bold;">{% if cupo %}{{ cupo.cantidad_total }}{% else %}{{ disponibles|add:turnos|length }}{% endif %}</div>
                     </div>
                     <div>
-                        <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Disponibles</span>
-                        <div style="font-size: 1.5rem; color: {% if disponibles > 0 %}#4caf50{% else %}#f44336{% endif %}; font-weight: bold;">{{ disponibles }}</div>
+                        <span style="color: var(--text-light); font-size: 0.95rem; font-weight: 600;">Disponibles</span>
+                        <div style="font-size: 1.5rem; color: {% if disponibles > 0 %}#8fb88f{% else %}#d89090{% endif %}; font-weight: bold;">{{ disponibles }}</div>
                     </div>
                 </div>
-            </div>
-        {% else %}
-            <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; color: #ff9999;">
-                <strong>⚠️ Sin cupo</strong><br>
-                No hay cupo configurado para esta fecha. Solicita al administrador que lo cree.
             </div>
         {% endif %}
     {% endif %}
 
-    <!-- Lista de turnos agendados -->
-    <h3 style="margin-top: 2rem;">📋 Turnos agendados</h3>
-    
-    {% if modo_vista == 'todas_agendas' %}
-        <!-- Vista agrupada por agenda -->
-        {% if turnos_por_agenda %}
-            {% for agenda_id, grupo in turnos_por_agenda.items %}
-                <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid rgba(0, 212, 255, 0.2);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h4 style="margin: 0; color: #00d4ff;">📌 {{ grupo.agenda.name }}</h4>
-                        <div style="font-size: 0.9rem;">
-                            <span style="color: rgba(224, 224, 224, 0.7);">Capacidad: </span>
-                            <strong style="color: #00d4ff;">{{ grupo.capacidad }}</strong>
-                            <span style="color: rgba(224, 224, 224, 0.7);"> | Disponibles: </span>
-                            <strong style="color: {% if grupo.disponibles > 0 %}#4caf50{% else %}#f44336{% endif %};">{{ grupo.disponibles }}</strong>
-                        </div>
-                    </div>
-                    {% if grupo.turnos %}
-                        <ul style="margin: 0; padding-left: 0; list-style: none;">
-                            {% for t in grupo.turnos %}
-                                <li style="padding: 1rem 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <strong>{{ t.nombre }}</strong><br>
-                                        <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">DNI: {{ t.dni }}</span> | <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">{{ t.determinaciones }}</span>
-                                    </div>
-                                    <div style="display: flex; gap: 0.5rem;">
-                                        <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #00d4ff; color: #000; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#00a8cc'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#00d4ff'; this.style.transform='translateY(0)';">✏️ Editar</a>
-                                        <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #f44336; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#d32f2f'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#f44336'; this.style.transform='translateY(0)';">🗑️ Eliminar</a>
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p style="margin: 0; color: rgba(224, 224, 224, 0.7);">No hay turnos agendados para esta agenda en esta fecha.</p>
-                    {% endif %}
+    <!-- Formulario de agregar turno -->
+    {% if modo_vista == 'agenda_seleccionada' and show_form %}
+        <h3 style="margin-top: 2rem; color: var(--text-light);">➕ Agendar turno</h3>
+        <form method="post" id="turnoForm" style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div style="background: rgba(216, 144, 144, 0.15); border: 2px solid var(--danger); color: #8c4a4a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 500;">
+                    {{ form.non_field_errors }}
                 </div>
-            {% endfor %}
-        {% else %}
-            <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1rem; margin-bottom: 2rem; border: 1px solid rgba(0, 212, 255, 0.2);">
-                <p style="margin: 0; color: rgba(224, 224, 224, 0.7);">No hay turnos agendados para esta fecha.</p>
+            {% endif %}
+            
+            {% if form.errors %}
+                <div style="background: rgba(216, 144, 144, 0.15); border: 2px solid var(--danger); color: #8c4a4a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 500;">
+                    <strong>⚠️ Errores en el formulario:</strong>
+                    <ul style="margin: 0.5rem 0 0 1.5rem;">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ field }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- Campo DNI -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">DNI</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="id_dni" name="dni" required style="flex: 1; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;" />
+                    <button type="button" id="btnBuscarPaciente" style="padding: 0.75rem 1.5rem; background: var(--accent); color: #ffffff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(200, 155, 143, 0.3);">🔍 Buscar</button>
+                </div>
+                <div id="pacienteStatus" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
             </div>
-        {% endif %}
+
+            <!-- Campos Apellido y Nombre en la misma fila -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Apellido</label>
+                    <input type="text" id="id_apellido" name="apellido" required disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                </div>
+                <div>
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nombre</label>
+                    <input type="text" id="id_nombre" name="nombre" required disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                </div>
+            </div>
+
+            <!-- Campos Fecha de Nacimiento y Sexo en la misma fila -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Fecha de Nacimiento</label>
+                    <input type="date" id="id_fecha_nacimiento" name="fecha_nacimiento" required disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                </div>
+                <div>
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Sexo</label>
+                    <select id="id_sexo" name="sexo" required disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;">
+                        <option value="">Seleccione...</option>
+                        <option value="Hombre">Hombre</option>
+                        <option value="Mujer">Mujer</option>
+                        <option value="Generico">Genérico</option>
+                        <option value="Desconocido">Desconocido</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Campos Teléfono, Email y Médico en una fila -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Teléfono</label>
+                    <input type="tel" id="id_telefono" name="telefono" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                </div>
+                <div>
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Email</label>
+                    <input type="email" id="id_email" name="email" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                </div>
+                <div>
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
+                    <input type="text" id="id_medico" name="medico" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                </div>
+            </div>
+
+            <!-- Campo Observaciones Paciente -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones del Paciente</label>
+                <textarea id="id_observaciones_paciente" name="observaciones_paciente" rows="2" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;"></textarea>
+            </div>
+
+            <!-- Determinaciones -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Determinaciones</label>
+                <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="inputCodigo" placeholder="Código" disabled style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem; opacity: 0.5; cursor: not-allowed;" />
+                    <div style="position: relative;">
+                        <input type="text" id="inputNombre" placeholder="Buscar por nombre..." autocomplete="off" disabled style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem; opacity: 0.5; cursor: not-allowed;" />
+                        <div id="autocompleteLista" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; margin-top: 0.25rem; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
+                    </div>
+                    <button type="button" id="btnAgregarDet" disabled style="padding: 0.75rem 1.5rem; background: #4caf50; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: not-allowed; white-space: nowrap; opacity: 0.5;">➕ Agregar</button>
+                </div>
+                <div id="detStatus" style="margin-bottom: 0.5rem; font-size: 0.9rem;"></div>
+                <div id="listaDeterminaciones" style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; min-height: 100px; max-height: 300px; overflow-y: auto;">
+                    <p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">Primero debe buscar un paciente por DNI</p>
+                </div>
+                <input type="hidden" id="id_determinaciones" name="determinaciones" value="" />
+            </div>
+
+            <!-- Campos ocultos -->
+            <input type="hidden" name="agenda" value="{{ form.agenda.value }}" />
+            <input type="hidden" name="fecha" value="{{ fecha|date:'Y-m-d' }}" />
+
+            <button type="submit" id="btnGuardarTurno" style="width: 100%; padding: 0.85rem; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color: #ffffff; border: none; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; margin-top: 1rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);">💾 Guardar turno</button>
+        </form>
+    {% endif %}
+
+    <!-- Lista de turnos -->
+    <h3 style="margin-top: 2rem; color: var(--text-light);">📋 Turnos agendados</h3>
+    
+    {% if modo_vista == 'todas_agendas' and turnos_por_agenda %}
+        <!-- Vista agrupada por agenda -->
+        {% for agenda_id, info in turnos_por_agenda.items %}
+            <div style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px solid var(--accent); box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid {{ info.agenda.color }};">
+                    <h4 style="margin: 0; color: {{ info.agenda.color }}; font-size: 1.3rem; font-weight: 700;">
+                        📌 {{ info.agenda.name }}
+                    </h4>
+                    <div style="text-align: right;">
+                        <span style="color: var(--text-light); font-size: 0.9rem; font-weight: 600;">Cupo: </span>
+                        <span style="color: #00d4ff; font-weight: bold; font-size: 1.05rem;">{{ info.usados }}/{{ info.capacidad }}</span>
+                        <span style="color: var(--text-light); font-size: 0.9rem; font-weight: 600;"> | Disponibles: </span>
+                        <span style="color: {% if info.disponibles > 0 %}#66ff66{% else %}#ff6666{% endif %}; font-weight: bold; font-size: 1.05rem;">{{ info.disponibles }}</span>
+                    </div>
+                </div>
+                
+                {% if info.turnos %}
+                    <ul style="margin: 0; padding-left: 0; list-style: none;">
+                        {% for t in info.turnos %}
+                            <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid rgba(0, 212, 255, 0.2);{% endif %} display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                    <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
+                                    <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p style="margin: 0; color: var(--text-dark); font-style: italic; font-size: 0.95rem;">No hay turnos agendados para esta agenda.</p>
+                {% endif %}
+            </div>
+        {% endfor %}
     {% else %}
-        <!-- Vista para una agenda específica -->
-        <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1rem; margin-bottom: 2rem; border: 1px solid rgba(0, 212, 255, 0.2);">
+        <!-- Vista simple cuando se selecciona una agenda específica -->
+        <div style="background: var(--bg-card); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border: 2px solid rgba(0, 212, 255, 0.3); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);">
             {% if turnos %}
                 <ul style="margin: 0; padding-left: 0; list-style: none;">
                     {% for t in turnos %}
-                        <li style="padding: 1rem 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                        <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid rgba(0, 212, 255, 0.2);{% endif %} display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <strong>{{ t.nombre }}</strong><br>
-                                <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">DNI: {{ t.dni }}</span> | <span style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">{{ t.determinaciones }}</span>
+                                <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
                             </div>
                             <div style="display: flex; gap: 0.5rem;">
-                                <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #00d4ff; color: #000; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#00a8cc'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#00d4ff'; this.style.transform='translateY(0)';">✏️ Editar</a>
-                                <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #f44336; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#d32f2f'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#f44336'; this.style.transform='translateY(0)';">🗑️ Eliminar</a>
+                                <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
+                                <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
                             </div>
                         </li>
                     {% endfor %}
                 </ul>
             {% else %}
-                <p style="margin: 0; color: rgba(224, 224, 224, 0.7);">No hay turnos agendados para esta fecha.</p>
+                <p style="margin: 0; color: var(--text-dark); font-size: 0.95rem; font-style: italic;">No hay turnos agendados.</p>
             {% endif %}
         </div>
     {% endif %}
 
-    <!-- Formulario de agregar turno -->
-    {% if modo_vista == 'agenda_seleccionada' %}
-        <h3 style="margin-top: 2rem;">➕ Agendar turno</h3>
-        {% if show_form %}
-        <form method="post" style="background: rgba(26, 26, 46, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem;">
-            {% csrf_token %}
-            
-            {% if form.non_field_errors %}
-                <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); color: #ff9999; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
-
-            {% for field in form %}
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {% if field.name == 'fecha' %}
-                        <input type="date" id="{{ field.id_for_label }}" name="{{ field.html_name }}" value="{{ fecha|date:'Y-m-d' }}" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" />
-                    {% elif field.field.widget.input_type == 'textarea' %}
-                        <textarea id="{{ field.id_for_label }}" name="{{ field.html_name }}" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem;" rows="4"></textarea>
-                    {% else %}
-                        {{ field }}
-                    {% endif %}
-                    {% if field.errors %}
-                        <span style="color: #ff9999; font-size: 0.9rem; display: block; margin-top: 0.25rem;">{{ field.errors }}</span>
-                    {% endif %}
-                </div>
-            {% endfor %}
-
-            <style>
-                #id_fecha, #id_nombre, #id_dni, #id_determinaciones {
-                    width: 100% !important;
-                    background: rgba(255, 255, 255, 0.05) !important;
-                    border: 1px solid rgba(0, 212, 255, 0.3) !important;
-                    color: var(--text-light) !important;
-                    padding: 0.75rem !important;
-                    border-radius: 8px !important;
-                    font-size: 1rem !important;
-                    font-family: inherit !important;
-                }
-                #id_fecha:focus, #id_nombre:focus, #id_dni:focus, #id_determinaciones:focus {
-                    background: rgba(255, 255, 255, 0.08) !important;
-                    border-color: var(--accent) !important;
-                    box-shadow: 0 0 12px rgba(0, 212, 255, 0.2) !important;
-                }
-                #id_fecha::placeholder, #id_nombre::placeholder, #id_dni::placeholder, #id_determinaciones::placeholder {
-                    color: rgba(224, 224, 224, 0.5) !important;
-                }
-            </style>
-
-            <button type="submit" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; margin-top: 1rem;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">💾 Guardar turno</button>
-        </form>
-        {% else %}
-            <div style="background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px; padding: 1.5rem; color: #ff9999;">
-                <strong>❌ No se puede agendar</strong><br>
-                {% if cupo %}
-                    La fecha está completa — no se pueden agendar más turnos.
-                {% else %}
-                    No hay cupo configurado para esta fecha.
-                {% endif %}
-            </div>
-        {% endif %}
-    {% else %}
-        <div style="background: rgba(0, 212, 255, 0.15); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 1.5rem; color: #b0e0ff; margin-top: 2rem;">
-            <strong>💡 Información:</strong>
-            Para agendar un turno, haz click en una de las agendas del calendario.
-        </div>
-    {% endif %}
-
-    <!-- Botón volver -->
     <div style="margin-top: 2rem;">
-        <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block;" onmouseover="this.style.background='rgba(0, 212, 255, 0.1)';" onmouseout="this.style.background='transparent';">← Volver al calendario</a>
+        <a href="{% url 'turnos:calendario' %}" style="color: #00d4ff; text-decoration: none; font-weight: 600; font-size: 1rem; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 6px; display: inline-block; background: rgba(0, 212, 255, 0.1);">← Volver al calendario</a>
     </div>
 </div>
+
+<script>
+let determinaciones = [];
+let determinacionesCache = null;
+
+// Cargar todas las determinaciones y perfiles al inicio
+async function cargarDeterminaciones() {
+    if (determinacionesCache) return determinacionesCache;
+    
+    try {
+        const response = await fetch('/turnos/api/listar-determinaciones/');
+        determinacionesCache = await response.json();
+        return determinacionesCache;
+    } catch (error) {
+        console.error('Error cargando determinaciones:', error);
+        return [];
+    }
+}
+
+// Autocompletado por nombre
+document.getElementById('inputNombre').addEventListener('input', async function() {
+    const texto = this.value.trim().toLowerCase();
+    const lista = document.getElementById('autocompleteLista');
+    
+    if (texto.length < 2) {
+        lista.style.display = 'none';
+        return;
+    }
+    
+    const items = await cargarDeterminaciones();
+    const coincidencias = items.filter(d => 
+        d.nombre.toLowerCase().includes(texto)
+    ).slice(0, 20);
+    
+    if (coincidencias.length === 0) {
+        lista.style.display = 'none';
+        return;
+    }
+    
+    lista.innerHTML = coincidencias.map(item => {
+        const tipoBadge = item.tipo === 'perfil' 
+            ? '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL</span>'
+            : '';
+        return `
+            <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(0, 212, 255, 0.1); transition: background 0.2s;">
+                <span style="color: #00d4ff; font-weight: bold;">${item.codigo}</span> - <span style="color: #ffffff; font-weight: 600;">${item.nombre}</span>${tipoBadge}
+            </div>
+        `;
+    }).join('');
+    
+    lista.style.display = 'block';
+    
+    lista.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(0, 212, 255, 0.2)';
+        });
+        item.addEventListener('mouseleave', function() {
+            this.style.background = 'transparent';
+        });
+        item.addEventListener('click', function() {
+            const codigo = this.dataset.codigo;
+            const nombre = this.dataset.nombre;
+            document.getElementById('inputCodigo').value = codigo;
+            document.getElementById('inputNombre').value = nombre;
+            lista.style.display = 'none';
+        });
+    });
+});
+
+// Cerrar autocompletado al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#inputNombre') && !e.target.closest('#autocompleteLista')) {
+        document.getElementById('autocompleteLista').style.display = 'none';
+    }
+});
+
+// Buscar paciente por DNI al presionar Enter
+document.getElementById('id_dni').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btnBuscarPaciente').click();
+    }
+});
+
+// Buscar paciente por DNI
+document.getElementById('btnBuscarPaciente').addEventListener('click', async function() {
+    const dni = document.getElementById('id_dni').value.trim();
+    const status = document.getElementById('pacienteStatus');
+    
+    if (!dni) {
+        status.innerHTML = '<span style="color: #ff9999;">⚠️ Ingrese un DNI</span>';
+        return;
+    }
+    
+    status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
+    
+    try {
+        const response = await fetch(`/turnos/api/buscar-paciente/?dni=${dni}`);
+        const data = await response.json();
+        
+        if (data.found) {
+            // Paciente encontrado - mostrar datos pero NO editable (excepto determinaciones)
+            status.innerHTML = '<span style="color: #4caf50;">✅ Paciente encontrado</span>';
+            document.getElementById('id_nombre').value = data.nombre;
+            document.getElementById('id_apellido').value = data.apellido;
+            document.getElementById('id_fecha_nacimiento').value = data.fecha_nacimiento;
+            document.getElementById('id_sexo').value = data.sexo;
+            document.getElementById('id_observaciones_paciente').value = data.observaciones;
+            
+            // Habilitar SOLO campos de determinaciones
+            habilitarSoloDeterminaciones();
+        } else {
+            // Paciente NO encontrado - habilitar todos los campos para crear nuevo
+            status.innerHTML = '<span style="color: #ff9999;">❌ Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
+            document.getElementById('id_nombre').value = '';
+            document.getElementById('id_apellido').value = '';
+            document.getElementById('id_fecha_nacimiento').value = '';
+            document.getElementById('id_sexo').value = '';
+            document.getElementById('id_observaciones_paciente').value = '';
+            
+            // Habilitar todos los campos
+            habilitarTodosCampos();
+        }
+    } catch (error) {
+        status.innerHTML = '<span style="color: #ff9999;">❌ Error al buscar</span>';
+        habilitarTodosCampos();
+    }
+});
+
+// Función para habilitar SOLO determinaciones (paciente encontrado)
+function habilitarSoloDeterminaciones() {
+    // Determinaciones habilitadas
+    document.getElementById('inputCodigo').disabled = false;
+    document.getElementById('inputNombre').disabled = false;
+    document.getElementById('btnAgregarDet').disabled = false;
+    
+    document.getElementById('inputCodigo').style.opacity = '1';
+    document.getElementById('inputCodigo').style.cursor = 'text';
+    document.getElementById('inputNombre').style.opacity = '1';
+    document.getElementById('inputNombre').style.cursor = 'text';
+    document.getElementById('btnAgregarDet').style.opacity = '1';
+    document.getElementById('btnAgregarDet').style.cursor = 'pointer';
+    
+    // Datos de paciente permanecen en modo READONLY (se envían pero no se pueden editar)
+    const camposPaciente = ['id_nombre', 'id_apellido', 'id_fecha_nacimiento', 'id_sexo', 'id_observaciones_paciente'];
+    camposPaciente.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        campo.disabled = false;
+        campo.readOnly = true;
+        campo.style.opacity = '0.7';
+        campo.style.cursor = 'not-allowed';
+        campo.style.backgroundColor = 'rgba(100, 100, 100, 0.1)';
+    });
+    
+    // Actualizar mensaje de determinaciones
+    const lista = document.getElementById('listaDeterminaciones');
+    if (determinaciones.length === 0) {
+        lista.innerHTML = '<p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>';
+    }
+}
+
+// Función para habilitar TODOS los campos (paciente nuevo)
+function habilitarTodosCampos() {
+    document.getElementById('id_nombre').disabled = false;
+    document.getElementById('id_apellido').disabled = false;
+    document.getElementById('id_fecha_nacimiento').disabled = false;
+    document.getElementById('id_sexo').disabled = false;
+    document.getElementById('id_observaciones_paciente').disabled = false;
+    document.getElementById('inputCodigo').disabled = false;
+    document.getElementById('inputNombre').disabled = false;
+    document.getElementById('btnAgregarDet').disabled = false;
+    
+    // Cambiar estilos visuales
+    document.getElementById('id_nombre').style.opacity = '1';
+    document.getElementById('id_nombre').style.cursor = 'text';
+    document.getElementById('id_apellido').style.opacity = '1';
+    document.getElementById('id_apellido').style.cursor = 'text';
+    document.getElementById('id_fecha_nacimiento').style.opacity = '1';
+    document.getElementById('id_fecha_nacimiento').style.cursor = 'text';
+    document.getElementById('id_sexo').style.opacity = '1';
+    document.getElementById('id_sexo').style.cursor = 'pointer';
+    document.getElementById('id_observaciones_paciente').style.opacity = '1';
+    document.getElementById('id_observaciones_paciente').style.cursor = 'text';
+    document.getElementById('inputCodigo').style.opacity = '1';
+    document.getElementById('inputCodigo').style.cursor = 'text';
+    document.getElementById('inputNombre').style.opacity = '1';
+    document.getElementById('inputNombre').style.cursor = 'text';
+    document.getElementById('btnAgregarDet').style.opacity = '1';
+    document.getElementById('btnAgregarDet').style.cursor = 'pointer';
+    
+    // Actualizar mensaje de determinaciones
+    const lista = document.getElementById('listaDeterminaciones');
+    if (determinaciones.length === 0) {
+        lista.innerHTML = '<p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>';
+    }
+}
+
+
+// Agregar determinación o perfil
+document.getElementById('btnAgregarDet').addEventListener('click', async function() {
+    const codigo = document.getElementById('inputCodigo').value.trim();
+    const status = document.getElementById('detStatus');
+    
+    if (!codigo) {
+        status.innerHTML = '<span style="color: #ff9999;">⚠️ Ingrese un código</span>';
+        return;
+    }
+    
+    status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
+    
+    try {
+        const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+        const data = await response.json();
+        
+        if (data.found) {
+            if (data.tipo === 'perfil') {
+                // Agregar perfil completo
+                const yaExiste = determinaciones.find(d => d.tipo === 'perfil' && d.codigo === data.codigo);
+                if (yaExiste) {
+                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Perfil ya agregado</span>';
+                    return;
+                }
+                
+                determinaciones.push({
+                    tipo: 'perfil',
+                    codigo: data.codigo,
+                    nombre: data.nombre,
+                    determinaciones: data.determinaciones
+                });
+                status.innerHTML = '<span style="color: #4caf50;">✅ Perfil agregado (' + data.determinaciones.length + ' determinaciones)</span>';
+            } else {
+                // Agregar determinación individual
+                const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
+                if (yaExiste) {
+                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Ya agregada</span>';
+                    return;
+                }
+                
+                determinaciones.push({
+                    tipo: 'determinacion',
+                    codigo: data.codigo,
+                    nombre: data.nombre
+                });
+                status.innerHTML = '<span style="color: #4caf50;">✅ Determinación agregada</span>';
+            }
+            
+            actualizarListaDeterminaciones();
+            document.getElementById('inputCodigo').value = '';
+            document.getElementById('inputNombre').value = '';
+            setTimeout(() => status.innerHTML = '', 2000);
+        } else {
+            status.innerHTML = '<span style="color: #ff9999;">❌ Código no encontrado</span>';
+        }
+    } catch (error) {
+        status.innerHTML = '<span style="color: #ff9999;">❌ Error al buscar</span>';
+    }
+});
+
+// Enter para agregar determinación
+document.getElementById('inputCodigo').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btnAgregarDet').click();
+    }
+});
+
+document.getElementById('inputNombre').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btnAgregarDet').click();
+    }
+});
+
+function actualizarListaDeterminaciones() {
+    const lista = document.getElementById('listaDeterminaciones');
+    
+    if (determinaciones.length === 0) {
+        lista.innerHTML = '<p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>';
+    } else {
+        lista.innerHTML = determinaciones.map((item, index) => {
+            if (item.tipo === 'perfil') {
+                return `
+                    <div style="background: rgba(76, 175, 80, 0.15); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">PERFIL</span>
+                                <strong style="color: #4caf50; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: var(--text-light);">${item.nombre}</span>
+                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(224, 224, 224, 0.7);">${item.determinaciones.length} determinaciones</div>
+                            </div>
+                            <button type="button" onclick="eliminarItem(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(0, 212, 255, 0.1); border-radius: 6px; margin-bottom: 0.5rem;">
+                        <div>
+                            <strong style="color: #00d4ff; font-weight: 700;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 700;">${item.nombre}</span>
+                        </div>
+                        <button type="button" onclick="eliminarItem(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+                    </div>
+                `;
+            }
+        }).join('');
+    }
+    
+    // Actualizar campo oculto con códigos
+    // Para perfiles: código del perfil, para determinaciones: código individual
+    const codigos = [];
+    determinaciones.forEach(item => {
+        if (item.tipo === 'perfil') {
+            codigos.push(item.codigo);
+        } else {
+            codigos.push(item.codigo.toString());
+        }
+    });
+    document.getElementById('id_determinaciones').value = codigos.join(',');
+}
+
+function eliminarItem(index) {
+    determinaciones.splice(index, 1);
+    actualizarListaDeterminaciones();
+}
+
+// Cargar determinaciones al cargar la página
+cargarDeterminaciones();
+
+// Auto-refresh: Recargar listado de turnos cada 15 segundos
+setInterval(function() {
+    // Obtener la URL actual con el parámetro agenda
+    const urlParams = new URLSearchParams(window.location.search);
+    const agendaParam = urlParams.get('agenda') ? '?agenda=' + urlParams.get('agenda') : '';
+    
+    // Recargar solo la sección de turnos sin afectar el formulario
+    fetch(window.location.pathname + agendaParam)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const nuevoListado = doc.querySelector('h3 + .div, h3'); // Buscar listado de turnos
+            
+            // Buscar el elemento h3 "Turnos agendados" y su contenedor
+            const currentH3 = Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent.includes('Turnos agendados'));
+            const newH3 = Array.from(doc.querySelectorAll('h3')).find(h3 => h3.textContent.includes('Turnos agendados'));
+            
+            if (currentH3 && newH3) {
+                // Reemplazar el h3 y el div siguiente (el listado)
+                const currentDiv = currentH3.nextElementSibling;
+                const newDiv = newH3.nextElementSibling;
+                if (currentDiv && newDiv) {
+                    currentDiv.innerHTML = newDiv.innerHTML;
+                    console.log('Listado de turnos actualizado automáticamente');
+                }
+            }
+        })
+        .catch(error => console.error('Error actualizando turnos:', error));
+}, 15000); // 15000 ms = 15 segundos
+
+// Validar formulario antes de enviar
+document.getElementById('turnoForm')?.addEventListener('submit', function(e) {
+    const determinacionesInput = document.getElementById('id_determinaciones');
+    
+    if (!determinacionesInput.value || determinacionesInput.value.trim() === '') {
+        e.preventDefault();
+        alert('⚠️ Debe agregar al menos una determinación antes de guardar el turno.');
+        return false;
+    }
+    
+    // Validar que los campos requeridos estén completos
+    const dni = document.getElementById('id_dni').value.trim();
+    const nombre = document.getElementById('id_nombre').value.trim();
+    const apellido = document.getElementById('id_apellido').value.trim();
+    
+    if (!dni || !nombre || !apellido) {
+        e.preventDefault();
+        alert('⚠️ Complete todos los campos requeridos: DNI, Nombre y Apellido.');
+        return false;
+    }
+    
+    console.log('Formulario válido, enviando datos...');
+    return true;
+});
+</script>
+
 {% endblock %}

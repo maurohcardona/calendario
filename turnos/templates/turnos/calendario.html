@@ -2,53 +2,47 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
     <div>
-        <h2 style="margin: 0;">📅 Calendario de turnos</h2>
+        <h2 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #000000;">📅 Calendario de Turnos</h2>
     </div>
     {% if user.is_superuser %}
     <a href="{% url 'turnos:generar_cupos_masivo' %}" style="background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">⚙️ Administrar cupos</a>
     {% endif %}
 </div>
 
-<div style="background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 2rem; color: #b0e0ff;">
-    <strong>💡 Información:</strong>
-    <ul style="margin: 0.5rem 0 0 1.5rem;">
-        <li><span style="color: #4caf50;">🟢 Verde</span>: hay turnos disponibles</li>
-        <li><span style="color: #f44336;">🔴 Rojo</span>: está completo</li>
-        <li>Haz click en cualquier día para agendar un turno</li>
-    </ul>
-</div>
-
 <!-- Leyenda de agendas -->
 <div style="display:flex; gap:0.75rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
-    <strong style="margin-right:0.5rem; color: rgba(224,224,224,0.8);">Agendas:</strong>
+    <strong style="margin-right:0.5rem; color: #000000;">Agendas:</strong>
     {% for ag in agendas %}
-    <div class="agenda-chip" data-agenda-id="{{ ag.id }}" style="display:flex; align-items:center; gap:0.5rem; padding:0.25rem 0.5rem; border-radius:6px; background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03); cursor:pointer;">
-        <div style="width:14px; height:14px; border-radius:3px; background: {{ ag.color }}; box-shadow: 0 1px 3px rgba(0,0,0,0.4);"></div>
-        <div style="color: rgba(224,224,224,0.85); font-size:0.95rem;">{{ ag.name }}</div>
+    <div class="agenda-chip" data-agenda-id="{{ ag.id }}" style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:6px; background: rgba(255,255,255,0.9); border:1px solid rgba(200, 155, 143, 0.3); cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="width:16px; height:16px; border-radius:3px; background: {{ ag.color }}; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+        <div style="color: #000000; font-size:1rem; font-weight: 600;">{{ ag.name }}</div>
     </div>
     {% endfor %}
 </div>
 
-<div id="calendar" style="background: rgba(26, 26, 46, 0.6); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 212, 255, 0.2);"></div>
+<div id="calendar" style="background: #faf6f4; border-radius: 12px; padding: 2rem; border: 2px solid var(--accent); box-shadow: 0 4px 16px rgba(200, 155, 143, 0.2); max-width: 1600px; margin: 0 auto;"></div>
 
 <!-- JSON seguro -->
 {{ eventos|json_script:"eventos-data" }}
 
 <style>
     #calendar {
-        --fc-border-color: rgba(0, 212, 255, 0.2);
-        --fc-button-bg-color: #00d4ff;
-        --fc-button-border-color: #00d4ff;
-        --fc-button-hover-bg-color: #00a8cc;
-        --fc-button-hover-border-color: #00a8cc;
-        --fc-button-active-bg-color: #00a8cc;
-        --fc-daygrid-day-frame-color: rgba(0, 212, 255, 0.15);
+        --fc-border-color: #000000;
+        --fc-button-bg-color: var(--accent);
+        --fc-button-border-color: var(--accent);
+        --fc-button-hover-bg-color: var(--accent-hover);
+        --fc-button-hover-border-color: var(--accent-hover);
+        --fc-button-active-bg-color: var(--accent-hover);
+        --fc-daygrid-day-frame-color: #000000;
         --fc-page-bg-color: transparent;
-        --fc-event-bg-color: #00d4ff;
-        --fc-event-border-color: #00d4ff;
-        --fc-event-text-color: #000;
-        --fc-highlight-color: rgba(0, 212, 255, 0.1);
-        --fc-today-highlight-color: rgba(0, 212, 255, 0.15);
+        --fc-event-bg-color: var(--accent);
+        --fc-event-border-color: var(--accent);
+        --fc-event-text-color: #000000;
+        --fc-highlight-color: rgba(200, 155, 143, 0.1);
+        --fc-today-highlight-color: rgba(200, 155, 143, 0.15);
+    }
+    .fc .fc-event-title {
+        color: #000000 !important;
     }
     .fc .fc-button-primary:disabled {
         color: #9e9e9e;
@@ -56,10 +50,28 @@
     .fc .fc-daygrid-day-number,
     .fc .fc-daygrid-day-frame,
     .fc .fc-col-header-cell {
-        color: #e0e0e0;
+        color: #000000;
+        font-weight: 600;
+    }
+    .fc .fc-col-header-cell-cushion {
+        color: #000000;
+        font-weight: 700;
+        font-size: 1rem;
+        text-transform: capitalize;
+    }
+    .fc .fc-toolbar-title {
+        color: #000000;
+        font-weight: 700;
+        text-transform: capitalize;
+        font-size: 2.5rem;
+    }
+    .fc .fc-button {
+        color: #ffffff !important;
+        font-weight: 600;
+        text-transform: capitalize;
     }
     .fc .fc-daygrid-day:hover {
-        background-color: rgba(0, 212, 255, 0.15);
+        background-color: rgba(200, 155, 143, 0.15);
         cursor: pointer;
     }
     .fc .fc-event-title {
@@ -67,10 +79,47 @@
         padding: 2px 4px;
     }
     .fc-button-primary {
-        box-shadow: 0 2px 8px rgba(0, 212, 255, 0.2);
+        box-shadow: 0 2px 8px rgba(200, 155, 143, 0.2);
     }
     .fc-button-primary:hover {
-        box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);
+    }
+    /* Aumentar altura del calendario */
+    .fc .fc-daygrid-day-frame {
+        min-height: 140px;
+    }
+    #calendar {
+        font-size: 1.15rem;
+    }
+    /* Tachar días pasados con línea diagonal negra */
+    .fc-day-past {
+        position: relative;
+    }
+    .fc-day-past::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to top right, 
+            transparent 0%, 
+            transparent calc(50% - 2px), 
+            #000000 calc(50% - 1px), 
+            #000000 calc(50% + 1px), 
+            transparent calc(50% + 2px), 
+            transparent 100%);
+        pointer-events: none;
+        z-index: 5;
+    }
+    /* Eventos completos tachados */
+    .fc-event.evento-completo .fc-event-title {
+        text-decoration: line-through;
+        text-decoration-thickness: 2px;
+    }
+    /* Día con todas las agendas completas - fondo rojo */
+    .fc-day.dia-todo-completo {
+        background-color: rgba(255, 68, 68, 0.3) !important;
     }
 </style>
 
@@ -99,15 +148,57 @@ document.addEventListener("DOMContentLoaded", function() {
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
             locale: "es",
+            dayHeaderFormat: { weekday: 'long' },
+            height: 'auto',
+            contentHeight: 'auto',
+            aspectRatio: 1.5,
             headerToolbar: {
-                left: 'prev,next today',
+                left: 'prev,next hoyButton',
                 center: 'title',
-                right: 'dayGridMonth,listMonth'
+                right: 'mesButton,listaButton'
+            },
+            customButtons: {
+                hoyButton: {
+                    text: 'Hoy',
+                    click: function() {
+                        calendar.today();
+                    }
+                },
+                mesButton: {
+                    text: 'Mes',
+                    click: function() {
+                        calendar.changeView('dayGridMonth');
+                    }
+                },
+                listaButton: {
+                    text: 'Lista',
+                    click: function() {
+                        calendar.changeView('listMonth');
+                    }
+                }
+            },
+            titleFormat: function(date) {
+                const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                return meses[date.date.month] + ' ' + date.date.year;
             },
             events: eventsToShow,
+            eventDidMount: function(info) {
+                // Tachar eventos completos
+                if (info.event.extendedProps.texto_tachado) {
+                    info.el.classList.add('evento-completo');
+                }
+            },
             eventClick: function(info) {
                 const fecha = info.event.extendedProps.fecha;
                 const agendaId = info.event.extendedProps.agenda_id;
+                const esPasado = info.event.extendedProps.es_pasado;
+                
+                // Si es día pasado, mostrar turnos históricos
+                if (esPasado) {
+                    mostrarTurnosHistoricos(fecha);
+                    return;
+                }
+                
                 if (info.event.extendedProps.disponibles === 0) {
                     alert('⚠️ Esta fecha está completa. No hay turnos disponibles para esta agenda.');
                     return;
@@ -121,11 +212,39 @@ document.addEventListener("DOMContentLoaded", function() {
             },
             dateClick: function(info) {
                 const fecha = info.dateStr;
+                const hoy = new Date().toISOString().split('T')[0];
+                
+                // Si es día pasado, mostrar turnos históricos
+                if (fecha < hoy) {
+                    mostrarTurnosHistoricos(fecha);
+                    return;
+                }
+                
                 let url = "{% url 'turnos:dia' '0000-00-00' %}".replace('0000-00-00', fecha);
                 if (selectedAgendaId) {
                     url += '?agenda=' + selectedAgendaId;
                 }
                 window.location.href = url;
+            },
+            dayCellDidMount: function(info) {
+                const fecha = info.date.toISOString().split('T')[0];
+                const hoy = new Date().toISOString().split('T')[0];
+                
+                // Marcar días pasados con estilo diferente
+                if (fecha < hoy) {
+                    info.el.style.backgroundColor = 'rgba(128, 128, 128, 0.1)';
+                    info.el.style.opacity = '0.6';
+                    info.el.style.cursor = 'pointer';
+                }
+                
+                // Verificar si todas las agendas están completas para este día
+                const eventosDia = eventsToShow.filter(e => e.start === fecha);
+                if (eventosDia.length > 0) {
+                    const todasCompletas = eventosDia.every(e => e.extendedProps.completo === true);
+                    if (todasCompletas) {
+                        info.el.classList.add('dia-todo-completo');
+                    }
+                }
             }
         });
 
@@ -153,6 +272,91 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     });
+
+    // Auto-refresh: Recargar eventos cada 30 segundos
+    setInterval(function() {
+        fetch('/turnos/eventos/')
+            .then(response => response.json())
+            .then(data => {
+                // Actualizar la variable eventos global
+                eventos = data;
+                // Re-renderizar el calendario con los nuevos eventos
+                renderCalendar(selectedAgendaId);
+                console.log('Calendario actualizado automáticamente');
+            })
+            .catch(error => console.error('Error actualizando calendario:', error));
+    }, 30000); // 30000 ms = 30 segundos
+
+    // Función para mostrar turnos históricos
+    function mostrarTurnosHistoricos(fecha) {
+        fetch(`/turnos/api/turnos-historicos/${fecha}/`)
+            .then(response => response.json())
+            .then(data => {
+                let html = `
+                    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;" id="modalHistoricos">
+                        <div style="background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(15, 15, 30, 0.98)); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 12px; padding: 2rem; max-width: 900px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                <h3 style="margin: 0; color: #00d4ff;">📋 Turnos del ${fecha}</h3>
+                                <button onclick="document.getElementById('modalHistoricos').remove()" style="background: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; color: #ff9999; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">✕ Cerrar</button>
+                            </div>
+                            <div style="color: rgba(224, 224, 224, 0.7); margin-bottom: 1rem;">
+                                Total de turnos: <strong style="color: #00d4ff;">${data.total_turnos}</strong>
+                            </div>
+                `;
+                
+                // Iterar por cada agenda
+                for (const [agendaName, turnosData] of Object.entries(data.agendas)) {
+                    html += `<div style="margin-bottom: 2rem; background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 1.5rem; border: 1px solid rgba(0, 212, 255, 0.15);">`;
+                    html += `<h4 style="color: #4caf50; margin-top: 0;">${agendaName}</h4>`;
+                    
+                    // Turnos coordinados
+                    if (turnosData.coordinados.length > 0) {
+                        html += `<div style="margin-bottom: 1rem;">`;
+                        html += `<h5 style="color: #00d4ff; font-size: 0.95rem; margin-bottom: 0.5rem;">✅ Coordinados (${turnosData.coordinados.length})</h5>`;
+                        html += `<div style="display: grid; gap: 0.5rem;">`;
+                        turnosData.coordinados.forEach(turno => {
+                            html += `
+                                <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 0.75rem; border-radius: 6px;">
+                                    <div style="color: #e0e0e0;"><strong>${turno.apellido}, ${turno.nombre}</strong> - DNI: ${turno.dni}</div>
+                                    <div style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Determinaciones: ${turno.determinaciones || 'N/A'}</div>
+                                </div>
+                            `;
+                        });
+                        html += `</div></div>`;
+                    }
+                    
+                    // Turnos no coordinados
+                    if (turnosData.no_coordinados.length > 0) {
+                        html += `<div>`;
+                        html += `<h5 style="color: #f44336; font-size: 0.95rem; margin-bottom: 0.5rem;">❌ No coordinados (${turnosData.no_coordinados.length})</h5>`;
+                        html += `<div style="display: grid; gap: 0.5rem;">`;
+                        turnosData.no_coordinados.forEach(turno => {
+                            html += `
+                                <div style="background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); padding: 0.75rem; border-radius: 6px;">
+                                    <div style="color: #e0e0e0;"><strong>${turno.apellido}, ${turno.nombre}</strong> - DNI: ${turno.dni}</div>
+                                    <div style="color: rgba(224, 224, 224, 0.7); font-size: 0.9rem;">Determinaciones: ${turno.determinaciones || 'N/A'}</div>
+                                </div>
+                            `;
+                        });
+                        html += `</div></div>`;
+                    }
+                    
+                    html += `</div>`;
+                }
+                
+                if (data.total_turnos === 0) {
+                    html += `<div style="text-align: center; padding: 2rem; color: rgba(224, 224, 224, 0.5);">No hay turnos registrados para esta fecha</div>`;
+                }
+                
+                html += `</div></div>`;
+                
+                document.body.insertAdjacentHTML('beforeend', html);
+            })
+            .catch(error => {
+                console.error('Error obteniendo turnos históricos:', error);
+                alert('Error al cargar los turnos históricos');
+            });
+    }
 
 });
 </script>
