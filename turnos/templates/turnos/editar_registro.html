@@ -65,6 +65,15 @@
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Nombre y Apellido:</label>
                     <input type="text" name="nombre_apellido" value="{{ registro.2 }}" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
                 </div>
+            {% elif tabla == 'feriados' %}
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Fecha del feriado:</label>
+                    <input type="date" name="fecha" value="{{ registro.1|date:'Y-m-d' }}" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Descripción:</label>
+                    <textarea name="descripcion" rows="3" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">{{ registro.2|default:"" }}</textarea>
+                </div>
             {% endif %}
             
             <button type="submit" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: #fff; padding: 1rem 2rem; border-radius: 8px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">

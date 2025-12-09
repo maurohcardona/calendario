@@ -14,6 +14,20 @@
     {% endif %}
     </h2>
 
+    <!-- Advertencia de feriado -->
+    {% if es_feriado %}
+        <div style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); border: 2px solid #e65100; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3); color: white;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="font-size: 2.5rem;">🚫</div>
+                <div>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 0.5rem;">DÍA FERIADO</div>
+                    <div style="font-size: 1.1rem;">{{ descripcion_feriado }}</div>
+                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">No se pueden crear nuevos turnos en esta fecha</div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Información de cupo -->
     {% if modo_vista == 'agenda_seleccionada' %}
         {% if disponibles > 0 or cupo %}

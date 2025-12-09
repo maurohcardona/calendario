@@ -5,6 +5,9 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <h2 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #000000;">📋 {{ tabla_nombre }}</h2>
         <div style="display: flex; gap: 1rem;">
+            {% if tabla == 'feriados' %}
+            <a href="{% url 'turnos:aplicar_feriados' %}" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600;" onclick="return confirm('¿Desea anular todos los cupos en fechas feriadas?');">⚠️ Aplicar feriados</a>
+            {% endif %}
             {% if not readonly %}
             <a href="{% url 'turnos:crear_registro' tabla %}" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600;">➕ Crear nuevo</a>
             {% endif %}

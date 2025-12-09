@@ -20,15 +20,53 @@ from datetime import datetime
 
 @login_required
 def calendario(request):
+    import psycopg2
     # Mostrar todos los Cupos de todas las agendas en el mismo calendario
     # Usar Cupo explícitos + disponibilidad semanal para construir eventos
     from datetime import date, timedelta
     eventos = []
     hoy = date.today()
 
+    # 0) Obtener feriados desde PostgreSQL
+    feriados_dict = {}
+    try:
+        conn = psycopg2.connect(
+            dbname='Laboratorio',
+            user='postgres',
+            password='estufa10',
+            host='localhost',
+            port='5432'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT fecha, descripcion FROM feriados")
+        for fecha_fer, descripcion in cursor.fetchall():
+            feriados_dict[fecha_fer] = descripcion
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error al cargar feriados: {e}")
+
+    # Agregar eventos de feriados al calendario
+    for fecha_fer, descripcion in feriados_dict.items():
+        eventos.append({
+            "title": f"🚫 {descripcion}",
+            "start": fecha_fer.isoformat(),
+            "allDay": True,
+            "color": "#9e9e9e",
+            "textColor": "#ffffff",
+            "extendedProps": {
+                "es_feriado": True,
+                "descripcion": descripcion
+            }
+        })
+
     # 1) Eventos por Cupo explícito
     cupos = Cupo.objects.select_related('agenda').all().order_by('fecha')
     for cupo in cupos:
+        # Saltar si es feriado
+        if cupo.fecha in feriados_dict:
+            continue
+            
         libres = cupo.disponibles()
         usados = Turno.objects.filter(fecha=cupo.fecha, agenda=cupo.agenda).count()
         es_pasado = cupo.fecha < hoy
@@ -70,6 +108,9 @@ def calendario(request):
     agendas = Agenda.objects.all()
     for delta in range(horizon_days):
         d = today + timedelta(days=delta)
+        # Saltar si es feriado
+        if d in feriados_dict:
+            continue
         for ag in agendas:
             # saltar si ya existe un Cupo explícito para esa agenda+fecha
             if Cupo.objects.filter(agenda=ag, fecha=d).exists():
@@ -152,11 +193,51 @@ def lighten_color(color_hex, factor=0.6):
 
 @login_required
 def eventos_calendario(request):
+    import psycopg2
     from datetime import date
     eventos = []
     hoy = date.today()
+    
+    # 1. Obtener feriados desde PostgreSQL
+    feriados_dict = {}
+    try:
+        conn = psycopg2.connect(
+            dbname='Laboratorio',
+            user='postgres',
+            password='estufa10',
+            host='localhost',
+            port='5432'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT fecha, descripcion FROM feriados")
+        for fecha_fer, descripcion in cursor.fetchall():
+            feriados_dict[fecha_fer] = descripcion
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error al cargar feriados: {e}")
+    
+    # 2. Agregar eventos de feriados al calendario
+    for fecha_fer, descripcion in feriados_dict.items():
+        eventos.append({
+            "title": f"🚫 {descripcion}",
+            "start": fecha_fer.isoformat(),
+            "allDay": True,
+            "color": "#9e9e9e",
+            "textColor": "#ffffff",
+            "extendedProps": {
+                "es_feriado": True,
+                "descripcion": descripcion
+            }
+        })
+    
+    # 3. Eventos por Cupo explícito
     cupos = Cupo.objects.select_related('agenda').all()
     for c in cupos:
+        # No mostrar cupo si es feriado
+        if c.fecha in feriados_dict:
+            continue
+            
         libres = c.disponibles()
         es_pasado = c.fecha < hoy
         
@@ -184,7 +265,8 @@ def eventos_calendario(request):
                 "disponibles": libres,
                 "es_pasado": es_pasado,
                 "completo": libres == 0,
-                "texto_tachado": texto_tachado
+                "texto_tachado": texto_tachado,
+                "es_feriado": False
             }
         })
     return JsonResponse(eventos, safe=False)
@@ -231,10 +313,33 @@ def turnos_historicos_api(request, fecha):
 
 @login_required
 def dia(request, fecha):
+    import psycopg2
     # Convertir fecha a objeto date si viene como string
     from datetime import datetime
     if isinstance(fecha, str):
         fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
+    
+    # Verificar si es feriado
+    es_feriado = False
+    descripcion_feriado = None
+    try:
+        conn = psycopg2.connect(
+            dbname='Laboratorio',
+            user='postgres',
+            password='estufa10',
+            host='localhost',
+            port='5432'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT descripcion FROM feriados WHERE fecha = %s", (fecha,))
+        resultado = cursor.fetchone()
+        if resultado:
+            es_feriado = True
+            descripcion_feriado = resultado[0]
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error al verificar feriado: {e}")
     
     # Mostrar turnos para la(s) agendas en la fecha.
     turnos_all = Turno.objects.filter(fecha=fecha).select_related('agenda')
@@ -428,8 +533,10 @@ def dia(request, fecha):
         'cupo': cupo,
         'disponibles': disponibles,
         'agenda_name': agenda_obj.name if agenda_obj else (cupo.agenda.name if cupo else ''),
-        # Mostrar formulario solo si hay disponibles Y una agenda específica seleccionada
-        'show_form': True if (disponibles > 0 and agenda_obj and modo_vista == 'agenda_seleccionada') else False
+        # Mostrar formulario solo si hay disponibles Y una agenda específica seleccionada Y NO es feriado
+        'show_form': True if (disponibles > 0 and agenda_obj and modo_vista == 'agenda_seleccionada' and not es_feriado) else False,
+        'es_feriado': es_feriado,
+        'descripcion_feriado': descripcion_feriado
     }
     return render(request, 'turnos/dia.html', context)
 
@@ -1537,6 +1644,16 @@ def administrar_tablas(request):
         'descripcion': 'Turnos registrados en el sistema'
     })
     
+    # Feriados
+    cursor.execute("SELECT COUNT(*) FROM feriados")
+    count_feriados = cursor.fetchone()[0]
+    tablas_info.append({
+        'nombre': 'Feriados',
+        'tabla': 'feriados',
+        'cantidad': count_feriados,
+        'descripcion': 'Días feriados y no laborables'
+    })
+    
     cursor.close()
     conn.close()
     
@@ -1605,6 +1722,12 @@ def administrar_tabla_detalle(request, tabla):
             'columnas_display': ['ID', 'Fecha', 'DNI', 'Apellido', 'Nombre', 'Médico', 'Agenda'],
             'query': 'SELECT id, fecha, dni, apellido, nombre, medico, agenda_id FROM turnos_turno ORDER BY fecha DESC, id DESC',
             'readonly': True
+        },
+        'feriados': {
+            'nombre': 'Feriados',
+            'columnas': ['id', 'fecha', 'descripcion'],
+            'columnas_display': ['ID', 'Fecha', 'Descripción'],
+            'query': 'SELECT id, fecha, descripcion FROM feriados ORDER BY fecha DESC'
         }
     }
     
@@ -1697,6 +1820,15 @@ def crear_registro(request, tabla):
                     request.POST.get('nombre_apellido'),
                     request.user.username
                 ))
+            elif tabla == 'feriados':
+                cursor.execute("""
+                    INSERT INTO feriados (fecha, descripcion, usuario)
+                    VALUES (%s, %s, %s)
+                """, (
+                    request.POST.get('fecha'),
+                    request.POST.get('descripcion'),
+                    request.user.username
+                ))
             
             conn.commit()
             messages.success(request, 'Registro creado exitosamente')
@@ -1776,6 +1908,16 @@ def editar_registro(request, tabla, id):
                     request.POST.get('nombre_apellido'),
                     id
                 ))
+            elif tabla == 'feriados':
+                cursor.execute("""
+                    UPDATE feriados 
+                    SET fecha = %s, descripcion = %s
+                    WHERE id = %s
+                """, (
+                    request.POST.get('fecha'),
+                    request.POST.get('descripcion'),
+                    id
+                ))
             
             conn.commit()
             messages.success(request, 'Registro actualizado exitosamente')
@@ -1797,6 +1939,8 @@ def editar_registro(request, tabla, id):
         cursor.execute("SELECT id, dni, apellido, nombre, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE id = %s", (id,))
     elif tabla == 'medicos':
         cursor.execute("SELECT id, matricula_provincial, nombre_apellido FROM medicos WHERE id = %s", (id,))
+    elif tabla == 'feriados':
+        cursor.execute("SELECT id, fecha, descripcion FROM feriados WHERE id = %s", (id,))
     
     registro = cursor.fetchone()
     cursor.close()
@@ -1846,3 +1990,59 @@ def eliminar_registro(request, tabla, id):
             conn.close()
     
     return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def aplicar_feriados(request):
+    """Anular cupos en fechas feriadas"""
+    import psycopg2
+    
+    conn = psycopg2.connect(
+        dbname='Laboratorio',
+        user='postgres',
+        password='estufa10',
+        host='localhost',
+        port='5432'
+    )
+    cursor = conn.cursor()
+    
+    try:
+        # Obtener todas las fechas de feriados
+        cursor.execute("SELECT fecha, descripcion FROM feriados ORDER BY fecha")
+        feriados = cursor.fetchall()
+        
+        if not feriados:
+            messages.warning(request, 'No hay feriados registrados')
+            return redirect('turnos:administrar_tabla_detalle', tabla='feriados')
+        
+        cupos_anulados = 0
+        fechas_procesadas = []
+        
+        # Anular cupos para cada fecha feriada
+        for fecha, descripcion in feriados:
+            cursor.execute("""
+                UPDATE turnos_cupo 
+                SET cantidad_total = 0 
+                WHERE fecha = %s AND cantidad_total > 0
+            """, (fecha,))
+            
+            if cursor.rowcount > 0:
+                cupos_anulados += cursor.rowcount
+                fechas_procesadas.append(f"{fecha.strftime('%d/%m/%Y')} ({descripcion})")
+        
+        conn.commit()
+        
+        if cupos_anulados > 0:
+            fechas_str = ', '.join(fechas_procesadas)
+            messages.success(request, f'Se anularon {cupos_anulados} cupos en {len(fechas_procesadas)} fechas: {fechas_str}')
+        else:
+            messages.info(request, 'No había cupos activos en las fechas feriadas')
+            
+    except Exception as e:
+        conn.rollback()
+        messages.error(request, f'Error al aplicar feriados: {str(e)}')
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect('turnos:administrar_tabla_detalle', tabla='feriados')

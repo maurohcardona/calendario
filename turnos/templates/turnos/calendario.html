@@ -192,6 +192,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             },
             eventClick: function(info) {
+                // Si es feriado, no hacer nada
+                if (info.event.extendedProps.es_feriado) {
+                    return;
+                }
+                
                 const fecha = info.event.extendedProps.fecha;
                 const agendaId = info.event.extendedProps.agenda_id;
                 const esPasado = info.event.extendedProps.es_pasado;
