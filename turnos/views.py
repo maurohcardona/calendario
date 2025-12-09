@@ -1507,6 +1507,36 @@ def administrar_tablas(request):
         'descripcion': 'Médicos registrados en el sistema'
     })
     
+    # Usuarios
+    cursor.execute("SELECT COUNT(*) FROM auth_user")
+    count_user = cursor.fetchone()[0]
+    tablas_info.append({
+        'nombre': 'Usuarios',
+        'tabla': 'usuarios',
+        'cantidad': count_user,
+        'descripcion': 'Usuarios del sistema'
+    })
+    
+    # Cupos
+    cursor.execute("SELECT COUNT(*) FROM turnos_cupo")
+    count_cupo = cursor.fetchone()[0]
+    tablas_info.append({
+        'nombre': 'Cupos',
+        'tabla': 'cupos',
+        'cantidad': count_cupo,
+        'descripcion': 'Cupos configurados por fecha'
+    })
+    
+    # Turnos
+    cursor.execute("SELECT COUNT(*) FROM turnos_turno")
+    count_turno = cursor.fetchone()[0]
+    tablas_info.append({
+        'nombre': 'Turnos',
+        'tabla': 'turnos',
+        'cantidad': count_turno,
+        'descripcion': 'Turnos registrados en el sistema'
+    })
+    
     cursor.close()
     conn.close()
     
@@ -1554,6 +1584,27 @@ def administrar_tabla_detalle(request, tabla):
             'columnas': ['id', 'matricula_provincial', 'nombre_apellido'],
             'columnas_display': ['ID', 'Matrícula Provincial', 'Nombre y Apellido'],
             'query': 'SELECT id, matricula_provincial, nombre_apellido FROM medicos ORDER BY nombre_apellido'
+        },
+        'usuarios': {
+            'nombre': 'Usuarios',
+            'columnas': ['id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'is_superuser', 'is_active'],
+            'columnas_display': ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Staff', 'Superuser', 'Activo'],
+            'query': 'SELECT id, username, first_name, last_name, email, is_staff, is_superuser, is_active FROM auth_user ORDER BY username',
+            'readonly': True
+        },
+        'cupos': {
+            'nombre': 'Cupos',
+            'columnas': ['id', 'fecha', 'cantidad_total', 'agenda_id', 'usuario'],
+            'columnas_display': ['ID', 'Fecha', 'Cantidad Total', 'Agenda ID', 'Usuario'],
+            'query': 'SELECT id, fecha, cantidad_total, agenda_id, usuario FROM turnos_cupo ORDER BY fecha DESC',
+            'readonly': True
+        },
+        'turnos': {
+            'nombre': 'Turnos',
+            'columnas': ['id', 'fecha', 'dni', 'apellido', 'nombre', 'medico', 'agenda_id'],
+            'columnas_display': ['ID', 'Fecha', 'DNI', 'Apellido', 'Nombre', 'Médico', 'Agenda'],
+            'query': 'SELECT id, fecha, dni, apellido, nombre, medico, agenda_id FROM turnos_turno ORDER BY fecha DESC, id DESC',
+            'readonly': True
         }
     }
     
