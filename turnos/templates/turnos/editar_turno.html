@@ -331,7 +331,8 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                     nombre: data.nombre,
                     determinaciones: data.determinaciones
                 });
-                status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (' + data.determinaciones.length + ' determinaciones)</span>';
+                const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
+                status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (' + cantidadDets + ' determinaciones)</span>';
             } else {
                 // Agregar determinación individual
                 const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
@@ -389,7 +390,7 @@ function actualizarListaDeterminaciones() {
                             <div>
                                 <span style="background: #4caf50; color: #fff; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">PERFIL</span>
                                 <strong style="color: #4caf50; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
-                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(200, 155, 143, 0.8); font-weight: 600;">${item.determinaciones.length} determinaciones</div>
+                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(200, 155, 143, 0.8); font-weight: 600;">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
                             </div>
                             <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
                         </div>

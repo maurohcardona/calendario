@@ -71,11 +71,11 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div>
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Apellido</label>
-                    <input type="text" id="id_apellido" name="apellido" required disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                    <input type="text" id="id_apellido" name="apellido" required disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed; text-transform: uppercase;" />
                 </div>
                 <div>
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nombre</label>
-                    <input type="text" id="id_nombre" name="nombre" required disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                    <input type="text" id="id_nombre" name="nombre" required disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed; text-transform: uppercase;" />
                 </div>
             </div>
 
@@ -540,7 +540,8 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                     nombre: data.nombre,
                     determinaciones: data.determinaciones
                 });
-                status.innerHTML = '<span style="color: #4caf50;">✅ Perfil agregado (' + data.determinaciones.length + ' determinaciones)</span>';
+                const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
+                status.innerHTML = '<span style="color: #4caf50;">✅ Perfil agregado (' + cantidadDets + ' determinaciones)</span>';
             } else {
                 // Agregar determinación individual
                 const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
@@ -598,7 +599,7 @@ function actualizarListaDeterminaciones() {
                             <div>
                                 <span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">PERFIL</span>
                                 <strong style="color: #4caf50; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: var(--text-light);">${item.nombre}</span>
-                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(224, 224, 224, 0.7);">${item.determinaciones.length} determinaciones</div>
+                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(224, 224, 224, 0.7);">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
                             </div>
                             <button type="button" onclick="eliminarItem(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
                         </div>
