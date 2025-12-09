@@ -33,6 +33,11 @@ class TurnoForm(forms.ModelForm):
         max_length=200,
         label="Médico"
     )
+    nota_interna = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 2}),
+        label="Nota Interna"
+    )
 
     class Meta:
         model = Turno

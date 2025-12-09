@@ -284,6 +284,7 @@ def dia(request, fecha):
                     telefono = form.cleaned_data.get('telefono', '')
                     email = form.cleaned_data.get('email', '')
                     medico = form.cleaned_data.get('medico', '')  # Este va al turno, no al paciente
+                    nota_interna = form.cleaned_data.get('nota_interna', '')  # Este va al turno
                     
                     # Guardar o actualizar paciente en PostgreSQL
                     conn = psycopg2.connect(
@@ -342,6 +343,7 @@ def dia(request, fecha):
                         nuevo = form.save(commit=False)
                         nuevo.fecha = fecha
                         nuevo.medico = medico
+                        nuevo.nota_interna = nota_interna
                         nuevo.full_clean()
                         nuevo.save()
                         return redirect(f"{reverse('turnos:dia', args=[fecha])}?agenda={agenda_form.id}")
@@ -535,11 +537,12 @@ def editar_turno(request, turno_id):
         pass
     
     if request.method == 'POST':
-        # Actualizar turno (agenda, fecha, determinaciones y medico)
+        # Actualizar turno (agenda, fecha, determinaciones, medico y nota_interna)
         turno.agenda_id = request.POST.get('agenda')
         turno.fecha = request.POST.get('fecha')
         turno.determinaciones = request.POST.get('determinaciones', '')
         turno.medico = request.POST.get('medico', '')
+        turno.nota_interna = request.POST.get('nota_interna', '')
         turno.save()
         
         # Actualizar datos del paciente si se enviaron (telefono y email)

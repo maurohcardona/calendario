@@ -120,6 +120,12 @@
                 <textarea id="id_observaciones_paciente" name="observaciones_paciente" rows="2" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;"></textarea>
             </div>
 
+            <!-- Campo Nota Interna -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nota Interna</label>
+                <textarea id="id_nota_interna" name="nota_interna" rows="2" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;"></textarea>
+            </div>
+
             <!-- Determinaciones -->
             <div style="margin-bottom: 1.5rem;">
                 <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Determinaciones</label>
@@ -437,8 +443,8 @@ function habilitarSoloDeterminaciones() {
         campo.style.backgroundColor = 'rgba(100, 100, 100, 0.1)';
     });
     
-    // Los nuevos campos (telefono, email, medico) se pueden editar
-    const camposEditables = ['id_telefono', 'id_email', 'id_medico'];
+    // Los nuevos campos (telefono, email, medico, nota_interna) se pueden editar
+    const camposEditables = ['id_telefono', 'id_email', 'id_medico', 'id_nota_interna'];
     camposEditables.forEach(campoId => {
         const campo = document.getElementById(campoId);
         campo.disabled = false;
@@ -465,6 +471,7 @@ function habilitarTodosCampos() {
     document.getElementById('id_email').disabled = false;
     document.getElementById('id_medico').disabled = false;
     document.getElementById('id_observaciones_paciente').disabled = false;
+    document.getElementById('id_nota_interna').disabled = false;
     document.getElementById('inputCodigo').disabled = false;
     document.getElementById('inputNombre').disabled = false;
     document.getElementById('btnAgregarDet').disabled = false;
@@ -485,6 +492,9 @@ function habilitarTodosCampos() {
     document.getElementById('id_observaciones_paciente').style.opacity = '1';
     document.getElementById('id_observaciones_paciente').style.cursor = 'text';
     document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
+    document.getElementById('id_nota_interna').style.opacity = '1';
+    document.getElementById('id_nota_interna').style.cursor = 'text';
+    document.getElementById('id_nota_interna').style.backgroundColor = '#ffffff';
     document.getElementById('id_telefono').style.opacity = '1';
     document.getElementById('id_telefono').style.cursor = 'text';
     document.getElementById('id_telefono').style.backgroundColor = '#ffffff';

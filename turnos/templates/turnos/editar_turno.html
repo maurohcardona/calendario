@@ -69,6 +69,12 @@
             <textarea name="observaciones_paciente" rows="2" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;">{% if paciente %}{{ paciente.observaciones }}{% endif %}</textarea>
         </div>
 
+        <!-- Campo Nota Interna -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nota Interna</label>
+            <textarea name="nota_interna" rows="2" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; resize: vertical;">{{ turno.nota_interna|default:"" }}</textarea>
+        </div>
+
         <!-- Campo Observaciones del Turno -->
         <div style="margin-bottom: 1.5rem;">
             <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones del Turno</label>
