@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.urls import reverse
 from .models import Cupo, Turno, CapacidadDia, Agenda
@@ -10,6 +10,12 @@ import json
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.conf import settings
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import cm
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from io import BytesIO
+from datetime import datetime
 
 
 @login_required
@@ -346,7 +352,9 @@ def dia(request, fecha):
                         nuevo.usuario = request.user.username
                         nuevo.full_clean()
                         nuevo.save()
-                        return redirect(f"{reverse('turnos:dia', args=[fecha])}?agenda={agenda_form.id}")
+                        
+                        # Redirigir con parámetro para abrir PDF
+                        return redirect(f"{reverse('turnos:dia', args=[fecha])}?agenda={agenda_form.id}&turno_creado={nuevo.id}")
             except ValidationError as e:
                 form.add_error(None, e)
     else:
@@ -1168,3 +1176,192 @@ def coordinar_turno(request, turno_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
+
+@login_required
+def generar_ticket_turno(request, turno_id):
+    """Genera un ticket PDF para impresora térmica de 8cm de ancho"""
+    import psycopg2
+    
+    conn = psycopg2.connect(
+        dbname='Laboratorio',
+        user='postgres',
+        password='estufa10',
+        host='localhost',
+        port='5432'
+    )
+    cursor = conn.cursor()
+    
+    # Obtener datos del turno
+    cursor.execute("""
+        SELECT 
+            t.id,
+            t.fecha,
+            t.medico,
+            t.nota_interna,
+            t.nombre,
+            t.apellido,
+            t.dni,
+            a.name as agenda_nombre
+        FROM turnos_turno t
+        JOIN turnos_agenda a ON t.agenda_id = a.id
+        WHERE t.id = %s
+    """, (turno_id,))
+    
+    row = cursor.fetchone()
+    
+    # Obtener datos adicionales del paciente de la tabla pacientes
+    paciente_data = None
+    if row:
+        cursor.execute("""
+            SELECT fecha_nacimiento, sexo, telefono, email
+            FROM pacientes
+            WHERE dni = %s
+            ORDER BY id DESC
+            LIMIT 1
+        """, (row[6],))
+        paciente_data = cursor.fetchone()
+    
+    cursor.close()
+    conn.close()
+    
+    if not row:
+        return HttpResponse("Turno no encontrado", status=404)
+    
+    # Crear PDF para impresora térmica (8cm = 226.77 puntos)
+    buffer = BytesIO()
+    ancho_papel = 8 * cm  # 8 cm
+    alto_papel = 20 * cm  # Altura flexible
+    
+    p = canvas.Canvas(buffer, pagesize=(ancho_papel, alto_papel))
+    
+    # Configuración
+    margen = 0.3 * cm
+    ancho_util = ancho_papel - (2 * margen)
+    y = alto_papel - margen
+    
+    # Título
+    p.setFont("Helvetica-Bold", 12)
+    p.drawCentredString(ancho_papel / 2, y, "TICKET DE TURNO")
+    y -= 0.6 * cm
+    
+    # Línea separadora
+    p.line(margen, y, ancho_papel - margen, y)
+    y -= 0.5 * cm
+    
+    # Datos del turno
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(margen, y, "Fecha:")
+    p.setFont("Helvetica", 9)
+    fecha_str = row[1].strftime('%d/%m/%Y')
+    p.drawString(margen + 1.5*cm, y, fecha_str)
+    y -= 0.4 * cm
+    
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(margen, y, "Agenda:")
+    p.setFont("Helvetica", 9)
+    p.drawString(margen + 1.5*cm, y, row[7] or "")
+    y -= 0.5 * cm
+    
+    # Línea separadora
+    p.line(margen, y, ancho_papel - margen, y)
+    y -= 0.5 * cm
+    
+    # Datos del paciente
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(margen, y, "PACIENTE")
+    y -= 0.5 * cm
+    
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(margen, y, "Nombre:")
+    p.setFont("Helvetica", 9)
+    nombre_completo = f"{row[4]} {row[5]}"
+    p.drawString(margen + 1.8*cm, y, nombre_completo)
+    y -= 0.4 * cm
+    
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(margen, y, "DNI:")
+    p.setFont("Helvetica", 9)
+    p.drawString(margen + 1.8*cm, y, str(row[6]))
+    y -= 0.4 * cm
+    
+    if paciente_data and paciente_data[0]:  # Fecha de nacimiento
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Nacimiento:")
+        p.setFont("Helvetica", 9)
+        p.drawString(margen + 1.8*cm, y, paciente_data[0].strftime('%d/%m/%Y'))
+        y -= 0.4 * cm
+    
+    if paciente_data and paciente_data[1]:  # Sexo
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Sexo:")
+        p.setFont("Helvetica", 9)
+        p.drawString(margen + 1.8*cm, y, paciente_data[1])
+        y -= 0.4 * cm
+    
+    if paciente_data and paciente_data[2]:  # Teléfono
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Teléfono:")
+        p.setFont("Helvetica", 9)
+        p.drawString(margen + 1.8*cm, y, paciente_data[2])
+        y -= 0.5 * cm
+    
+    # Línea separadora
+    y -= 0.1 * cm
+    p.line(margen, y, ancho_papel - margen, y)
+    y -= 0.5 * cm
+    
+    # Médico
+    if row[2]:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Médico:")
+        p.setFont("Helvetica", 9)
+        # Dividir texto largo
+        medico_text = row[2]
+        if len(medico_text) > 30:
+            p.drawString(margen + 1.5*cm, y, medico_text[:30])
+            y -= 0.4 * cm
+            p.drawString(margen + 1.5*cm, y, medico_text[30:])
+        else:
+            p.drawString(margen + 1.5*cm, y, medico_text)
+        y -= 0.5 * cm
+    
+    # Nota interna
+    if row[3]:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Nota Interna:")
+        y -= 0.4 * cm
+        p.setFont("Helvetica", 8)
+        # Dividir texto en líneas
+        nota_text = row[3]
+        max_chars = 35
+        words = nota_text.split()
+        line = ""
+        for word in words:
+            if len(line + word) <= max_chars:
+                line += word + " "
+            else:
+                p.drawString(margen, y, line.strip())
+                y -= 0.35 * cm
+                line = word + " "
+        if line:
+            p.drawString(margen, y, line.strip())
+            y -= 0.5 * cm
+    
+    # Pie de página
+    y -= 0.3 * cm
+    p.line(margen, y, ancho_papel - margen, y)
+    y -= 0.4 * cm
+    p.setFont("Helvetica", 7)
+    p.drawCentredString(ancho_papel / 2, y, datetime.now().strftime('%d/%m/%Y %H:%M'))
+    y -= 0.3 * cm
+    p.drawCentredString(ancho_papel / 2, y, f"Turno #{turno_id}")
+    
+    p.showPage()
+    p.save()
+    
+    # Preparar respuesta HTTP
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="ticket_turno_{turno_id}.pdf"'
+    
+    return response

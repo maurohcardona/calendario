@@ -21,5 +21,6 @@ urlpatterns = [
     path("api/buscar-perfil/", views.buscar_perfil_api, name="buscar_perfil_api"),
     path("turno/<int:turno_id>/coordinar/", views.coordinar_turno, name="coordinar_turno"),
     path("api/turnos-historicos/<str:fecha>/", views.turnos_historicos_api, name="turnos_historicos_api"),
+    path("turno/<int:turno_id>/ticket/", views.generar_ticket_turno, name="generar_ticket_turno"),
 ]
 
