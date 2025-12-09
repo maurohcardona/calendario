@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #000000;">📋 {{ tabla_nombre }}</h2>
+        <div style="display: flex; gap: 1rem;">
+            {% if not readonly %}
+            <a href="{% url 'turnos:crear_registro' tabla %}" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600;">➕ Crear nuevo</a>
+            {% endif %}
+            <a href="{% url 'turnos:administrar_tablas' %}" style="background: linear-gradient(135deg, #c89b8f 0%, #a8867a 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600;">← Volver</a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div style="margin-bottom: 1.5rem;">
+        {% for message in messages %}
+        <div style="background: {% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% else %}#f5c6cb{% endif %}; color: {% if message.tags == 'success' %}#155724{% else %}#721c24{% endif %}; padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="background: #ffffff; border-radius: 12px; padding: 2rem; border: 2px solid var(--accent); box-shadow: 0 4px 16px rgba(200, 155, 143, 0.2); overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--accent); color: #000;">
+                    {% for col in columnas_display %}
+                    <th style="padding: 1rem; text-align: left; font-weight: 700; border-bottom: 2px solid #000;">{{ col }}</th>
+                    {% endfor %}
+                    {% if not readonly %}
+                    <th style="padding: 1rem; text-align: center; font-weight: 700; border-bottom: 2px solid #000;">Acciones</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for dato in datos %}
+                <tr style="border-bottom: 1px solid #ddd; transition: background 0.2s;" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background='transparent'">
+                    {% for col in columnas %}
+                    <td style="padding: 1rem;">{{ dato|get_item:col|default:"-" }}</td>
+                    {% endfor %}
+                    {% if not readonly %}
+                    <td style="padding: 1rem; text-align: center;">
+                        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                            <a href="{% url 'turnos:editar_registro' tabla dato.id %}" style="background: #2196F3; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 600;">✏️ Editar</a>
+                            <form method="POST" action="{% url 'turnos:eliminar_registro' tabla dato.id %}" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este registro?');">
+                                {% csrf_token %}
+                                <button type="submit" style="background: #f44336; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; border: none; cursor: pointer; font-size: 0.875rem; font-weight: 600;">🗑️ Eliminar</button>
+                            </form>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ columnas|length|add:1 }}" style="padding: 2rem; text-align: center; color: #666;">
+                        No hay registros para mostrar
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Filtro de diccionario en template
+document.addEventListener('DOMContentLoaded', function() {
+    // Registrar filtro personalizado para acceder a diccionarios
+});
+</script>
+{% endblock %}

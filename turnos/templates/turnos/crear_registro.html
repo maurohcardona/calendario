@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #000000;">➕ Crear nuevo registro</h2>
+        <a href="{% url 'turnos:administrar_tabla_detalle' tabla %}" style="background: linear-gradient(135deg, #c89b8f 0%, #a8867a 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600;">← Cancelar</a>
+    </div>
+
+    <div style="background: #ffffff; border-radius: 12px; padding: 2rem; border: 2px solid var(--accent); box-shadow: 0 4px 16px rgba(200, 155, 143, 0.2);">
+        <form method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            {% csrf_token %}
+            
+            {% if tabla == 'determinaciones' or tabla == 'perfiles' %}
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Código:</label>
+                    <input type="text" name="codigo" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Nombre:</label>
+                    <input type="text" name="nombre" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Descripción:</label>
+                    <textarea name="descripcion" rows="4" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;"></textarea>
+                </div>
+            {% elif tabla == 'pacientes' %}
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">DNI:</label>
+                    <input type="text" name="dni" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Apellido:</label>
+                    <input type="text" name="apellido" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Nombre:</label>
+                    <input type="text" name="nombre" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Fecha de Nacimiento:</label>
+                    <input type="date" name="fecha_nacimiento" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Sexo:</label>
+                    <select name="sexo" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                        <option value="">Seleccionar...</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Teléfono:</label>
+                    <input type="text" name="telefono" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Email:</label>
+                    <input type="email" name="email" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+            {% elif tabla == 'medicos' %}
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Matrícula Provincial:</label>
+                    <input type="number" name="matricula_provincial" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Nombre y Apellido:</label>
+                    <input type="text" name="nombre_apellido" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+            {% endif %}
+            
+            <button type="submit" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%); color: #fff; padding: 1rem 2rem; border-radius: 8px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                Crear registro
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

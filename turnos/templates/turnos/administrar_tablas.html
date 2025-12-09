@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #000000;">📊 Administrar Tablas</h2>
+        <a href="{% url 'turnos:calendario' %}" style="background: linear-gradient(135deg, #c89b8f 0%, #a8867a 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(200, 155, 143, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">← Volver al calendario</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+        {% for tabla in tablas %}
+        <div style="background: #ffffff; border-radius: 12px; padding: 2rem; border: 2px solid var(--accent); box-shadow: 0 4px 16px rgba(200, 155, 143, 0.2); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(200, 155, 143, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(200, 155, 143, 0.2)';">
+            <h3 style="margin: 0 0 1rem 0; font-size: 1.5rem; font-weight: 700; color: #000000;">{{ tabla.nombre }}</h3>
+            <p style="color: #666; margin: 0 0 1rem 0;">{{ tabla.descripcion }}</p>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+                <span style="font-size: 2rem; font-weight: 700; color: var(--accent);">{{ tabla.cantidad }}</span>
+                <span style="color: #666;">registros</span>
+            </div>
+            <a href="{% url 'turnos:administrar_tabla_detalle' tabla.tabla %}" style="display: inline-block; background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(76, 175, 80, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                ✏️ Administrar
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Información importante</h4>
+        <p style="margin: 0; color: #666;">Esta sección permite administrar las tablas principales del sistema. Solo usuarios administradores tienen acceso a estas funciones.</p>
+    </div>
+</div>
+{% endblock %}

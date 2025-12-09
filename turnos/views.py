@@ -1449,3 +1449,349 @@ def generar_ticket_turno(request, turno_id):
     
     return response
 
+
+@user_passes_test(lambda u: u.is_superuser)
+def administrar_tablas(request):
+    """Vista para administrar las tablas principales del sistema"""
+    import psycopg2
+    
+    conn = psycopg2.connect(
+        dbname='Laboratorio',
+        user='postgres',
+        password='estufa10',
+        host='localhost',
+        port='5432'
+    )
+    cursor = conn.cursor()
+    
+    # Obtener todas las tablas con sus conteos
+    tablas_info = []
+    
+    # Determinaciones
+    cursor.execute("SELECT COUNT(*) FROM determinaciones")
+    count_det = cursor.fetchone()[0]
+    tablas_info.append({
+        'nombre': 'Determinaciones',
+        'tabla': 'determinaciones',
+        'cantidad': count_det,
+        'descripcion': 'Estudios de laboratorio individuales'
+    })
+    
+    # Perfiles
+    cursor.execute("SELECT COUNT(*) FROM perfiles")
+    count_perf = cursor.fetchone()[0]
+    tablas_info.append({
+        'nombre': 'Perfiles',
+        'tabla': 'perfiles',
+        'cantidad': count_perf,
+        'descripcion': 'Grupos de determinaciones'
+    })
+    
+    # Pacientes
+    cursor.execute("SELECT COUNT(*) FROM pacientes")
+    count_pac = cursor.fetchone()[0]
+    tablas_info.append({
+        'nombre': 'Pacientes',
+        'tabla': 'pacientes',
+        'cantidad': count_pac,
+        'descripcion': 'Información de pacientes'
+    })
+    
+    # Médicos
+    cursor.execute("SELECT COUNT(*) FROM medicos")
+    count_med = cursor.fetchone()[0]
+    tablas_info.append({
+        'nombre': 'Médicos',
+        'tabla': 'medicos',
+        'cantidad': count_med,
+        'descripcion': 'Médicos registrados en el sistema'
+    })
+    
+    cursor.close()
+    conn.close()
+    
+    return render(request, 'turnos/administrar_tablas.html', {
+        'tablas': tablas_info
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def administrar_tabla_detalle(request, tabla):
+    """Vista detallada para administrar una tabla específica"""
+    import psycopg2
+    
+    conn = psycopg2.connect(
+        dbname='Laboratorio',
+        user='postgres',
+        password='estufa10',
+        host='localhost',
+        port='5432'
+    )
+    cursor = conn.cursor()
+    
+    # Configuración según la tabla
+    config = {
+        'determinaciones': {
+            'nombre': 'Determinaciones',
+            'columnas': ['id', 'codigo', 'nombre', 'descripcion'],
+            'columnas_display': ['ID', 'Código', 'Nombre', 'Descripción'],
+            'query': 'SELECT id, codigo, nombre, descripcion FROM determinaciones ORDER BY codigo'
+        },
+        'perfiles': {
+            'nombre': 'Perfiles',
+            'columnas': ['id', 'codigo', 'nombre', 'descripcion'],
+            'columnas_display': ['ID', 'Código', 'Nombre', 'Descripción'],
+            'query': 'SELECT id, codigo, nombre, descripcion FROM perfiles ORDER BY codigo'
+        },
+        'pacientes': {
+            'nombre': 'Pacientes',
+            'columnas': ['id', 'dni', 'apellido', 'nombre', 'fecha_nacimiento', 'sexo', 'telefono', 'email'],
+            'columnas_display': ['ID', 'DNI', 'Apellido', 'Nombre', 'Fecha Nac.', 'Sexo', 'Teléfono', 'Email'],
+            'query': 'SELECT id, dni, apellido, nombre, fecha_nacimiento, sexo, telefono, email FROM pacientes ORDER BY apellido, nombre'
+        },
+        'medicos': {
+            'nombre': 'Médicos',
+            'columnas': ['id', 'matricula_provincial', 'nombre_apellido'],
+            'columnas_display': ['ID', 'Matrícula Provincial', 'Nombre y Apellido'],
+            'query': 'SELECT id, matricula_provincial, nombre_apellido FROM medicos ORDER BY nombre_apellido'
+        }
+    }
+    
+    if tabla not in config:
+        messages.error(request, 'Tabla no válida')
+        return redirect('turnos:administrar_tablas')
+    
+    tabla_config = config[tabla]
+    
+    # Obtener datos
+    cursor.execute(tabla_config['query'])
+    registros = cursor.fetchall()
+    
+    # Convertir a lista de diccionarios
+    datos = []
+    for reg in registros:
+        dato = {}
+        for i, col in enumerate(tabla_config['columnas']):
+            dato[col] = reg[i]
+        datos.append(dato)
+    
+    cursor.close()
+    conn.close()
+    
+    return render(request, 'turnos/administrar_tabla_detalle.html', {
+        'tabla': tabla,
+        'tabla_nombre': tabla_config['nombre'],
+        'columnas': tabla_config['columnas'],
+        'columnas_display': tabla_config['columnas_display'],
+        'datos': datos,
+        'readonly': tabla_config.get('readonly', False)
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def crear_registro(request, tabla):
+    """Crear un nuevo registro en la tabla"""
+    import psycopg2
+    
+    if request.method == 'POST':
+        conn = psycopg2.connect(
+            dbname='Laboratorio',
+            user='postgres',
+            password='estufa10',
+            host='localhost',
+            port='5432'
+        )
+        cursor = conn.cursor()
+        
+        try:
+            if tabla == 'determinaciones':
+                cursor.execute("""
+                    INSERT INTO determinaciones (codigo, nombre, descripcion, usuario)
+                    VALUES (%s, %s, %s, %s)
+                """, (
+                    request.POST.get('codigo'),
+                    request.POST.get('nombre'),
+                    request.POST.get('descripcion'),
+                    request.user.username
+                ))
+            elif tabla == 'perfiles':
+                cursor.execute("""
+                    INSERT INTO perfiles (codigo, nombre, descripcion, usuario)
+                    VALUES (%s, %s, %s, %s)
+                """, (
+                    request.POST.get('codigo'),
+                    request.POST.get('nombre'),
+                    request.POST.get('descripcion'),
+                    request.user.username
+                ))
+            elif tabla == 'pacientes':
+                cursor.execute("""
+                    INSERT INTO pacientes (dni, apellido, nombre, fecha_nacimiento, sexo, telefono, email)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    request.POST.get('dni'),
+                    request.POST.get('apellido'),
+                    request.POST.get('nombre'),
+                    request.POST.get('fecha_nacimiento') or None,
+                    request.POST.get('sexo') or None,
+                    request.POST.get('telefono') or None,
+                    request.POST.get('email') or None
+                ))
+            elif tabla == 'medicos':
+                cursor.execute("""
+                    INSERT INTO medicos (matricula_provincial, nombre_apellido, usuario)
+                    VALUES (%s, %s, %s)
+                """, (
+                    request.POST.get('matricula_provincial'),
+                    request.POST.get('nombre_apellido'),
+                    request.user.username
+                ))
+            
+            conn.commit()
+            messages.success(request, 'Registro creado exitosamente')
+        except Exception as e:
+            conn.rollback()
+            messages.error(request, f'Error al crear registro: {str(e)}')
+        finally:
+            cursor.close()
+            conn.close()
+        
+        return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
+    
+    return render(request, 'turnos/crear_registro.html', {'tabla': tabla})
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def editar_registro(request, tabla, id):
+    """Editar un registro existente"""
+    import psycopg2
+    
+    conn = psycopg2.connect(
+        dbname='Laboratorio',
+        user='postgres',
+        password='estufa10',
+        host='localhost',
+        port='5432'
+    )
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        try:
+            if tabla == 'determinaciones':
+                cursor.execute("""
+                    UPDATE determinaciones 
+                    SET codigo = %s, nombre = %s, descripcion = %s
+                    WHERE id = %s
+                """, (
+                    request.POST.get('codigo'),
+                    request.POST.get('nombre'),
+                    request.POST.get('descripcion'),
+                    id
+                ))
+            elif tabla == 'perfiles':
+                cursor.execute("""
+                    UPDATE perfiles 
+                    SET codigo = %s, nombre = %s, descripcion = %s
+                    WHERE id = %s
+                """, (
+                    request.POST.get('codigo'),
+                    request.POST.get('nombre'),
+                    request.POST.get('descripcion'),
+                    id
+                ))
+            elif tabla == 'pacientes':
+                cursor.execute("""
+                    UPDATE pacientes 
+                    SET dni = %s, apellido = %s, nombre = %s, fecha_nacimiento = %s, 
+                        sexo = %s, telefono = %s, email = %s
+                    WHERE id = %s
+                """, (
+                    request.POST.get('dni'),
+                    request.POST.get('apellido'),
+                    request.POST.get('nombre'),
+                    request.POST.get('fecha_nacimiento') or None,
+                    request.POST.get('sexo') or None,
+                    request.POST.get('telefono') or None,
+                    request.POST.get('email') or None,
+                    id
+                ))
+            elif tabla == 'medicos':
+                cursor.execute("""
+                    UPDATE medicos 
+                    SET matricula_provincial = %s, nombre_apellido = %s
+                    WHERE id = %s
+                """, (
+                    request.POST.get('matricula_provincial'),
+                    request.POST.get('nombre_apellido'),
+                    id
+                ))
+            
+            conn.commit()
+            messages.success(request, 'Registro actualizado exitosamente')
+        except Exception as e:
+            conn.rollback()
+            messages.error(request, f'Error al actualizar registro: {str(e)}')
+        finally:
+            cursor.close()
+            conn.close()
+        
+        return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
+    
+    # Obtener datos actuales
+    if tabla == 'determinaciones':
+        cursor.execute("SELECT id, codigo, nombre, descripcion FROM determinaciones WHERE id = %s", (id,))
+    elif tabla == 'perfiles':
+        cursor.execute("SELECT id, codigo, nombre, descripcion FROM perfiles WHERE id = %s", (id,))
+    elif tabla == 'pacientes':
+        cursor.execute("SELECT id, dni, apellido, nombre, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE id = %s", (id,))
+    elif tabla == 'medicos':
+        cursor.execute("SELECT id, matricula_provincial, nombre_apellido FROM medicos WHERE id = %s", (id,))
+    
+    registro = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if not registro:
+        messages.error(request, 'Registro no encontrado')
+        return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
+    
+    return render(request, 'turnos/editar_registro.html', {
+        'tabla': tabla,
+        'registro': registro,
+        'id': id
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def eliminar_registro(request, tabla, id):
+    """Eliminar un registro"""
+    import psycopg2
+    
+    if request.method == 'POST':
+        conn = psycopg2.connect(
+            dbname='Laboratorio',
+            user='postgres',
+            password='estufa10',
+            host='localhost',
+            port='5432'
+        )
+        cursor = conn.cursor()
+        
+        try:
+            if tabla == 'determinaciones':
+                cursor.execute("DELETE FROM determinaciones WHERE id = %s", (id,))
+            elif tabla == 'perfiles':
+                cursor.execute("DELETE FROM perfiles WHERE id = %s", (id,))
+            elif tabla == 'pacientes':
+                cursor.execute("DELETE FROM pacientes WHERE id = %s", (id,))
+            
+            conn.commit()
+            messages.success(request, 'Registro eliminado exitosamente')
+        except Exception as e:
+            conn.rollback()
+            messages.error(request, f'Error al eliminar registro: {str(e)}')
+        finally:
+            cursor.close()
+            conn.close()
+    
+    return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
