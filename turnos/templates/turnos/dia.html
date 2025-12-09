@@ -174,6 +174,7 @@
                                     <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem;">
+                                    <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
                                     <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
                                     <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
                                 </div>
@@ -197,6 +198,7 @@
                                 <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
                             </div>
                             <div style="display: flex; gap: 0.5rem;">
+                                <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
                                 <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
                                 <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
                             </div>

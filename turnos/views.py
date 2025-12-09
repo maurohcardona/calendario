@@ -1181,6 +1181,7 @@ def coordinar_turno(request, turno_id):
 def generar_ticket_turno(request, turno_id):
     """Genera un ticket PDF para impresora térmica de 8cm de ancho"""
     import psycopg2
+    from datetime import date
     
     conn = psycopg2.connect(
         dbname='Laboratorio',
@@ -1201,7 +1202,9 @@ def generar_ticket_turno(request, turno_id):
             t.nombre,
             t.apellido,
             t.dni,
-            a.name as agenda_nombre
+            t.usuario,
+            a.name as agenda_nombre,
+            t.determinaciones
         FROM turnos_turno t
         JOIN turnos_agenda a ON t.agenda_id = a.id
         WHERE t.id = %s
@@ -1227,10 +1230,85 @@ def generar_ticket_turno(request, turno_id):
     if not row:
         return HttpResponse("Turno no encontrado", status=404)
     
+    # Calcular edad del paciente
+    edad = None
+    if paciente_data and paciente_data[0]:
+        fecha_nacimiento = paciente_data[0]
+        fecha_turno = row[1]
+        edad = fecha_turno.year - fecha_nacimiento.year
+        if (fecha_turno.month, fecha_turno.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
+            edad -= 1
+    
+    # Obtener determinaciones del campo de texto (son códigos separados por comas)
+    determinaciones_texto = row[9] if row[9] else ""
+    determinaciones_list = []
+    perfiles_list = []
+    
+    if determinaciones_texto:
+        # Dividir por comas y limpiar
+        codigos = [d.strip() for d in determinaciones_texto.split(',') if d.strip()]
+        
+        # Separar códigos de perfiles (empiezan con /) y determinaciones (números)
+        codigos_perfiles = []
+        codigos_determinaciones = []
+        
+        for codigo in codigos:
+            if codigo.startswith('/'):
+                # Es un perfil, mantener el /
+                codigos_perfiles.append(codigo)
+            else:
+                # Es una determinación
+                try:
+                    codigos_determinaciones.append(int(codigo))
+                except:
+                    pass
+        
+        # Buscar nombres de perfiles
+        if codigos_perfiles:
+            conn2 = psycopg2.connect(
+                dbname='Laboratorio',
+                user='postgres',
+                password='estufa10',
+                host='localhost',
+                port='5432'
+            )
+            cursor2 = conn2.cursor()
+            placeholders = ','.join(['%s'] * len(codigos_perfiles))
+            cursor2.execute(f"""
+                SELECT codigo, nombre 
+                FROM perfiles 
+                WHERE codigo IN ({placeholders})
+                ORDER BY nombre
+            """, codigos_perfiles)
+            perfiles_list = cursor2.fetchall()
+            cursor2.close()
+            conn2.close()
+        
+        # Buscar nombres de determinaciones
+        if codigos_determinaciones:
+            conn3 = psycopg2.connect(
+                dbname='Laboratorio',
+                user='postgres',
+                password='estufa10',
+                host='localhost',
+                port='5432'
+            )
+            cursor3 = conn3.cursor()
+            placeholders = ','.join(['%s'] * len(codigos_determinaciones))
+            cursor3.execute(f"""
+                SELECT codigo, nombre 
+                FROM determinaciones 
+                WHERE codigo IN ({placeholders})
+                ORDER BY nombre
+            """, codigos_determinaciones)
+            determinaciones_list = cursor3.fetchall()
+            cursor3.close()
+            conn3.close()
+    
     # Crear PDF para impresora térmica (8cm = 226.77 puntos)
     buffer = BytesIO()
     ancho_papel = 8 * cm  # 8 cm
-    alto_papel = 20 * cm  # Altura flexible
+    alto_papel = 29 * cm  # Altura más larga para todo el contenido
     
     p = canvas.Canvas(buffer, pagesize=(ancho_papel, alto_papel))
     
@@ -1239,122 +1317,127 @@ def generar_ticket_turno(request, turno_id):
     ancho_util = ancho_papel - (2 * margen)
     y = alto_papel - margen
     
-    # Título
-    p.setFont("Helvetica-Bold", 12)
-    p.drawCentredString(ancho_papel / 2, y, "TICKET DE TURNO")
+    # ====== ENCABEZADO ======
+    p.setFont("Helvetica-Bold", 11)
+    p.drawCentredString(ancho_papel / 2, y, "Hospital Balestrini")
+    y -= 0.5 * cm
+    
+    p.setFont("Helvetica", 9)
+    p.drawCentredString(ancho_papel / 2, y, row[8] or "")  # Nombre de la agenda
     y -= 0.6 * cm
     
     # Línea separadora
     p.line(margen, y, ancho_papel - margen, y)
     y -= 0.5 * cm
     
-    # Datos del turno
+    # ====== DATOS DEL PACIENTE ======
     p.setFont("Helvetica-Bold", 9)
-    p.drawString(margen, y, "Fecha:")
-    p.setFont("Helvetica", 9)
-    fecha_str = row[1].strftime('%d/%m/%Y')
-    p.drawString(margen + 1.5*cm, y, fecha_str)
-    y -= 0.4 * cm
-    
-    p.setFont("Helvetica-Bold", 9)
-    p.drawString(margen, y, "Agenda:")
-    p.setFont("Helvetica", 9)
-    p.drawString(margen + 1.5*cm, y, row[7] or "")
-    y -= 0.5 * cm
-    
-    # Línea separadora
-    p.line(margen, y, ancho_papel - margen, y)
-    y -= 0.5 * cm
-    
-    # Datos del paciente
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(margen, y, "PACIENTE")
-    y -= 0.5 * cm
-    
-    p.setFont("Helvetica-Bold", 9)
-    p.drawString(margen, y, "Nombre:")
+    p.drawString(margen, y, "Paciente:")
     p.setFont("Helvetica", 9)
     nombre_completo = f"{row[4]} {row[5]}"
-    p.drawString(margen + 1.8*cm, y, nombre_completo)
-    y -= 0.4 * cm
+    p.drawString(margen + 2*cm, y, nombre_completo)
+    y -= 0.45 * cm
     
-    p.setFont("Helvetica-Bold", 9)
-    p.drawString(margen, y, "DNI:")
-    p.setFont("Helvetica", 9)
-    p.drawString(margen + 1.8*cm, y, str(row[6]))
-    y -= 0.4 * cm
-    
-    if paciente_data and paciente_data[0]:  # Fecha de nacimiento
+    if edad is not None:
         p.setFont("Helvetica-Bold", 9)
-        p.drawString(margen, y, "Nacimiento:")
+        p.drawString(margen, y, "Edad:")
         p.setFont("Helvetica", 9)
-        p.drawString(margen + 1.8*cm, y, paciente_data[0].strftime('%d/%m/%Y'))
-        y -= 0.4 * cm
+        p.drawString(margen + 2*cm, y, f"{edad} años")
+        y -= 0.45 * cm
     
-    if paciente_data and paciente_data[1]:  # Sexo
-        p.setFont("Helvetica-Bold", 9)
-        p.drawString(margen, y, "Sexo:")
-        p.setFont("Helvetica", 9)
-        p.drawString(margen + 1.8*cm, y, paciente_data[1])
-        y -= 0.4 * cm
-    
-    if paciente_data and paciente_data[2]:  # Teléfono
-        p.setFont("Helvetica-Bold", 9)
-        p.drawString(margen, y, "Teléfono:")
-        p.setFont("Helvetica", 9)
-        p.drawString(margen + 1.8*cm, y, paciente_data[2])
-        y -= 0.5 * cm
+    # ====== FECHA DEL TURNO (EN NEGRITA) ======
+    p.setFont("Helvetica-Bold", 10)
+    fecha_str = row[1].strftime('%d/%m/%Y')
+    p.drawString(margen, y, f"Fecha de turno: {fecha_str}")
+    y -= 0.6 * cm
     
     # Línea separadora
-    y -= 0.1 * cm
     p.line(margen, y, ancho_papel - margen, y)
     y -= 0.5 * cm
     
-    # Médico
-    if row[2]:
-        p.setFont("Helvetica-Bold", 9)
-        p.drawString(margen, y, "Médico:")
-        p.setFont("Helvetica", 9)
-        # Dividir texto largo
-        medico_text = row[2]
-        if len(medico_text) > 30:
-            p.drawString(margen + 1.5*cm, y, medico_text[:30])
-            y -= 0.4 * cm
-            p.drawString(margen + 1.5*cm, y, medico_text[30:])
-        else:
-            p.drawString(margen + 1.5*cm, y, medico_text)
-        y -= 0.5 * cm
+    # ====== DETERMINACIONES Y PERFILES ======
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(margen, y, "Estudios solicitados:")
+    y -= 0.45 * cm
     
-    # Nota interna
-    if row[3]:
-        p.setFont("Helvetica-Bold", 9)
-        p.drawString(margen, y, "Nota Interna:")
-        y -= 0.4 * cm
+    # Mostrar perfiles primero
+    if perfiles_list:
         p.setFont("Helvetica", 8)
-        # Dividir texto en líneas
-        nota_text = row[3]
-        max_chars = 35
-        words = nota_text.split()
-        line = ""
-        for word in words:
-            if len(line + word) <= max_chars:
-                line += word + " "
-            else:
-                p.drawString(margen, y, line.strip())
+        for perfil in perfiles_list:
+            texto_perfil = f"• {perfil[1].upper()}"
+            # Dividir si es muy largo
+            if len(texto_perfil) > 40:
+                p.drawString(margen + 0.2*cm, y, texto_perfil[:40])
                 y -= 0.35 * cm
-                line = word + " "
-        if line:
-            p.drawString(margen, y, line.strip())
-            y -= 0.5 * cm
+                p.drawString(margen + 0.4*cm, y, texto_perfil[40:])
+                y -= 0.4 * cm
+            else:
+                p.drawString(margen + 0.2*cm, y, texto_perfil)
+                y -= 0.4 * cm
     
-    # Pie de página
+    # Mostrar determinaciones individuales
+    if determinaciones_list:
+        p.setFont("Helvetica", 8)
+        for det in determinaciones_list:
+            texto_det = f"• {det[1].upper()}"
+            # Dividir si es muy largo
+            if len(texto_det) > 40:
+                p.drawString(margen + 0.2*cm, y, texto_det[:40])
+                y -= 0.35 * cm
+                p.drawString(margen + 0.4*cm, y, texto_det[40:])
+                y -= 0.4 * cm
+            else:
+                p.drawString(margen + 0.2*cm, y, texto_det)
+                y -= 0.4 * cm
+    
+    # Si no hay ni perfiles ni determinaciones
+    if not perfiles_list and not determinaciones_list:
+        p.setFont("Helvetica", 8)
+        p.drawString(margen + 0.2*cm, y, "(Sin estudios especificados)")
+        y -= 0.4 * cm
+    
     y -= 0.3 * cm
+    
+    # Línea separadora
+    p.line(margen, y, ancho_papel - margen, y)
+    y -= 0.5 * cm
+    
+    # ====== INDICACIONES FIJAS ======
+    p.setFont("Helvetica-Bold", 8)
+    p.drawCentredString(ancho_papel / 2, y, "INDICACIONES")
+    y -= 0.45 * cm
+    
+    p.setFont("Helvetica", 7)
+    indicaciones = [
+        "Concurrir al laboratorio de 7:00 a 9:00 hs",
+        "con su DNI, receta médica (autorizada por",
+        "SAMO) y este ticket de turno con 8 o 12 hs",
+        "de ayuno según corresponda.",
+        "",
+        "No tomar medicación antes de la extracción.",
+        "",
+        "Traer la primera orina de la mañana si",
+        "corresponde."
+    ]
+    
+    for linea in indicaciones:
+        p.drawCentredString(ancho_papel / 2, y, linea)
+        y -= 0.35 * cm
+    
+    y -= 0.3 * cm
+    
+    # Línea separadora
     p.line(margen, y, ancho_papel - margen, y)
     y -= 0.4 * cm
+    
+    # ====== PIE DE PÁGINA ======
     p.setFont("Helvetica", 7)
-    p.drawCentredString(ancho_papel / 2, y, datetime.now().strftime('%d/%m/%Y %H:%M'))
+    p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {row[7]}")
     y -= 0.3 * cm
-    p.drawCentredString(ancho_papel / 2, y, f"Turno #{turno_id}")
+    p.drawCentredString(ancho_papel / 2, y, f"Ticket N° {turno_id}")
+    y -= 0.3 * cm
+    p.setFont("Helvetica", 6)
+    p.drawCentredString(ancho_papel / 2, y, datetime.now().strftime('%d/%m/%Y %H:%M'))
     
     p.showPage()
     p.save()
@@ -1365,3 +1448,4 @@ def generar_ticket_turno(request, turno_id):
     response['Content-Disposition'] = f'inline; filename="ticket_turno_{turno_id}.pdf"'
     
     return response
+
