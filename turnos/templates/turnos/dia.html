@@ -114,12 +114,6 @@
                 </div>
             </div>
 
-            <!-- Campo Observaciones Paciente -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones del Paciente</label>
-                <textarea id="id_observaciones_paciente" name="observaciones_paciente" rows="2" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;"></textarea>
-            </div>
-
             <!-- Campo Nota Interna -->
             <div style="margin-bottom: 1.5rem;">
                 <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nota Interna</label>
@@ -390,7 +384,6 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_apellido').value = data.apellido;
             document.getElementById('id_fecha_nacimiento').value = data.fecha_nacimiento;
             document.getElementById('id_sexo').value = data.sexo;
-            document.getElementById('id_observaciones_paciente').value = data.observaciones;
             document.getElementById('id_telefono').value = data.telefono || '';
             document.getElementById('id_email').value = data.email || '';
             // medico NO se llena desde paciente, queda vacío y editable
@@ -404,7 +397,6 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_apellido').value = '';
             document.getElementById('id_fecha_nacimiento').value = '';
             document.getElementById('id_sexo').value = '';
-            document.getElementById('id_observaciones_paciente').value = '';
             document.getElementById('id_telefono').value = '';
             document.getElementById('id_email').value = '';
             document.getElementById('id_medico').value = '';
@@ -433,7 +425,7 @@ function habilitarSoloDeterminaciones() {
     document.getElementById('btnAgregarDet').style.cursor = 'pointer';
     
     // Datos de paciente permanecen en modo READONLY (se envían pero no se pueden editar)
-    const camposPaciente = ['id_nombre', 'id_apellido', 'id_fecha_nacimiento', 'id_sexo', 'id_observaciones_paciente'];
+    const camposPaciente = ['id_nombre', 'id_apellido', 'id_fecha_nacimiento', 'id_sexo'];
     camposPaciente.forEach(campoId => {
         const campo = document.getElementById(campoId);
         campo.disabled = false;
@@ -470,7 +462,6 @@ function habilitarTodosCampos() {
     document.getElementById('id_telefono').disabled = false;
     document.getElementById('id_email').disabled = false;
     document.getElementById('id_medico').disabled = false;
-    document.getElementById('id_observaciones_paciente').disabled = false;
     document.getElementById('id_nota_interna').disabled = false;
     document.getElementById('inputCodigo').disabled = false;
     document.getElementById('inputNombre').disabled = false;
@@ -489,9 +480,6 @@ function habilitarTodosCampos() {
     document.getElementById('id_sexo').style.opacity = '1';
     document.getElementById('id_sexo').style.cursor = 'pointer';
     document.getElementById('id_sexo').style.backgroundColor = '#ffffff';
-    document.getElementById('id_observaciones_paciente').style.opacity = '1';
-    document.getElementById('id_observaciones_paciente').style.cursor = 'text';
-    document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
     document.getElementById('id_nota_interna').style.opacity = '1';
     document.getElementById('id_nota_interna').style.cursor = 'text';
     document.getElementById('id_nota_interna').style.backgroundColor = '#ffffff';

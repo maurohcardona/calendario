@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 <div style="max-width: 800px; margin: 0 auto;">
-    <h2>🗓️ Generador de Cupos Masivo</h2>
-    <p style="color: rgba(224, 224, 224, 0.7); margin-bottom: 2rem;">
+    <h2 style="color: #000000;">🗓️ Generador de Cupos Masivo</h2>
+    <p style="color: #000000; margin-bottom: 2rem;">
         Genera cupos automáticamente para un rango de fechas. Solo días hábiles (Lunes a Viernes) o un día específico.
     </p>
 
@@ -26,7 +26,7 @@
         
         <!-- Agenda -->
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 600;">
                 📌 Agenda *
             </label>
             <select name="agenda" required style="
@@ -35,7 +35,7 @@
                 background: rgba(30, 30, 30, 0.8);
                 border: 1px solid rgba(0, 212, 255, 0.3);
                 border-radius: 6px;
-                color: #e0e0e0;
+                color: #ffffff;
                 font-size: 1rem;
             ">
                 <option value="">Seleccione una agenda</option>
@@ -49,16 +49,16 @@
         <div style="margin-bottom: 1.5rem;">
             <label style="display: flex; align-items: center; cursor: pointer;">
                 <input type="checkbox" id="por_dia_semana" name="por_dia_semana" style="margin-right: 0.5rem; width: 18px; height: 18px; cursor: pointer;" onchange="toggleDiaSemana()">
-                <span style="color: #00d4ff; font-weight: 500;">📅 Por día de semana específico</span>
+                <span style="color: #00d4ff; font-weight: 600;">📅 Por día de semana específico</span>
             </label>
-            <small style="color: rgba(224, 224, 224, 0.6); display: block; margin-top: 0.25rem;">
+            <small style="color: #000000; display: block; margin-top: 0.25rem;">
                 Si está activado, solo se crearán cupos para el día seleccionado. Si no, se crearán para todos los días hábiles (Lun-Vie).
             </small>
         </div>
 
         <!-- Día de la semana (deshabilitado por defecto) -->
         <div id="dia_semana_container" style="margin-bottom: 1.5rem; opacity: 0.5; pointer-events: none;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 600;">
                 📆 Día de la semana
             </label>
             <select name="dia_semana" id="dia_semana_select" disabled style="
@@ -67,7 +67,7 @@
                 background: rgba(30, 30, 30, 0.8);
                 border: 1px solid rgba(0, 212, 255, 0.3);
                 border-radius: 6px;
-                color: #e0e0e0;
+                color: #ffffff;
                 font-size: 1rem;
             ">
                 <option value="">Seleccione un día</option>
@@ -82,7 +82,7 @@
         <!-- Rango de fechas -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 600;">
                     📅 Desde *
                 </label>
                 <input type="date" name="desde_fecha" required style="
@@ -91,12 +91,12 @@
                     background: rgba(30, 30, 30, 0.8);
                     border: 1px solid rgba(0, 212, 255, 0.3);
                     border-radius: 6px;
-                    color: #e0e0e0;
+                    color: #ffffff;
                     font-size: 1rem;
                 ">
             </div>
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 600;">
                     📅 Hasta *
                 </label>
                 <input type="date" name="hasta_fecha" required style="
@@ -105,7 +105,7 @@
                     background: rgba(30, 30, 30, 0.8);
                     border: 1px solid rgba(0, 212, 255, 0.3);
                     border-radius: 6px;
-                    color: #e0e0e0;
+                    color: #ffffff;
                     font-size: 1rem;
                 ">
             </div>
@@ -113,7 +113,7 @@
 
         <!-- Cantidad de cupos -->
         <div style="margin-bottom: 2rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 500;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #00d4ff; font-weight: 600;">
                 🔢 Cantidad de cupos por día *
             </label>
             <input type="number" name="cantidad" min="1" required style="
@@ -122,10 +122,10 @@
                 background: rgba(30, 30, 30, 0.8);
                 border: 1px solid rgba(0, 212, 255, 0.3);
                 border-radius: 6px;
-                color: #e0e0e0;
+                color: #ffffff;
                 font-size: 1rem;
             " placeholder="Ej: 10">
-            <small style="color: rgba(224, 224, 224, 0.6); display: block; margin-top: 0.25rem;">
+            <small style="color: #000000; display: block; margin-top: 0.25rem;">
                 Esta cantidad se aplicará a cada día que se genere en el rango.
             </small>
         </div>
@@ -198,9 +198,9 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
 
 <!-- FORMULARIO PARA BORRAR CUPOS -->
 <div style="max-width: 800px; margin: 0 auto;">
-    <h2 style="color: #f44336;">🗑️ Borrar Cupos Masivamente</h2>
-    <p style="color: rgba(224, 224, 224, 0.7); margin-bottom: 2rem;">
-        Elimina cupos para un rango de fechas. <strong style="color: #f44336;">IMPORTANTE:</strong> Los turnos agendados NO se borrarán.
+    <h2 style="color: #000000;">🗑️ Borrar Cupos Masivamente</h2>
+    <p style="color: #000000; margin-bottom: 2rem;">
+        Elimina cupos para un rango de fechas. <strong style="color: #ff5252;">IMPORTANTE:</strong> Los turnos agendados NO se borrarán.
     </p>
 
     <form method="post" action="{% url 'turnos:borrar_cupos_masivo' %}" onsubmit="return confirmarBorrado()" style="background: rgba(244, 67, 54, 0.05); border-radius: 12px; padding: 2rem; border: 1px solid rgba(244, 67, 54, 0.3);">
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
         
         <!-- Agenda -->
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #ff5252; font-weight: 600;">
                 📌 Agenda *
             </label>
             <select name="agenda" id="delete_agenda" required style="
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
                 background: rgba(30, 30, 30, 0.8);
                 border: 1px solid rgba(244, 67, 54, 0.3);
                 border-radius: 6px;
-                color: #e0e0e0;
+                color: #ffffff;
                 font-size: 1rem;
             ">
                 <option value="">Seleccione una agenda</option>
@@ -231,16 +231,16 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
         <div style="margin-bottom: 1.5rem;">
             <label style="display: flex; align-items: center; cursor: pointer;">
                 <input type="checkbox" id="delete_por_dia_semana" name="por_dia_semana" style="margin-right: 0.5rem; width: 18px; height: 18px; cursor: pointer;" onchange="toggleDeleteDiaSemana()">
-                <span style="color: #f44336; font-weight: 500;">📅 Por día de semana específico</span>
+                <span style="color: #ff5252; font-weight: 600;">📅 Por día de semana específico</span>
             </label>
-            <small style="color: rgba(224, 224, 224, 0.6); display: block; margin-top: 0.25rem;">
+            <small style="color: #000000; display: block; margin-top: 0.25rem;">
                 Si está activado, solo se borrarán cupos del día seleccionado. Si no, se borrarán todos los días hábiles (Lun-Vie).
             </small>
         </div>
 
         <!-- Día de la semana -->
         <div id="delete_dia_semana_container" style="margin-bottom: 1.5rem; opacity: 0.5; pointer-events: none;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #ff5252; font-weight: 600;">
                 📆 Día de la semana
             </label>
             <select name="dia_semana" id="delete_dia_semana_select" disabled style="
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
                 background: rgba(30, 30, 30, 0.8);
                 border: 1px solid rgba(244, 67, 54, 0.3);
                 border-radius: 6px;
-                color: #e0e0e0;
+                color: #ffffff;
                 font-size: 1rem;
             ">
                 <option value="">Seleccione un día</option>
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
         <!-- Rango de fechas -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #ff5252; font-weight: 600;">
                     📅 Desde *
                 </label>
                 <input type="date" name="desde_fecha" required style="
@@ -273,12 +273,12 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
                     background: rgba(30, 30, 30, 0.8);
                     border: 1px solid rgba(244, 67, 54, 0.3);
                     border-radius: 6px;
-                    color: #e0e0e0;
+                    color: #ffffff;
                     font-size: 1rem;
                 ">
             </div>
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #ff5252; font-weight: 600;">
                     📅 Hasta *
                 </label>
                 <input type="date" name="hasta_fecha" required style="
@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
                     background: rgba(30, 30, 30, 0.8);
                     border: 1px solid rgba(244, 67, 54, 0.3);
                     border-radius: 6px;
-                    color: #e0e0e0;
+                    color: #ffffff;
                     font-size: 1rem;
                 ">
             </div>
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
 
         <!-- Cantidad a borrar -->
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #f44336; font-weight: 500;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #ff5252; font-weight: 600;">
                 🔢 Cantidad de cupos a eliminar (opcional)
             </label>
             <input type="number" name="cantidad_a_borrar" min="1" style="
@@ -304,16 +304,16 @@ document.addEventListener('DOMContentLoaded', toggleDiaSemana);
                 background: rgba(30, 30, 30, 0.8);
                 border: 1px solid rgba(244, 67, 54, 0.3);
                 border-radius: 6px;
-                color: #e0e0e0;
+                color: #ffffff;
                 font-size: 1rem;
             " placeholder="Dejar vacío para eliminar todos los cupos del día">
-            <small style="color: #888; display: block; margin-top: 0.5rem;">
+            <small style="color: #000000; display: block; margin-top: 0.5rem;">
                 Si se especifica una cantidad, se reducirá el total de cupos sin eliminarlos completamente.
             </small>
         </div>
 
         <!-- Advertencia -->
-        <div style="background: rgba(255, 152, 0, 0.15); border: 1px solid rgba(255, 152, 0, 0.4); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; color: #ffab40;">
+        <div style="background: rgba(255, 152, 0, 0.15); border: 1px solid rgba(255, 152, 0, 0.4); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; color: #000000; font-weight: bold;">
             <strong>⚠️ Advertencia:</strong><br>
             Esta acción eliminará los cupos del rango seleccionado. Los turnos ya agendados NO se borrarán y permanecerán en el sistema.
         </div>

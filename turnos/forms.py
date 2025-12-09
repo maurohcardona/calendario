@@ -13,11 +13,6 @@ class TurnoForm(forms.ModelForm):
         required=True,
         label="Sexo"
     )
-    observaciones_paciente = forms.CharField(
-        required=False, 
-        widget=forms.Textarea(attrs={'rows': 3}),
-        label="Observaciones del Paciente"
-    )
     telefono = forms.CharField(
         required=False,
         max_length=50,
