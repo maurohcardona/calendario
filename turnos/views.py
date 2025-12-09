@@ -281,6 +281,9 @@ def dia(request, fecha):
                     fecha_nacimiento = form.cleaned_data.get('fecha_nacimiento')
                     sexo = form.cleaned_data.get('sexo')
                     observaciones_pac = form.cleaned_data.get('observaciones_paciente', '')
+                    telefono = form.cleaned_data.get('telefono', '')
+                    email = form.cleaned_data.get('email', '')
+                    medico = form.cleaned_data.get('medico', '')  # Este va al turno, no al paciente
                     
                     # Guardar o actualizar paciente en PostgreSQL
                     conn = psycopg2.connect(
@@ -300,15 +303,16 @@ def dia(request, fecha):
                         # Actualizar paciente
                         cursor.execute("""
                             UPDATE pacientes 
-                            SET nombre = %s, apellido = %s, fecha_nacimiento = %s, sexo = %s, observaciones = %s
+                            SET nombre = %s, apellido = %s, fecha_nacimiento = %s, sexo = %s, observaciones = %s,
+                                telefono = %s, email = %s
                             WHERE dni = %s
-                        """, (nombre, apellido, fecha_nacimiento, sexo, observaciones_pac, dni))
+                        """, (nombre, apellido, fecha_nacimiento, sexo, observaciones_pac, telefono, email, dni))
                     else:
                         # Crear nuevo paciente
                         cursor.execute("""
-                            INSERT INTO pacientes (nombre, apellido, dni, fecha_nacimiento, sexo, observaciones)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, (nombre, apellido, dni, fecha_nacimiento, sexo, observaciones_pac))
+                            INSERT INTO pacientes (nombre, apellido, dni, fecha_nacimiento, sexo, observaciones, telefono, email)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (nombre, apellido, dni, fecha_nacimiento, sexo, observaciones_pac, telefono, email))
                     
                     conn.commit()
                     cursor.close()
@@ -337,6 +341,7 @@ def dia(request, fecha):
                         # Crear el turno
                         nuevo = form.save(commit=False)
                         nuevo.fecha = fecha
+                        nuevo.medico = medico
                         nuevo.full_clean()
                         nuevo.save()
                         return redirect(f"{reverse('turnos:dia', args=[fecha])}?agenda={agenda_form.id}")
@@ -509,7 +514,7 @@ def editar_turno(request, turno_id):
         )
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo FROM pacientes WHERE dni = %s",
+            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, observaciones, telefono, email FROM pacientes WHERE dni = %s",
             (turno.dni,)
         )
         result = cursor.fetchone()
@@ -519,7 +524,10 @@ def editar_turno(request, turno_id):
                 'apellido': result[1],
                 'dni': result[2],
                 'fecha_nacimiento': result[3],
-                'sexo': result[4]
+                'sexo': result[4],
+                'observaciones': result[5],
+                'telefono': result[6],
+                'email': result[7]
             }
         cursor.close()
         conn.close()
@@ -527,11 +535,38 @@ def editar_turno(request, turno_id):
         pass
     
     if request.method == 'POST':
-        # Solo actualizar agenda, fecha y determinaciones
+        # Actualizar turno (agenda, fecha, determinaciones y medico)
         turno.agenda_id = request.POST.get('agenda')
         turno.fecha = request.POST.get('fecha')
         turno.determinaciones = request.POST.get('determinaciones', '')
+        turno.medico = request.POST.get('medico', '')
         turno.save()
+        
+        # Actualizar datos del paciente si se enviaron (telefono y email)
+        telefono = request.POST.get('telefono', '')
+        email = request.POST.get('email', '')
+        
+        if telefono or email:
+            try:
+                conn = psycopg2.connect(
+                    dbname=settings.DATABASES['default']['NAME'],
+                    user=settings.DATABASES['default']['USER'],
+                    password=settings.DATABASES['default']['PASSWORD'],
+                    host=settings.DATABASES['default']['HOST'],
+                    port=settings.DATABASES['default']['PORT']
+                )
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE pacientes 
+                    SET telefono = %s, email = %s
+                    WHERE dni = %s
+                """, (telefono, email, turno.dni))
+                conn.commit()
+                cursor.close()
+                conn.close()
+            except Exception as e:
+                pass
+        
         return redirect(reverse('turnos:dia', args=[turno.fecha]) + f'?agenda={turno.agenda.id}')
     
     # Obtener todas las agendas
@@ -778,7 +813,7 @@ def buscar_paciente_api(request):
         cursor = conn.cursor()
         
         cursor.execute(
-            "SELECT nombre, apellido, fecha_nacimiento, sexo, observaciones FROM pacientes WHERE dni = %s",
+            "SELECT nombre, apellido, fecha_nacimiento, sexo, observaciones, telefono, email FROM pacientes WHERE dni = %s",
             (dni,)
         )
         result = cursor.fetchone()
@@ -793,7 +828,9 @@ def buscar_paciente_api(request):
                 'apellido': result[1],
                 'fecha_nacimiento': result[2].isoformat() if result[2] else '',
                 'sexo': result[3],
-                'observaciones': result[4] or ''
+                'observaciones': result[4] or '',
+                'telefono': result[5] or '',
+                'email': result[6] or ''
             })
         else:
             return JsonResponse({'found': False})
@@ -878,6 +915,39 @@ def listar_determinaciones_api(request):
         # Agregar perfiles
         for row in perfs:
             items.append({'codigo': row[0], 'nombre': row[1], 'tipo': 'perfil'})
+        
+        return JsonResponse(items, safe=False)
+            
+    except Exception as e:
+        return JsonResponse([], safe=False)
+
+
+@login_required
+def listar_medicos_api(request):
+    """API para listar todos los médicos"""
+    import psycopg2
+    from django.conf import settings
+    
+    try:
+        conn = psycopg2.connect(
+            dbname=settings.DATABASES['default']['NAME'],
+            user=settings.DATABASES['default']['USER'],
+            password=settings.DATABASES['default']['PASSWORD'],
+            host=settings.DATABASES['default']['HOST'],
+            port=settings.DATABASES['default']['PORT']
+        )
+        cursor = conn.cursor()
+        
+        # Obtener médicos ordenados por nombre
+        cursor.execute("SELECT matricula_provincial, nombre_apellido FROM medicos ORDER BY nombre_apellido")
+        medicos = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        items = []
+        for row in medicos:
+            items.append({'matricula_provincial': row[0], 'nombre_apellido': row[1]})
         
         return JsonResponse(items, safe=False)
             

@@ -42,6 +42,7 @@ class Turno(models.Model):
     nombre = models.CharField(max_length=200)
     determinaciones = models.TextField(blank=True)
     fecha = models.DateField()
+    medico = models.CharField(max_length=200, blank=True, default='')
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:

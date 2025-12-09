@@ -18,6 +18,21 @@ class TurnoForm(forms.ModelForm):
         widget=forms.Textarea(attrs={'rows': 3}),
         label="Observaciones del Paciente"
     )
+    telefono = forms.CharField(
+        required=False,
+        max_length=50,
+        label="Teléfono"
+    )
+    email = forms.EmailField(
+        required=False,
+        max_length=100,
+        label="Email"
+    )
+    medico = forms.CharField(
+        required=False,
+        max_length=200,
+        label="Médico"
+    )
 
     class Meta:
         model = Turno

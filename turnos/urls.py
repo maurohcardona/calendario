@@ -16,6 +16,7 @@ urlpatterns = [
     path("api/buscar-paciente/", views.buscar_paciente_api, name="buscar_paciente_api"),
     path("api/buscar-determinacion/", views.buscar_determinacion_api, name="buscar_determinacion_api"),
     path("api/listar-determinaciones/", views.listar_determinaciones_api, name="listar_determinaciones_api"),
+    path("api/listar-medicos/", views.listar_medicos_api, name="listar_medicos_api"),
     path("api/buscar-codigo/", views.buscar_codigo_api, name="buscar_codigo_api"),
     path("api/buscar-perfil/", views.buscar_perfil_api, name="buscar_perfil_api"),
     path("turno/<int:turno_id>/coordinar/", views.coordinar_turno, name="coordinar_turno"),

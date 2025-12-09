@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+    #id_medico:not(:disabled) {
+        background: #ffffff;
+        opacity: 1;
+        cursor: text;
+    }
+</style>
 <div style="max-width: 800px;">
     <h2>📅 Turnos del día: <span style="color: #8fb88f; font-weight: bold;">{{ fecha }}</span>
     {% if agenda_name %}
@@ -100,9 +107,10 @@
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Email</label>
                     <input type="email" id="id_email" name="email" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
                 </div>
-                <div>
+                <div style="position: relative;">
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
-                    <input type="text" id="id_medico" name="medico" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                    <input type="text" id="id_medico" name="medico" autocomplete="off" disabled placeholder="Buscar médico..." style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                    <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(200, 155, 143, 0.5); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
                 </div>
             </div>
 
@@ -209,6 +217,21 @@
 <script>
 let determinaciones = [];
 let determinacionesCache = null;
+let medicosCache = null;
+
+// Cargar todos los médicos al inicio
+async function cargarMedicos() {
+    if (medicosCache) return medicosCache;
+    
+    try {
+        const response = await fetch('/turnos/api/listar-medicos/');
+        medicosCache = await response.json();
+        return medicosCache;
+    } catch (error) {
+        console.error('Error cargando médicos:', error);
+        return [];
+    }
+}
 
 // Cargar todas las determinaciones y perfiles al inicio
 async function cargarDeterminaciones() {
@@ -279,6 +302,55 @@ document.addEventListener('click', function(e) {
     if (!e.target.closest('#inputNombre') && !e.target.closest('#autocompleteLista')) {
         document.getElementById('autocompleteLista').style.display = 'none';
     }
+    if (!e.target.closest('#id_medico') && !e.target.closest('#autocompleteMedicos')) {
+        document.getElementById('autocompleteMedicos').style.display = 'none';
+    }
+});
+
+// Autocompletado de médicos
+document.getElementById('id_medico').addEventListener('input', async function() {
+    const texto = this.value.trim().toLowerCase();
+    const lista = document.getElementById('autocompleteMedicos');
+    
+    if (texto.length < 2) {
+        lista.style.display = 'none';
+        return;
+    }
+    
+    const medicos = await cargarMedicos();
+    const coincidencias = medicos.filter(m => 
+        m.nombre_apellido.toLowerCase().includes(texto)
+    ).slice(0, 15);
+    
+    if (coincidencias.length === 0) {
+        lista.style.display = 'none';
+        return;
+    }
+    
+    lista.innerHTML = coincidencias.map(medico => {
+        return `
+            <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
+                <span style="color: #c89b8f; font-weight: 600;">${medico.nombre_apellido}</span>
+                <span style="color: rgba(224, 224, 224, 0.6); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
+            </div>
+        `;
+    }).join('');
+    
+    lista.style.display = 'block';
+    
+    lista.querySelectorAll('.autocomplete-medico').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(200, 155, 143, 0.2)';
+        });
+        item.addEventListener('mouseleave', function() {
+            this.style.background = 'transparent';
+        });
+        item.addEventListener('click', function() {
+            const nombre = this.dataset.nombre;
+            document.getElementById('id_medico').value = nombre;
+            lista.style.display = 'none';
+        });
+    });
 });
 
 // Buscar paciente por DNI al presionar Enter
@@ -313,6 +385,9 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_fecha_nacimiento').value = data.fecha_nacimiento;
             document.getElementById('id_sexo').value = data.sexo;
             document.getElementById('id_observaciones_paciente').value = data.observaciones;
+            document.getElementById('id_telefono').value = data.telefono || '';
+            document.getElementById('id_email').value = data.email || '';
+            // medico NO se llena desde paciente, queda vacío y editable
             
             // Habilitar SOLO campos de determinaciones
             habilitarSoloDeterminaciones();
@@ -324,6 +399,9 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_fecha_nacimiento').value = '';
             document.getElementById('id_sexo').value = '';
             document.getElementById('id_observaciones_paciente').value = '';
+            document.getElementById('id_telefono').value = '';
+            document.getElementById('id_email').value = '';
+            document.getElementById('id_medico').value = '';
             
             // Habilitar todos los campos
             habilitarTodosCampos();
@@ -359,6 +437,17 @@ function habilitarSoloDeterminaciones() {
         campo.style.backgroundColor = 'rgba(100, 100, 100, 0.1)';
     });
     
+    // Los nuevos campos (telefono, email, medico) se pueden editar
+    const camposEditables = ['id_telefono', 'id_email', 'id_medico'];
+    camposEditables.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        campo.disabled = false;
+        campo.readOnly = false;
+        campo.style.opacity = '1';
+        campo.style.cursor = 'text';
+        campo.style.backgroundColor = '#ffffff';
+    });
+    
     // Actualizar mensaje de determinaciones
     const lista = document.getElementById('listaDeterminaciones');
     if (determinaciones.length === 0) {
@@ -372,6 +461,9 @@ function habilitarTodosCampos() {
     document.getElementById('id_apellido').disabled = false;
     document.getElementById('id_fecha_nacimiento').disabled = false;
     document.getElementById('id_sexo').disabled = false;
+    document.getElementById('id_telefono').disabled = false;
+    document.getElementById('id_email').disabled = false;
+    document.getElementById('id_medico').disabled = false;
     document.getElementById('id_observaciones_paciente').disabled = false;
     document.getElementById('inputCodigo').disabled = false;
     document.getElementById('inputNombre').disabled = false;
@@ -380,14 +472,28 @@ function habilitarTodosCampos() {
     // Cambiar estilos visuales
     document.getElementById('id_nombre').style.opacity = '1';
     document.getElementById('id_nombre').style.cursor = 'text';
+    document.getElementById('id_nombre').style.backgroundColor = '#ffffff';
     document.getElementById('id_apellido').style.opacity = '1';
     document.getElementById('id_apellido').style.cursor = 'text';
+    document.getElementById('id_apellido').style.backgroundColor = '#ffffff';
     document.getElementById('id_fecha_nacimiento').style.opacity = '1';
     document.getElementById('id_fecha_nacimiento').style.cursor = 'text';
+    document.getElementById('id_fecha_nacimiento').style.backgroundColor = '#ffffff';
     document.getElementById('id_sexo').style.opacity = '1';
     document.getElementById('id_sexo').style.cursor = 'pointer';
+    document.getElementById('id_sexo').style.backgroundColor = '#ffffff';
     document.getElementById('id_observaciones_paciente').style.opacity = '1';
     document.getElementById('id_observaciones_paciente').style.cursor = 'text';
+    document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
+    document.getElementById('id_telefono').style.opacity = '1';
+    document.getElementById('id_telefono').style.cursor = 'text';
+    document.getElementById('id_telefono').style.backgroundColor = '#ffffff';
+    document.getElementById('id_email').style.opacity = '1';
+    document.getElementById('id_email').style.cursor = 'text';
+    document.getElementById('id_email').style.backgroundColor = '#ffffff';
+    document.getElementById('id_medico').style.opacity = '1';
+    document.getElementById('id_medico').style.cursor = 'text';
+    document.getElementById('id_medico').style.backgroundColor = '#ffffff';
     document.getElementById('inputCodigo').style.opacity = '1';
     document.getElementById('inputCodigo').style.cursor = 'text';
     document.getElementById('inputNombre').style.opacity = '1';
