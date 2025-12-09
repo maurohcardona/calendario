@@ -1202,7 +1202,7 @@ def coordinar_turno(request, turno_id):
         
         # Buscar paciente por DNI
         cursor.execute(
-            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo FROM pacientes WHERE dni = %s",
+            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE dni = %s",
             (turno.dni,)
         )
         paciente = cursor.fetchone()
@@ -1212,10 +1212,14 @@ def coordinar_turno(request, turno_id):
             conn.close()
             return JsonResponse({'success': False, 'error': 'Paciente no encontrado'})
         
-        nombre, apellido, dni, fecha_nacimiento, sexo = paciente
+        nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email = paciente
         
         # Convertir sexo al formato ASTM (M/F/U)
         sexo_astm = 'M' if sexo == 'Hombre' else ('F' if sexo == 'Mujer' else 'U')
+        
+        # Preparar telefono y email (sin comillas)
+        telefono_astm = telefono if telefono else ''
+        email_astm = email if email else ''
         
         # Formatear fechas
         ahora = datetime.now()
@@ -1230,12 +1234,14 @@ def coordinar_turno(request, turno_id):
         determinaciones_astm = []
         for codigo in codigos:
             if codigo.startswith('/'):
-                # Es un perfil
+                # Es un perfil - expandir sus determinaciones individuales
                 cursor.execute("SELECT determinaciones FROM perfiles WHERE codigo = %s", (codigo,))
                 perfil_result = cursor.fetchone()
                 if perfil_result and perfil_result[0]:
-                    # Agregar el perfil en formato ^^^codigo\
-                    determinaciones_astm.append(f'^^^{codigo}\\')
+                    # Obtener determinaciones del perfil y agregarlas individualmente
+                    dets_perfil = [d.strip() for d in perfil_result[0].split(',') if d.strip()]
+                    for det in dets_perfil:
+                        determinaciones_astm.append(f'^^^{det}\\')
             else:
                 # Es una determinación individual
                 determinaciones_astm.append(f'^^^{codigo}\\')
@@ -1243,10 +1249,13 @@ def coordinar_turno(request, turno_id):
         cursor.close()
         conn.close()
         
+        # Preparar nota_interna (sin comillas)
+        nota_interna_astm = turno.nota_interna if turno.nota_interna else ''
+        
         # Construir el contenido del archivo ASTM
         lineas = []
         lineas.append(f'H|\\^&|||Balestrini|||||||P||{timestamp}')
-        lineas.append(f'P|1||{dni}||"{apellido}"^"{nombre}"^||{fecha_nac}|{sexo_astm}|||||||||| |||||"{timestamp}"||||||||||')
+        lineas.append(f'P|1||{dni}||{apellido}^{nombre}^||{fecha_nac}|{sexo_astm}|{email_astm}|{telefono_astm}|{nota_interna_astm}||||||| |||||{timestamp}||||||||||')
         
         # Construir línea O con todas las determinaciones/perfiles
         determinaciones_concatenadas = ''.join(determinaciones_astm)
@@ -1254,7 +1263,7 @@ def coordinar_turno(request, turno_id):
         lineas.append('L|1|F')
         
         # Crear nombre de archivo único
-        nombre_archivo = f"mensaje_{turno_id}_{ahora.strftime('%Y%m%d_%H%M%S')}.txt"
+        nombre_archivo = f"mensaje_{turno_id}_{ahora.strftime('%Y%m%d_%H%M%S')}.pet"
         ruta_mensajes = os.path.join(settings.BASE_DIR, 'mensajes')
         
         # Asegurar que existe el directorio
