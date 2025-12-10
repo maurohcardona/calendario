@@ -9,6 +9,7 @@ urlpatterns = [
     path("eventos/", views.eventos_calendario, name="eventos"),
     path("dia/<str:fecha>/", views.dia, name="dia"),
     path("buscar/", views.buscar, name="buscar"),
+    path("turno/<int:turno_id>/ver-coordinacion/", views.ver_coordinacion, name="ver_coordinacion"),
     path("turno/<int:turno_id>/editar/", views.editar_turno, name="editar_turno"),
     path("turno/<int:turno_id>/eliminar/", views.eliminar_turno, name="eliminar_turno"),
     path("generar-cupos/", views.generar_cupos_masivo, name="generar_cupos_masivo"),

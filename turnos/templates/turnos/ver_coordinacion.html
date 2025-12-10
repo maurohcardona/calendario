@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Ver Coordinación - Turno #{{ turno.id }}{% endblock %}
+
+{% block content %}
+<style>
+    .ver-coordinacion-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+    
+    .header-ver {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+    }
+    
+    .header-ver h1 {
+        margin: 0 0 10px 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+    
+    .header-ver .subtitle {
+        opacity: 0.9;
+        font-size: 14px;
+    }
+    
+    .seccion {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e0e0e0;
+    }
+    
+    .seccion-titulo {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1976D2;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #E3F2FD;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .campo {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 15px;
+        margin-bottom: 15px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .campo-label {
+        font-weight: 600;
+        color: #555;
+    }
+    
+    .campo-valor {
+        color: #333;
+        word-break: break-word;
+    }
+    
+    .lista-determinaciones {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .determinacion-item {
+        background: white;
+        padding: 10px 15px;
+        border-radius: 6px;
+        border-left: 3px solid #2196F3;
+    }
+    
+    .badge-coordinado {
+        background: #4CAF50;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .badge-no-coordinado {
+        background: #FF9800;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .botones-accion {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+    
+    .btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 15px;
+    }
+    
+    .btn-primary {
+        background: #2196F3;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #1976D2;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #757575;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #616161;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+</style>
+
+<div class="ver-coordinacion-container">
+    <div class="header-ver">
+        <h1>👁️ Visualización de Turno Coordinado</h1>
+        <div class="subtitle">Turno #{{ turno.id }} - Modo solo lectura</div>
+    </div>
+    
+    <!-- Información del Turno -->
+    <div class="seccion">
+        <div class="seccion-titulo">
+            📋 Información del Turno
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">ID del Turno:</div>
+            <div class="campo-valor"><strong>#{{ turno.id }}</strong></div>
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Fecha:</div>
+            <div class="campo-valor">{{ turno.fecha|date:"d/m/Y" }}</div>
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Hora:</div>
+            <div class="campo-valor">{{ turno.hora }}</div>
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Estado:</div>
+            <div class="campo-valor">
+                {% if coordinacion %}
+                    <span class="badge-coordinado">✓ Coordinado</span>
+                {% else %}
+                    <span class="badge-no-coordinado">⚠ No Coordinado</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Paciente -->
+    {% if paciente %}
+    <div class="seccion">
+        <div class="seccion-titulo">
+            👤 Datos del Paciente
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">DNI:</div>
+            <div class="campo-valor">{{ paciente.dni }}</div>
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Apellido:</div>
+            <div class="campo-valor">{{ paciente.apellido }}</div>
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Nombre:</div>
+            <div class="campo-valor">{{ paciente.nombre }}</div>
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Fecha de Nacimiento:</div>
+            <div class="campo-valor">{{ paciente.fecha_nacimiento|date:"d/m/Y" }}</div>
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Sexo:</div>
+            <div class="campo-valor">{{ paciente.sexo }}</div>
+        </div>
+        
+        {% if paciente.email %}
+        <div class="campo">
+            <div class="campo-label">Email:</div>
+            <div class="campo-valor">{{ paciente.email }}</div>
+        </div>
+        {% endif %}
+        
+        {% if paciente.telefono %}
+        <div class="campo">
+            <div class="campo-label">Teléfono:</div>
+            <div class="campo-valor">{{ paciente.telefono }}</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Información del Médico -->
+    {% if medico %}
+    <div class="seccion">
+        <div class="seccion-titulo">
+            🩺 Médico Solicitante
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Matrícula Provincial:</div>
+            <div class="campo-valor">{{ medico.matricula }}</div>
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Nombre:</div>
+            <div class="campo-valor">{{ medico.nombre }}</div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Determinaciones Solicitadas -->
+    <div class="seccion">
+        <div class="seccion-titulo">
+            🔬 Determinaciones Solicitadas
+        </div>
+        
+        {% if determinaciones_nombres %}
+        <div class="lista-determinaciones">
+            {% for det in determinaciones_nombres %}
+            <div class="determinacion-item">{{ det }}</div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="campo-valor" style="color: #999;">No hay determinaciones registradas</div>
+        {% endif %}
+    </div>
+    
+    <!-- Nota Interna -->
+    {% if turno.nota_interna %}
+    <div class="seccion">
+        <div class="seccion-titulo">
+            📝 Nota Interna
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Nota:</div>
+            <div class="campo-valor">{{ turno.nota_interna }}</div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Información de Coordinación -->
+    {% if coordinacion %}
+    <div class="seccion" style="border-left: 4px solid #4CAF50;">
+        <div class="seccion-titulo">
+            ✅ Detalles de la Coordinación
+        </div>
+        
+        <div class="campo">
+            <div class="campo-label">Fecha de Coordinación:</div>
+            <div class="campo-valor">{{ coordinacion.fecha_creacion|date:"d/m/Y H:i:s" }}</div>
+        </div>
+        
+        {% if coordinacion.usuario %}
+        <div class="campo">
+            <div class="campo-label">Usuario que Coordinó:</div>
+            <div class="campo-valor">{{ coordinacion.usuario }}</div>
+        </div>
+        {% endif %}
+        
+        {% if coordinacion.archivo %}
+        <div class="campo">
+            <div class="campo-label">Archivo Generado:</div>
+            <div class="campo-valor"><code>{{ coordinacion.archivo }}</code></div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Botones de Acción -->
+    <div class="botones-accion">
+        <a href="{% url 'turnos:buscar' %}" class="btn btn-secondary">
+            ← Volver a Búsqueda
+        </a>
+        
+        {% if turno.fecha >= hoy %}
+        <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" class="btn btn-primary" target="_blank">
+            🎫 Generar Ticket
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

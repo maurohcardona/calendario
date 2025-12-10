@@ -548,12 +548,21 @@ def buscar(request):
     from .models import Coordinados
     
     q = request.GET.get('q', '').strip()
+    turno_id = request.GET.get('turno_id', '').strip()
+    apellido = request.GET.get('apellido', '').strip()
     resultados = []
     turnos_previos = []
     turnos_pendientes = []
     
-    if q:
-        resultados = Turno.objects.filter(dni__icontains=q).order_by('-fecha')
+    if q or turno_id or apellido:
+        # Buscar por DNI, apellido o por ID de turno
+        if turno_id:
+            resultados = Turno.objects.filter(id=turno_id)
+        elif apellido:
+            resultados = Turno.objects.filter(apellido__icontains=apellido).order_by('-fecha')
+        else:
+            resultados = Turno.objects.filter(dni__icontains=q).order_by('-fecha')
+            
         hoy = date.today()
         
         # Obtener IDs de turnos coordinados
@@ -609,8 +618,108 @@ def buscar(request):
         'turnos_previos': turnos_previos,
         'turnos_pendientes': turnos_pendientes,
         'q': q,
+        'turno_id': turno_id,
+        'apellido': apellido,
         'hoy': date.today()
     })
+
+
+@login_required
+def ver_coordinacion(request, turno_id):
+    """Ver detalles completos de un turno coordinado (solo lectura)."""
+    import psycopg2
+    from datetime import date
+    from .models import Coordinados
+    
+    turno = get_object_or_404(Turno, id=turno_id)
+    
+    # Verificar que el turno esté coordinado
+    coordinacion = Coordinados.objects.filter(id_turno=turno_id).first()
+    
+    # Conectar a PostgreSQL
+    conn = psycopg2.connect(
+        dbname=settings.DATABASES['default']['NAME'],
+        user=settings.DATABASES['default']['USER'],
+        password=settings.DATABASES['default']['PASSWORD'],
+        host=settings.DATABASES['default']['HOST'],
+        port=settings.DATABASES['default']['PORT']
+    )
+    cursor = conn.cursor()
+    
+    # Obtener datos del paciente
+    paciente_data = None
+    cursor.execute(
+        "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE dni = %s",
+        (turno.dni,)
+    )
+    result = cursor.fetchone()
+    if result:
+        paciente_data = {
+            'nombre': result[0],
+            'apellido': result[1],
+            'dni': result[2],
+            'fecha_nacimiento': result[3],
+            'sexo': result[4],
+            'telefono': result[5] or '',
+            'email': result[6] or ''
+        }
+    
+    # Obtener datos del médico
+    medico_data = None
+    if turno.medico:
+        cursor.execute(
+            "SELECT matricula_provincial, nombre_apellido FROM medicos WHERE nombre_apellido = %s",
+            (turno.medico,)
+        )
+        result = cursor.fetchone()
+        if result:
+            medico_data = {
+                'matricula': result[0],
+                'nombre': result[1]
+            }
+    
+    # Obtener nombres de determinaciones y perfiles
+    determinaciones_nombres = []
+    if turno.determinaciones:
+        codigos = [c.strip() for c in turno.determinaciones.split(',') if c.strip()]
+        
+        for codigo in codigos:
+            if codigo.startswith('/'):
+                # Es un perfil
+                cursor.execute(
+                    "SELECT nombre FROM perfiles WHERE codigo = %s",
+                    (codigo,)
+                )
+                result = cursor.fetchone()
+                if result:
+                    determinaciones_nombres.append(f"{codigo} - {result[0]}")
+            else:
+                # Es una determinación
+                try:
+                    codigo_int = int(codigo)
+                    cursor.execute(
+                        "SELECT nombre FROM determinaciones WHERE codigo = %s",
+                        (codigo_int,)
+                    )
+                    result = cursor.fetchone()
+                    if result:
+                        determinaciones_nombres.append(f"{codigo} - {result[0]}")
+                except ValueError:
+                    determinaciones_nombres.append(codigo)
+    
+    cursor.close()
+    conn.close()
+    
+    context = {
+        'turno': turno,
+        'coordinacion': coordinacion,
+        'paciente': paciente_data,
+        'medico': medico_data,
+        'determinaciones_nombres': determinaciones_nombres,
+        'hoy': date.today()
+    }
+    
+    return render(request, 'turnos/ver_coordinacion.html', context)
 
 
 @login_required
@@ -1464,12 +1573,60 @@ def generar_ticket_turno(request, turno_id):
     p.drawString(margen + 2*cm, y, nombre_completo)
     y -= 0.45 * cm
     
+    # DNI
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(margen, y, "DNI:")
+    p.setFont("Helvetica", 9)
+    p.drawString(margen + 2*cm, y, str(row[6]))
+    y -= 0.45 * cm
+    
+    # Teléfono (si existe)
+    if paciente_data and paciente_data[2]:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Teléfono:")
+        p.setFont("Helvetica", 9)
+        p.drawString(margen + 2*cm, y, str(paciente_data[2]))
+        y -= 0.45 * cm
+    
+    # Email (si existe)
+    if paciente_data and paciente_data[3]:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Email:")
+        p.setFont("Helvetica", 7)
+        # Dividir email si es muy largo
+        email_str = str(paciente_data[3])
+        if len(email_str) > 30:
+            p.drawString(margen + 2*cm, y, email_str[:30])
+            y -= 0.35 * cm
+            p.drawString(margen + 2*cm, y, email_str[30:])
+            y -= 0.45 * cm
+        else:
+            p.setFont("Helvetica", 9)
+            p.drawString(margen + 2*cm, y, email_str)
+            y -= 0.45 * cm
+    
     if edad is not None:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(margen, y, "Edad:")
         p.setFont("Helvetica", 9)
         p.drawString(margen + 2*cm, y, f"{edad} años")
         y -= 0.45 * cm
+    
+    # Médico solicitante (si existe)
+    if row[2]:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Médico:")
+        p.setFont("Helvetica", 9)
+        # Dividir si el nombre es muy largo
+        medico_str = str(row[2])
+        if len(medico_str) > 30:
+            p.drawString(margen + 2*cm, y, medico_str[:30])
+            y -= 0.35 * cm
+            p.drawString(margen + 2*cm, y, medico_str[30:])
+            y -= 0.45 * cm
+        else:
+            p.drawString(margen + 2*cm, y, medico_str)
+            y -= 0.45 * cm
     
     # ====== FECHA DEL TURNO (EN NEGRITA) ======
     p.setFont("Helvetica-Bold", 10)
