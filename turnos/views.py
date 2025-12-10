@@ -1246,11 +1246,21 @@ def coordinar_turno(request, turno_id):
                 # Es una determinación individual
                 determinaciones_astm.append(f'^^^{codigo}\\')
         
-        cursor.close()
-        conn.close()
-        
         # Preparar nota_interna (sin comillas)
         nota_interna_astm = turno.nota_interna if turno.nota_interna else ''
+        
+        # Obtener matrícula del médico si existe
+        matricula_medico = ''
+        if turno.medico:
+            cursor_temp = conn.cursor()
+            cursor_temp.execute("SELECT matricula_provincial FROM medicos WHERE nombre_apellido = %s", (turno.medico,))
+            medico_result = cursor_temp.fetchone()
+            if medico_result:
+                matricula_medico = str(medico_result[0])
+            cursor_temp.close()
+        
+        cursor.close()
+        conn.close()
         
         # Construir el contenido del archivo ASTM
         lineas = []
@@ -1259,7 +1269,7 @@ def coordinar_turno(request, turno_id):
         
         # Construir línea O con todas las determinaciones/perfiles
         determinaciones_concatenadas = ''.join(determinaciones_astm)
-        lineas.append(f'O|1|1|1|{determinaciones_concatenadas}||||||A||||||||||||||O')
+        lineas.append(f'O|1|{turno_id}||{determinaciones_concatenadas}||||{matricula_medico}||A||||||||||||||O')
         lineas.append('L|1|F')
         
         # Crear nombre de archivo único
