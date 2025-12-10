@@ -2222,3 +2222,50 @@ def aplicar_feriados(request):
         conn.close()
     
     return redirect('turnos:administrar_tabla_detalle', tabla='feriados')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def audit_log(request):
+    """Vista para mostrar el registro de auditoría (solo superusuarios)"""
+    from auditlog.models import LogEntry
+    from django.core.paginator import Paginator
+    from django.contrib.contenttypes.models import ContentType
+    
+    # Obtener todos los logs
+    logs = LogEntry.objects.select_related('content_type', 'actor').all()
+    
+    # Filtros
+    action = request.GET.get('action', '')
+    model = request.GET.get('model', '')
+    user = request.GET.get('user', '')
+    
+    if action:
+        logs = logs.filter(action=action)
+    
+    if model:
+        try:
+            content_type = ContentType.objects.get(model=model.lower())
+            logs = logs.filter(content_type=content_type)
+        except ContentType.DoesNotExist:
+            pass
+    
+    if user:
+        logs = logs.filter(actor__username__icontains=user)
+    
+    # Ordenar por más reciente primero
+    logs = logs.order_by('-timestamp')
+    
+    # Paginación
+    paginator = Paginator(logs, 20)  # 20 registros por página
+    page_number = request.GET.get('page', 1)
+    logs_page = paginator.get_page(page_number)
+    
+    context = {
+        'logs': logs_page,
+        'action': action,
+        'model': model,
+        'user': user,
+    }
+    
+    return render(request, 'turnos/audit_log.html', context)

@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}Registro de Auditoría{% endblock %}
+
+{% block content %}
+<style>
+    .audit-container {
+        max-width: 1400px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .audit-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .audit-filters {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-group label {
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .audit-entry {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid;
+    }
+    
+    .audit-entry.create {
+        border-left-color: #4caf50;
+    }
+    
+    .audit-entry.update {
+        border-left-color: #2196F3;
+    }
+    
+    .audit-entry.delete {
+        border-left-color: #f44336;
+    }
+    
+    .audit-entry.access {
+        border-left-color: #FF9800;
+    }
+    
+    .entry-header {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        gap: 20px;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .action-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+        text-transform: uppercase;
+    }
+    
+    .action-badge.create { background: #4caf50; }
+    .action-badge.update { background: #2196F3; }
+    .action-badge.delete { background: #f44336; }
+    .action-badge.access { background: #FF9800; }
+    
+    .object-info {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .timestamp {
+        color: #999;
+        font-size: 14px;
+    }
+    
+    .user-info {
+        color: #667eea;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
+    .changes-grid {
+        display: grid;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .change-item {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .change-field {
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 5px;
+    }
+    
+    .change-values {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .old-value {
+        color: #f44336;
+        text-decoration: line-through;
+    }
+    
+    .new-value {
+        color: #4caf50;
+        font-weight: 600;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 30px;
+    }
+    
+    .page-link {
+        padding: 8px 16px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .page-link:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .page-link.active {
+        background: #667eea;
+        color: white;
+    }
+</style>
+
+<div class="audit-container">
+    <div class="audit-header">
+        <h1 style="margin: 0 0 10px 0;">📋 Registro de Auditoría</h1>
+        <p style="margin: 0; opacity: 0.9;">Historial completo de todas las acciones realizadas en el sistema</p>
+    </div>
+    
+    <form method="get" class="audit-filters">
+        <div class="filter-group">
+            <label>Tipo de acción</label>
+            <select name="action">
+                <option value="">Todas</option>
+                <option value="0" {% if action == '0' %}selected{% endif %}>Crear</option>
+                <option value="1" {% if action == '1' %}selected{% endif %}>Modificar</option>
+                <option value="2" {% if action == '2' %}selected{% endif %}>Eliminar</option>
+                <option value="3" {% if action == '3' %}selected{% endif %}>Acceso</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Tipo de registro</label>
+            <select name="model">
+                <option value="">Todos</option>
+                <option value="turno" {% if model == 'turno' %}selected{% endif %}>Turnos</option>
+                <option value="cupo" {% if model == 'cupo' %}selected{% endif %}>Cupos</option>
+                <option value="agenda" {% if model == 'agenda' %}selected{% endif %}>Agendas</option>
+                <option value="coordinados" {% if model == 'coordinados' %}selected{% endif %}>Coordinaciones</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Usuario</label>
+            <input type="text" name="user" value="{{ user }}" placeholder="Nombre de usuario">
+        </div>
+        
+        <div class="filter-group">
+            <label>&nbsp;</label>
+            <button type="submit" style="padding: 8px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                🔍 Filtrar
+            </button>
+        </div>
+    </form>
+    
+    {% for log in logs %}
+    <div class="audit-entry {{ log.get_action_display|lower }}">
+        <div class="entry-header">
+            <span class="action-badge {{ log.get_action_display|lower }}">
+                {% if log.action == 0 %}✨ Crear
+                {% elif log.action == 1 %}✏️ Modificar
+                {% elif log.action == 2 %}🗑️ Eliminar
+                {% else %}👁️ Acceso{% endif %}
+            </span>
+            
+            <span class="object-info">
+                {{ log.content_type.model|title }}: {{ log.object_repr }}
+            </span>
+            
+            <span class="timestamp">
+                {{ log.timestamp|date:"d/m/Y H:i:s" }}
+            </span>
+            
+            <span class="user-info">
+                👤 {{ log.actor|default:"Sistema" }}
+            </span>
+        </div>
+        
+        {% if log.changes %}
+        <div class="changes-grid">
+            {% for field, values in log.changes.items %}
+            <div class="change-item">
+                <div class="change-field">{{ field|title }}</div>
+                <div class="change-values">
+                    {% if values|length == 2 %}
+                        <span class="old-value">{{ values.0|default:"(vacío)" }}</span>
+                        <span>→</span>
+                        <span class="new-value">{{ values.1|default:"(vacío)" }}</span>
+                    {% else %}
+                        <span>{{ values }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% empty %}
+    <div style="background: white; padding: 40px; text-align: center; border-radius: 12px; color: #999;">
+        No se encontraron registros de auditoría
+    </div>
+    {% endfor %}
+    
+    {% if logs.has_other_pages %}
+    <div class="pagination">
+        {% if logs.has_previous %}
+            <a href="?page={{ logs.previous_page_number }}{% if action %}&action={{ action }}{% endif %}{% if model %}&model={{ model }}{% endif %}{% if user %}&user={{ user }}{% endif %}" class="page-link">← Anterior</a>
+        {% endif %}
+        
+        <span class="page-link active">Página {{ logs.number }} de {{ logs.paginator.num_pages }}</span>
+        
+        {% if logs.has_next %}
+            <a href="?page={{ logs.next_page_number }}{% if action %}&action={{ action }}{% endif %}{% if model %}&model={{ model }}{% endif %}{% if user %}&user={{ user }}{% endif %}" class="page-link">Siguiente →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="{% url 'turnos:calendario' %}" style="color: #667eea; text-decoration: none; font-weight: 500;">
+            ← Volver al calendario
+        </a>
+    </div>
+</div>
+{% endblock %}

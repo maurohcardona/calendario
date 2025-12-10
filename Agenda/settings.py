@@ -17,6 +17,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Apps de terceros
+    'auditlog',
+
     # Tu app
     'turnos',
 ]
@@ -30,6 +33,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'auditlog.middleware.AuditlogMiddleware',  # Registra el usuario en cada cambio
 ]
 
 ROOT_URLCONF = 'Agenda.urls'
@@ -100,3 +104,6 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 SESSION_COOKIE_AGE = 1800  # 30 minutos de inactividad (en segundos)
 SESSION_SAVE_EVERY_REQUEST = True  # Actualiza la expiración con cada petición
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Cierra sesión al cerrar el navegador
+
+# Configuración de Auditlog
+AUDITLOG_LOGENTRY_MODEL = 'auditlog.LogEntry'

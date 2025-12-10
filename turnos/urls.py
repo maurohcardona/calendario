@@ -29,5 +29,6 @@ urlpatterns = [
     path("administrar-tablas/<str:tabla>/editar/<int:id>/", views.editar_registro, name="editar_registro"),
     path("administrar-tablas/<str:tabla>/eliminar/<int:id>/", views.eliminar_registro, name="eliminar_registro"),
     path("feriados/aplicar/", views.aplicar_feriados, name="aplicar_feriados"),
+    path("auditoria/", views.audit_log, name="audit_log"),
 ]
 
