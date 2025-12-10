@@ -95,3 +95,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/turnos/calendario/'
 LOGIN_URL = '/accounts/login/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Configuración de sesiones
+SESSION_COOKIE_AGE = 1800  # 30 minutos de inactividad (en segundos)
+SESSION_SAVE_EVERY_REQUEST = True  # Actualiza la expiración con cada petición
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Cierra sesión al cerrar el navegador
