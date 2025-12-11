@@ -1,0 +1,32 @@
+[
+{
+  "model": "turnos.agenda",
+  "pk": 1,
+  "fields": {
+    "name": "Ambulatorio",
+    "slug": "ambulatorio",
+    "color": "#00d4ff",
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.agenda",
+  "pk": 2,
+  "fields": {
+    "name": "Curvas",
+    "slug": "curvas",
+    "color": "#ffd54f",
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.agenda",
+  "pk": 3,
+  "fields": {
+    "name": "Emergencia",
+    "slug": "emergencia",
+    "color": "#ff5252",
+    "usuario": null
+  }
+}
+]

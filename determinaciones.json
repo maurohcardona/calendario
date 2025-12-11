@@ -1,0 +1,692 @@
+[
+{
+  "model": "turnos.cupo",
+  "pk": 70,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-01",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 71,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-02",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 72,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-03",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 73,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-04",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 74,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-05",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 75,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-08",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 76,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-09",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 77,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-10",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 78,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-11",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 79,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-12",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 80,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-15",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 81,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-16",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 82,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-17",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 83,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-18",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 84,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-19",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 85,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-22",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 86,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-23",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 87,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-24",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 88,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-25",
+    "cantidad_total": 0,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 89,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-26",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 90,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-29",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 91,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-30",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 92,
+  "fields": {
+    "agenda": 1,
+    "fecha": "2025-12-31",
+    "cantidad_total": 0,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 93,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-01",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 94,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-08",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 95,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-15",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 96,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-22",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 97,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-29",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 121,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-02",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 122,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-03",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 123,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-04",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 124,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-05",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 125,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-09",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 126,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-10",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 127,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-11",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 128,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-12",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 129,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-16",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 130,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-17",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 131,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-18",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 132,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-19",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 133,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-23",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 134,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-24",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 135,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-25",
+    "cantidad_total": 0,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 136,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-26",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 137,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-30",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 138,
+  "fields": {
+    "agenda": 2,
+    "fecha": "2025-12-31",
+    "cantidad_total": 0,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 139,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-01",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 140,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-02",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 141,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-03",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 142,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-04",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 143,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-05",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 144,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-08",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 145,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-09",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 146,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-10",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 147,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-11",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 148,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-12",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 149,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-15",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 150,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-16",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 151,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-17",
+    "cantidad_total": 7,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 152,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-18",
+    "cantidad_total": 10,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 153,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-19",
+    "cantidad_total": 10,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 154,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-22",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 155,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-23",
+    "cantidad_total": 10,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 156,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-24",
+    "cantidad_total": 10,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 157,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-25",
+    "cantidad_total": 0,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 158,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-26",
+    "cantidad_total": 10,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 159,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-29",
+    "cantidad_total": 1,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 160,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-30",
+    "cantidad_total": 10,
+    "usuario": null
+  }
+},
+{
+  "model": "turnos.cupo",
+  "pk": 161,
+  "fields": {
+    "agenda": 3,
+    "fecha": "2025-12-31",
+    "cantidad_total": 0,
+    "usuario": null
+  }
+}
+]
