@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.urls import reverse
-from .models import Cupo, Turno, CapacidadDia, Agenda
+from .models import Cupo, Turno, CapacidadDia, Agenda, Coordinados
 from .forms import TurnoForm, CupoForm
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
@@ -278,7 +278,10 @@ def turnos_historicos_api(request, fecha):
     from datetime import datetime
     fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
     
-    turnos = Turno.objects.filter(fecha=fecha_obj).select_related('agenda').order_by('agenda__name', 'coordinado', 'apellido', 'nombre')
+    turnos = Turno.objects.filter(fecha=fecha_obj).select_related('agenda').order_by('agenda__name', 'apellido', 'nombre')
+    
+    # Obtener IDs de turnos coordinados
+    turnos_coordinados_ids = set(Coordinados.objects.values_list('id_turno', flat=True))
     
     # Agrupar por agenda
     agendas_dict = {}
@@ -296,10 +299,10 @@ def turnos_historicos_api(request, fecha):
             'nombre': turno.nombre,
             'apellido': turno.apellido,
             'determinaciones': turno.determinaciones,
-            'coordinado': turno.coordinado
         }
         
-        if turno.coordinado:
+        # Verificar si está coordinado
+        if turno.id in turnos_coordinados_ids:
             agendas_dict[agenda_name]['coordinados'].append(turno_data)
         else:
             agendas_dict[agenda_name]['no_coordinados'].append(turno_data)
