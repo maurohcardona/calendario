@@ -1889,8 +1889,7 @@ def administrar_tabla_detalle(request, tabla):
             'nombre': 'Usuarios',
             'columnas': ['id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'is_superuser', 'is_active'],
             'columnas_display': ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Staff', 'Superuser', 'Activo'],
-            'query': 'SELECT id, username, first_name, last_name, email, is_staff, is_superuser, is_active FROM auth_user ORDER BY username',
-            'readonly': True
+            'query': 'SELECT id, username, first_name, last_name, email, is_staff, is_superuser, is_active FROM auth_user ORDER BY username'
         },
         'cupos': {
             'nombre': 'Cupos',
@@ -2012,11 +2011,43 @@ def crear_registro(request, tabla):
                     request.POST.get('descripcion'),
                     request.user.username
                 ))
+            elif tabla == 'usuarios':
+                from django.contrib.auth.models import User
+                
+                username = request.POST.get('username')
+                password = request.POST.get('password')
+                email = request.POST.get('email', '')
+                first_name = request.POST.get('first_name', '')
+                last_name = request.POST.get('last_name', '')
+                is_staff = request.POST.get('is_staff') == 'on'
+                is_superuser = request.POST.get('is_superuser') == 'on'
+                is_active = request.POST.get('is_active', 'on') == 'on'
+                
+                # Cerrar conexión PostgreSQL antes de usar Django ORM
+                cursor.close()
+                conn.close()
+                
+                # Crear usuario usando Django ORM para manejar la contraseña correctamente
+                user = User.objects.create_user(
+                    username=username,
+                    password=password,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                user.is_staff = is_staff
+                user.is_superuser = is_superuser
+                user.is_active = is_active
+                user.save()
+                
+                messages.success(request, 'Usuario creado exitosamente')
+                return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
             
             conn.commit()
             messages.success(request, 'Registro creado exitosamente')
         except Exception as e:
-            conn.rollback()
+            if conn and not conn.closed:
+                conn.rollback()
             messages.error(request, f'Error al crear registro: {str(e)}')
         finally:
             cursor.close()
@@ -2101,15 +2132,41 @@ def editar_registro(request, tabla, id):
                     request.POST.get('descripcion'),
                     id
                 ))
+            elif tabla == 'usuarios':
+                from django.contrib.auth.models import User
+                
+                cursor.close()
+                conn.close()
+                
+                user = User.objects.get(id=id)
+                user.username = request.POST.get('username')
+                user.email = request.POST.get('email', '')
+                user.first_name = request.POST.get('first_name', '')
+                user.last_name = request.POST.get('last_name', '')
+                user.is_staff = request.POST.get('is_staff') == 'on'
+                user.is_superuser = request.POST.get('is_superuser') == 'on'
+                user.is_active = request.POST.get('is_active') == 'on'
+                
+                # Solo cambiar contraseña si se proporciona una nueva
+                new_password = request.POST.get('password', '').strip()
+                if new_password:
+                    user.set_password(new_password)
+                
+                user.save()
+                messages.success(request, 'Usuario actualizado exitosamente')
+                return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
             
             conn.commit()
             messages.success(request, 'Registro actualizado exitosamente')
         except Exception as e:
-            conn.rollback()
+            if conn and not conn.closed:
+                conn.rollback()
             messages.error(request, f'Error al actualizar registro: {str(e)}')
         finally:
-            cursor.close()
-            conn.close()
+            if cursor and not cursor.closed:
+                cursor.close()
+            if conn and not conn.closed:
+                conn.close()
         
         return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
     
@@ -2124,6 +2181,8 @@ def editar_registro(request, tabla, id):
         cursor.execute("SELECT id, matricula_provincial, nombre_apellido FROM medicos WHERE id = %s", (id,))
     elif tabla == 'feriados':
         cursor.execute("SELECT id, fecha, descripcion FROM feriados WHERE id = %s", (id,))
+    elif tabla == 'usuarios':
+        cursor.execute("SELECT id, username, first_name, last_name, email, is_staff, is_superuser, is_active FROM auth_user WHERE id = %s", (id,))
     
     registro = cursor.fetchone()
     cursor.close()

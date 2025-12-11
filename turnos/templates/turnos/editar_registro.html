@@ -74,6 +74,45 @@
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Descripción:</label>
                     <textarea name="descripcion" rows="3" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">{{ registro.2|default:"" }}</textarea>
                 </div>
+            {% elif tabla == 'usuarios' %}
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Usuario (username):</label>
+                    <input type="text" name="username" value="{{ registro.1 }}" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Nueva contraseña (dejar en blanco para no cambiar):</label>
+                    <input type="password" name="password" placeholder="••••••••" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Nombre:</label>
+                    <input type="text" name="first_name" value="{{ registro.2|default:"" }}" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Apellido:</label>
+                    <input type="text" name="last_name" value="{{ registro.3|default:"" }}" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Email:</label>
+                    <input type="email" name="email" value="{{ registro.4|default:"" }}" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="is_active" {% if registro.7 %}checked{% endif %} style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-weight: 600; color: #000;">Usuario activo</span>
+                    </label>
+                </div>
+                <div>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="is_staff" {% if registro.5 %}checked{% endif %} style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-weight: 600; color: #000;">Miembro del staff (puede acceder al admin)</span>
+                    </label>
+                </div>
+                <div>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="is_superuser" {% if registro.6 %}checked{% endif %} style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-weight: 600; color: #000;">Superusuario (todos los permisos)</span>
+                    </label>
+                </div>
             {% endif %}
             
             <button type="submit" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: #fff; padding: 1rem 2rem; border-radius: 8px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">

@@ -74,6 +74,45 @@
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Descripción:</label>
                     <textarea name="descripcion" rows="3" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;" placeholder="Ej: Día del Trabajo, Navidad, etc."></textarea>
                 </div>
+            {% elif tabla == 'usuarios' %}
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Usuario (username):</label>
+                    <input type="text" name="username" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Contraseña:</label>
+                    <input type="password" name="password" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Nombre:</label>
+                    <input type="text" name="first_name" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Apellido:</label>
+                    <input type="text" name="last_name" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000;">Email:</label>
+                    <input type="email" name="email" style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="is_active" checked style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-weight: 600; color: #000;">Usuario activo</span>
+                    </label>
+                </div>
+                <div>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="is_staff" style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-weight: 600; color: #000;">Miembro del staff (puede acceder al admin)</span>
+                    </label>
+                </div>
+                <div>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="is_superuser" style="width: 20px; height: 20px; cursor: pointer;">
+                        <span style="font-weight: 600; color: #000;">Superusuario (todos los permisos)</span>
+                    </label>
+                </div>
             {% endif %}
             
             <button type="submit" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%); color: #fff; padding: 1rem 2rem; border-radius: 8px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
