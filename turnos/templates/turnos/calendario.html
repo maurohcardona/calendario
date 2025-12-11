@@ -201,13 +201,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const agendaId = info.event.extendedProps.agenda_id;
                 const esPasado = info.event.extendedProps.es_pasado;
                 
-                // Si es día pasado, mostrar turnos históricos
-                if (esPasado) {
-                    mostrarTurnosHistoricos(fecha);
-                    return;
-                }
-                
-                if (info.event.extendedProps.disponibles === 0) {
+                if (info.event.extendedProps.disponibles === 0 && !esPasado) {
                     alert('⚠️ Esta fecha está completa. No hay turnos disponibles para esta agenda.');
                     return;
                 }
@@ -220,13 +214,6 @@ document.addEventListener("DOMContentLoaded", function() {
             },
             dateClick: function(info) {
                 const fecha = info.dateStr;
-                const hoy = new Date().toISOString().split('T')[0];
-                
-                // Si es día pasado, mostrar turnos históricos
-                if (fecha < hoy) {
-                    mostrarTurnosHistoricos(fecha);
-                    return;
-                }
                 
                 let url = "{% url 'turnos:dia' '0000-00-00' %}".replace('0000-00-00', fecha);
                 if (selectedAgendaId) {

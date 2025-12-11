@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.urls import reverse
-from .models import Cupo, Turno, CapacidadDia, Agenda
+from .models import Cupo, Turno, CapacidadDia, Agenda, Coordinados
 from .forms import TurnoForm, CupoForm
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
@@ -278,7 +278,10 @@ def turnos_historicos_api(request, fecha):
     from datetime import datetime
     fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
     
-    turnos = Turno.objects.filter(fecha=fecha_obj).select_related('agenda').order_by('agenda__name', 'coordinado', 'apellido', 'nombre')
+    turnos = Turno.objects.filter(fecha=fecha_obj).select_related('agenda').order_by('agenda__name', 'apellido', 'nombre')
+    
+    # Obtener IDs de turnos coordinados
+    turnos_coordinados_ids = set(Coordinados.objects.values_list('id_turno', flat=True))
     
     # Agrupar por agenda
     agendas_dict = {}
@@ -296,10 +299,10 @@ def turnos_historicos_api(request, fecha):
             'nombre': turno.nombre,
             'apellido': turno.apellido,
             'determinaciones': turno.determinaciones,
-            'coordinado': turno.coordinado
         }
         
-        if turno.coordinado:
+        # Verificar si está coordinado
+        if turno.id in turnos_coordinados_ids:
             agendas_dict[agenda_name]['coordinados'].append(turno_data)
         else:
             agendas_dict[agenda_name]['no_coordinados'].append(turno_data)
@@ -1569,7 +1572,10 @@ def generar_ticket_turno(request, turno_id):
     p.setFont("Helvetica-Bold", 9)
     p.drawString(margen, y, "Paciente:")
     p.setFont("Helvetica", 9)
-    nombre_completo = f"{row[4]} {row[5]}"
+    # Formatear: Apellido, Nombre (primera letra mayúscula, resto minúscula)
+    apellido_formateado = row[5].strip().capitalize() if row[5] else ""
+    nombre_formateado = row[4].strip().capitalize() if row[4] else ""
+    nombre_completo = f"{apellido_formateado}, {nombre_formateado}"
     p.drawString(margen + 2*cm, y, nombre_completo)
     y -= 0.45 * cm
     
@@ -1617,8 +1623,9 @@ def generar_ticket_turno(request, turno_id):
         p.setFont("Helvetica-Bold", 9)
         p.drawString(margen, y, "Médico:")
         p.setFont("Helvetica", 9)
+        # Formatear: Primera letra mayúscula, resto minúscula
+        medico_str = str(row[2]).strip().capitalize()
         # Dividir si el nombre es muy largo
-        medico_str = str(row[2])
         if len(medico_str) > 30:
             p.drawString(margen + 2*cm, y, medico_str[:30])
             y -= 0.35 * cm
