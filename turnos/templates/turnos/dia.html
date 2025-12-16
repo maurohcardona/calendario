@@ -112,7 +112,7 @@
             </div>
 
             <!-- Campos Teléfono, Email y Médico en una fila -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 0.5rem;">
                 <div>
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Teléfono</label>
                     <input type="tel" id="id_telefono" name="telefono" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
@@ -126,6 +126,10 @@
                     <input type="text" id="id_medico" name="medico" autocomplete="off" disabled placeholder="Buscar médico..." style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
                     <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(200, 155, 143, 0.5); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
                 </div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones de paciente</label>
+                <input type="text" id="id_observaciones_paciente" name="observaciones_paciente" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
             </div>
 
             <!-- Campo Nota Interna -->
@@ -394,7 +398,7 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
         const data = await response.json();
         
         if (data.found) {
-            // Paciente encontrado - mostrar datos pero NO editable (excepto determinaciones)
+            // Paciente encontrado - mostrar datos
             status.innerHTML = '<span style="color: #4caf50;">✅ Paciente encontrado</span>';
             document.getElementById('id_nombre').value = data.nombre;
             document.getElementById('id_apellido').value = data.apellido;
@@ -402,10 +406,15 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_sexo').value = data.sexo;
             document.getElementById('id_telefono').value = data.telefono || '';
             document.getElementById('id_email').value = data.email || '';
+            document.getElementById('id_observaciones_paciente').value = data.observaciones || '';
             // medico NO se llena desde paciente, queda vacío y editable
-            
-            // Habilitar SOLO campos de determinaciones
+            // Habilitar campos de determinaciones y observaciones
             habilitarSoloDeterminaciones();
+            // Habilitar campo observaciones de paciente
+            document.getElementById('id_observaciones_paciente').disabled = false;
+            document.getElementById('id_observaciones_paciente').style.opacity = '1';
+            document.getElementById('id_observaciones_paciente').style.cursor = 'text';
+            document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
         } else {
             // Paciente NO encontrado - habilitar todos los campos para crear nuevo
             status.innerHTML = '<span style="color: #ff9999;">❌ Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
@@ -416,9 +425,14 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_telefono').value = '';
             document.getElementById('id_email').value = '';
             document.getElementById('id_medico').value = '';
-            
+            document.getElementById('id_observaciones_paciente').value = '';
             // Habilitar todos los campos
             habilitarTodosCampos();
+            // Habilitar campo observaciones de paciente
+            document.getElementById('id_observaciones_paciente').disabled = false;
+            document.getElementById('id_observaciones_paciente').style.opacity = '1';
+            document.getElementById('id_observaciones_paciente').style.cursor = 'text';
+            document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
         }
     } catch (error) {
         status.innerHTML = '<span style="color: #ff9999;">❌ Error al buscar</span>';

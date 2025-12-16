@@ -396,6 +396,7 @@ def dia(request, fecha):
                     sexo = form.cleaned_data.get('sexo')
                     telefono = form.cleaned_data.get('telefono', '')
                     email = form.cleaned_data.get('email', '')
+                    observaciones_paciente = form.cleaned_data.get('observaciones_paciente', '')
                     medico = form.cleaned_data.get('medico', '')  # Este va al turno, no al paciente
                     nota_interna = form.cleaned_data.get('nota_interna', '')  # Este va al turno
                     
@@ -418,15 +419,15 @@ def dia(request, fecha):
                         cursor.execute("""
                             UPDATE pacientes 
                             SET nombre = %s, apellido = %s, fecha_nacimiento = %s, sexo = %s,
-                                telefono = %s, email = %s
+                                telefono = %s, email = %s, observaciones = %s
                             WHERE dni = %s
-                        """, (nombre, apellido, fecha_nacimiento, sexo, telefono, email, dni))
+                        """, (nombre, apellido, fecha_nacimiento, sexo, telefono, email, observaciones_paciente, dni))
                     else:
                         # Crear nuevo paciente
                         cursor.execute("""
-                            INSERT INTO pacientes (nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, usuario)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        """, (nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, request.user.username))
+                            INSERT INTO pacientes (nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones, usuario)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones_paciente, request.user.username))
                     
                     conn.commit()
                     cursor.close()
@@ -1042,7 +1043,7 @@ def buscar_paciente_api(request):
         cursor = conn.cursor()
         
         cursor.execute(
-            "SELECT nombre, apellido, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE dni = %s",
+            "SELECT nombre, apellido, fecha_nacimiento, sexo, telefono, email, observaciones FROM pacientes WHERE dni = %s",
             (dni,)
         )
         result = cursor.fetchone()
@@ -1058,7 +1059,8 @@ def buscar_paciente_api(request):
                 'fecha_nacimiento': result[2].isoformat() if result[2] else '',
                 'sexo': result[3],
                 'telefono': result[4] or '',
-                'email': result[5] or ''
+                'email': result[5] or '',
+                'observaciones': result[6] or ''
             })
         else:
             return JsonResponse({'found': False})
