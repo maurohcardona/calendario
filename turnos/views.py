@@ -16,6 +16,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import BytesIO
 from datetime import datetime
+from django.views.decorators.csrf import csrf_exempt
 
 
 @login_required
@@ -744,7 +745,7 @@ def editar_turno(request, turno_id):
         )
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE dni = %s",
+            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones FROM pacientes WHERE dni = %s",
             (turno.dni,)
         )
         result = cursor.fetchone()
@@ -756,7 +757,8 @@ def editar_turno(request, turno_id):
                 'fecha_nacimiento': result[3],
                 'sexo': result[4],
                 'telefono': result[5],
-                'email': result[6]
+                'email': result[6],
+                'observaciones': result[7] if len(result) > 7 else ''
             }
         cursor.close()
         conn.close()
@@ -771,12 +773,13 @@ def editar_turno(request, turno_id):
         turno.medico = request.POST.get('medico', '')
         turno.nota_interna = request.POST.get('nota_interna', '')
         turno.save()
-        
-        # Actualizar datos del paciente si se enviaron (telefono y email)
+
+        # Actualizar datos del paciente si se enviaron (telefono, email, observaciones)
         telefono = request.POST.get('telefono', '')
         email = request.POST.get('email', '')
-        
-        if telefono or email:
+        observaciones_paciente = request.POST.get('observaciones_paciente', '')
+
+        if telefono or email or observaciones_paciente:
             try:
                 conn = psycopg2.connect(
                     dbname=settings.DATABASES['default']['NAME'],
@@ -788,15 +791,15 @@ def editar_turno(request, turno_id):
                 cursor = conn.cursor()
                 cursor.execute("""
                     UPDATE pacientes 
-                    SET telefono = %s, email = %s
+                    SET telefono = %s, email = %s, observaciones = %s
                     WHERE dni = %s
-                """, (telefono, email, turno.dni))
+                """, (telefono, email, observaciones_paciente, turno.dni))
                 conn.commit()
                 cursor.close()
                 conn.close()
             except Exception as e:
                 pass
-        
+
         return redirect(reverse('turnos:dia', args=[turno.fecha]) + f'?agenda={turno.agenda.id}')
     
     # Obtener todas las agendas
@@ -2278,3 +2281,36 @@ def audit_log(request):
     }
     
     return render(request, 'turnos/audit_log.html', context)
+
+
+@csrf_exempt
+@login_required
+def crear_medico_api(request):
+    """API para crear un médico desde el modal (POST JSON)"""
+    import psycopg2
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    try:
+        data = json.loads(request.body)
+        nombre_apellido = data.get('nombre_apellido', '').strip()
+        matricula_provincial = data.get('matricula_provincial', '').strip()
+        if not nombre_apellido or not matricula_provincial:
+            return JsonResponse({'success': False, 'error': 'Faltan datos requeridos'}, status=400)
+        conn = psycopg2.connect(
+            dbname='Laboratorio',
+            user='postgres',
+            password='estufa10',
+            host='localhost',
+            port='5432'
+        )
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO medicos (matricula_provincial, nombre_apellido, usuario)
+            VALUES (%s, %s, %s)
+        """, (matricula_provincial, nombre_apellido, request.user.username))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
