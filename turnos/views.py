@@ -1377,7 +1377,31 @@ def coordinar_turno(request, turno_id):
         
         # Preparar nota_interna (sin comillas)
         nota_interna_astm = turno.nota_interna if turno.nota_interna else ''
-        
+        # Observaciones de paciente (sin comillas)
+        # Buscar en la tabla pacientes
+        observaciones_paciente = ''
+        try:
+            conn_obs = psycopg2.connect(
+                dbname=settings.DATABASES['default']['NAME'],
+                user=settings.DATABASES['default']['USER'],
+                password=settings.DATABASES['default']['PASSWORD'],
+                host=settings.DATABASES['default']['HOST'],
+                port=settings.DATABASES['default']['PORT']
+            )
+            cursor_obs = conn_obs.cursor()
+            cursor_obs.execute(
+                "SELECT observaciones FROM pacientes WHERE dni = %s ORDER BY id DESC LIMIT 1",
+                (turno.dni,)
+            )
+            obs_result = cursor_obs.fetchone()
+            if obs_result and obs_result[0]:
+                observaciones_paciente = obs_result[0]
+            cursor_obs.close()
+            conn_obs.close()
+        except Exception:
+            observaciones_paciente = ''
+        # Nombre del médico (sin comillas)
+        nombre_medico = turno.medico or ''
         # Obtener matrícula del médico si existe
         matricula_medico = ''
         if turno.medico:
@@ -1387,18 +1411,27 @@ def coordinar_turno(request, turno_id):
             if medico_result:
                 matricula_medico = str(medico_result[0])
             cursor_temp.close()
-        
+        # Impresora desde JSON (body) o POST clásico
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+                nombre_impresora = data.get('nombre_impresora', '')
+            except Exception:
+                nombre_impresora = ''
+        else:
+            nombre_impresora = request.POST.get('nombre_impresora', '')
+        if not nombre_impresora:
+            nombre_impresora = ''
+        nombre_impresora = nombre_impresora.strip()
         cursor.close()
         conn.close()
-        
         # Construir el contenido del archivo ASTM
         lineas = []
         lineas.append(f'H|\\^&|||Balestrini|||||||P||{timestamp}')
-        lineas.append(f'P|1||{dni}||{apellido}^{nombre}^||{fecha_nac}|{sexo_astm}|{email_astm}|{telefono_astm}|{nota_interna_astm}||||||| |||||{timestamp}||||||||||')
-        
+        lineas.append(f'P|1||{dni}||{apellido}^{nombre}^||{fecha_nac}|{sexo_astm}|{email_astm}|{telefono_astm}|{nota_interna_astm}|{observaciones_paciente}|||||| |||||{timestamp}||||||||||')
         # Construir línea O con todas las determinaciones/perfiles
         determinaciones_concatenadas = ''.join(determinaciones_astm)
-        lineas.append(f'O|1|{turno_id}||{determinaciones_concatenadas}||||{matricula_medico}||A||||||||||||||O')
+        lineas.append(f'O|1|{turno_id}||{determinaciones_concatenadas}||{nombre_impresora}|{nombre_medico}|{matricula_medico}||A||||||||||||||O')
         lineas.append('L|1|F')
         
         # Crear nombre de archivo único
@@ -1741,8 +1774,12 @@ def generar_ticket_turno(request, turno_id):
     p.setFont("Helvetica", 7)
     p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {row[7]}")
     y -= 0.3 * cm
-    p.drawCentredString(ancho_papel / 2, y, f"Ticket N° {turno_id}")
+    # Agregar el email debajo del nombre de usuario
+    p.drawCentredString(ancho_papel / 2, y, "laboratoriobalestrini@gmail.com")
     y -= 0.3 * cm
+    p.setFont("Helvetica-Bold", 11)
+    p.drawCentredString(ancho_papel / 2, y, f"Ticket N° {turno_id}")
+    y -= 0.35 * cm
     p.setFont("Helvetica", 6)
     p.drawCentredString(ancho_papel / 2, y, datetime.now().strftime('%d/%m/%Y %H:%M'))
     
