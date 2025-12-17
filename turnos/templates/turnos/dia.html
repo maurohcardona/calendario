@@ -419,9 +419,10 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
     try {
         const response = await fetch(`/turnos/api/buscar-paciente/?dni=${dni}`);
         const data = await response.json();
-        
+        // Eliminar cartel previo si existe
+        const cartelExistente = document.getElementById('cartel-turno-pendiente');
+        if (cartelExistente) cartelExistente.remove();
         if (data.found) {
-            // Paciente encontrado - mostrar datos
             status.innerHTML = '<span style="color: #4caf50;">✅ Paciente encontrado</span>';
             document.getElementById('id_nombre').value = data.nombre;
             document.getElementById('id_apellido').value = data.apellido;
@@ -430,16 +431,27 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_telefono').value = data.telefono || '';
             document.getElementById('id_email').value = data.email || '';
             document.getElementById('id_observaciones_paciente').value = data.observaciones || '';
-            // medico NO se llena desde paciente, queda vacío y editable
-            // Habilitar campos de determinaciones y observaciones
             habilitarSoloDeterminaciones();
-            // Habilitar campo observaciones de paciente
             document.getElementById('id_observaciones_paciente').disabled = false;
             document.getElementById('id_observaciones_paciente').style.opacity = '1';
             document.getElementById('id_observaciones_paciente').style.cursor = 'text';
             document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
+            // Mostrar cartel si tiene turno pendiente
+            if (data.tiene_turno_pendiente && data.proximo_turno) {
+                const cartel = document.createElement('div');
+                cartel.id = 'cartel-turno-pendiente';
+                cartel.style = 'background: #fff3cd; color: #856404; border: 2px solid #ffeeba; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-weight: 600; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(200, 155, 143, 0.15);';
+                cartel.innerHTML = `⚠️ El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b>.<br>¿Desea continuar con el turno de todos modos?<br><button id="btnContinuarTurno" style="margin: 0.5rem 1rem 0 0; padding: 0.5rem 1.2rem; background: #4caf50; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Sí</button><button id="btnVerTurnosPendientes" style="margin: 0.5rem 0 0 0; padding: 0.5rem 1.2rem; background: #2196f3; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Turnos pendientes</button>`;
+                const form = document.getElementById('turnoForm');
+                form.parentNode.insertBefore(cartel, form);
+                cartel.querySelector('#btnContinuarTurno').onclick = function() {
+                    cartel.remove();
+                };
+                cartel.querySelector('#btnVerTurnosPendientes').onclick = function() {
+                    window.location.href = `/turnos/buscar/?q=${dni}`;
+                };
+            }
         } else {
-            // Paciente NO encontrado - habilitar todos los campos para crear nuevo
             status.innerHTML = '<span style="color: #ff9999;">❌ Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
             document.getElementById('id_nombre').value = '';
             document.getElementById('id_apellido').value = '';
@@ -449,9 +461,7 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_email').value = '';
             document.getElementById('id_medico').value = '';
             document.getElementById('id_observaciones_paciente').value = '';
-            // Habilitar todos los campos
             habilitarTodosCampos();
-            // Habilitar campo observaciones de paciente
             document.getElementById('id_observaciones_paciente').disabled = false;
             document.getElementById('id_observaciones_paciente').style.opacity = '1';
             document.getElementById('id_observaciones_paciente').style.cursor = 'text';

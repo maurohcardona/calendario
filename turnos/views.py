@@ -1054,6 +1054,16 @@ def buscar_paciente_api(request):
         cursor.close()
         conn.close()
         
+        # Buscar si tiene turno pendiente (fecha >= hoy)
+        from datetime import date
+        tiene_turno_pendiente = False
+        proximo_turno = None
+        if result:
+            turnos_pendientes = Turno.objects.filter(dni=dni, fecha__gte=date.today()).order_by('fecha')
+            if turnos_pendientes.exists():
+                tiene_turno_pendiente = True
+                proximo_turno = turnos_pendientes.first().fecha.strftime('%d-%m-%y')
+        
         if result:
             return JsonResponse({
                 'found': True,
@@ -1063,7 +1073,9 @@ def buscar_paciente_api(request):
                 'sexo': result[3],
                 'telefono': result[4] or '',
                 'email': result[5] or '',
-                'observaciones': result[6] or ''
+                'observaciones': result[6] or '',
+                'tiene_turno_pendiente': tiene_turno_pendiente,
+                'proximo_turno': proximo_turno
             })
         else:
             return JsonResponse({'found': False})
