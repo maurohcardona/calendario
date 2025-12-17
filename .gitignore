@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.py[oc]
+
+# Virtual environments
+.venv/
+venv/
+
+# Django
+db.sqlite3
+staticfiles/
+staticfiles_collected/
+
+# Coverage / tests
+.coverage
+
+# Runtime / mensajes
+mensajes/*.pet
+
+# Build
+build/
+dist/
+*.egg-info
