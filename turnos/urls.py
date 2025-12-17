@@ -30,5 +30,6 @@ urlpatterns = [
     path("administrar-tablas/<str:tabla>/eliminar/<int:id>/", views.eliminar_registro, name="eliminar_registro"),
     path("feriados/aplicar/", views.aplicar_feriados, name="aplicar_feriados"),
     path("auditoria/", views.audit_log, name="audit_log"),
+    path("api/crear-medico/", views.crear_medico_api, name="crear_medico_api"),
 ]
 

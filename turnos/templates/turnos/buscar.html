@@ -188,13 +188,16 @@ function cerrarModal() {
 
 document.getElementById('btnConfirmarCoordinar').addEventListener('click', function() {
   if (turnoIdActual) {
+    // Obtener impresora seleccionada de localStorage
+    const nombreImpresora = localStorage.getItem('nombre_impresora') || '';
     // Enviar petición POST para coordinar turno
     fetch(`/turnos/turno/${turnoIdActual}/coordinar/`, {
       method: 'POST',
       headers: {
         'X-CSRFToken': getCookie('csrftoken'),
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({ nombre_impresora: nombreImpresora })
     })
     .then(response => response.json())
     .then(data => {

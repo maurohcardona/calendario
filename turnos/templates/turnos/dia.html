@@ -53,6 +53,10 @@
             {% csrf_token %}
             
             {% if form.non_field_errors %}
+                    <!-- Selector de impresora oculto: ahora solo se usa el menú de opciones -->
+                    <input type="hidden" id="nombreImpresora" />
+            <!-- Hidden input for printer name -->
+            <input type="hidden" id="printer_name" name="nombre_impresora" />
                 <div style="background: rgba(216, 144, 144, 0.15); border: 2px solid var(--danger); color: #8c4a4a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 500;">
                     {{ form.non_field_errors }}
                 </div>
@@ -112,7 +116,7 @@
             </div>
 
             <!-- Campos Teléfono, Email y Médico en una fila -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 0.5rem;">
                 <div>
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Teléfono</label>
                     <input type="tel" id="id_telefono" name="telefono" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
@@ -121,11 +125,18 @@
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Email</label>
                     <input type="email" id="id_email" name="email" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
                 </div>
-                <div style="position: relative;">
-                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
-                    <input type="text" id="id_medico" name="medico" autocomplete="off" disabled placeholder="Buscar médico..." style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
-                    <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(200, 155, 143, 0.5); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
+                <div style="position: relative; display: flex; align-items: flex-end; gap: 0.5rem;">
+                    <div style="flex: 1;">
+                        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
+                        <input type="text" id="id_medico" name="medico" autocomplete="off" disabled placeholder="Buscar médico..." style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                        <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(200, 155, 143, 0.5); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
+                    </div>
+                    <button type="button" id="btnNuevoMedico" title="Agregar médico nuevo" style="height: 2.6rem; width: 2.6rem; background: #4caf50; color: #fff; border: none; border-radius: 50%; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2); margin-bottom: 0.2rem;">+</button>
                 </div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones de paciente</label>
+                <input type="text" id="id_observaciones_paciente" name="observaciones_paciente" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
             </div>
 
             <!-- Campo Nota Interna -->
@@ -160,32 +171,80 @@
         </form>
     {% endif %}
 
-    <!-- Lista de turnos -->
-    <h3 style="margin-top: 2rem; color: var(--text-light);">📋 Turnos agendados</h3>
-    
-    {% if modo_vista == 'todas_agendas' and turnos_por_agenda %}
-        <!-- Vista agrupada por agenda -->
-        {% for agenda_id, info in turnos_por_agenda.items %}
-            <div style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px solid var(--accent); box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid {{ info.agenda.color }};">
-                    <h4 style="margin: 0; color: {{ info.agenda.color }}; font-size: 1.3rem; font-weight: 700;">
-                        📌 {{ info.agenda.name }}
-                    </h4>
-                    <div style="text-align: right;">
-                        <span style="color: var(--text-light); font-size: 0.9rem; font-weight: 600;">Cupo: </span>
-                        <span style="color: #00d4ff; font-weight: bold; font-size: 1.05rem;">{{ info.usados }}/{{ info.capacidad }}</span>
-                        <span style="color: var(--text-light); font-size: 0.9rem; font-weight: 600;"> | Disponibles: </span>
-                        <span style="color: {% if info.disponibles > 0 %}#66ff66{% else %}#ff6666{% endif %}; font-weight: bold; font-size: 1.05rem;">{{ info.disponibles }}</span>
+    {% if modo_vista != 'agenda_seleccionada' or not show_form %}
+        <!-- Lista de turnos -->
+        <h3 style="margin-top: 2rem; color: var(--text-light);">📋 Turnos agendados</h3>
+        {% if modo_vista == 'todas_agendas' and turnos_por_agenda %}
+            <!-- Vista agrupada por agenda y coordinación -->
+            {% for agenda_id, info in turnos_por_agenda.items %}
+                <div style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px solid var(--accent); box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid {{ info.agenda.color }};">
+                        <h4 style="margin: 0; color: {{ info.agenda.color }}; font-size: 1.3rem; font-weight: 700;">
+                            📌 {{ info.agenda.name }}
+                        </h4>
+                        <div style="text-align: right;">
+                            <span style="color: var(--text-light); font-size: 0.9rem; font-weight: 600;">Cupo: </span>
+                            <span style="color: #00d4ff; font-weight: bold; font-size: 1.05rem;">{{ info.usados }}/{{ info.capacidad }}</span>
+                            <span style="color: var(--text-light); font-size: 0.9rem; font-weight: 600;"> | Disponibles: </span>
+                            <span style="color: {% if info.disponibles > 0 %}#66ff66{% else %}#ff6666{% endif %}; font-weight: bold; font-size: 1.05rem;">{{ info.disponibles }}</span>
+                        </div>
+                    </div>
+                    <!-- Turnos coordinados -->
+                    <div style="margin-bottom: 1rem;">
+                        <span style="font-weight: bold; color: #388e3c; font-size: 1.1rem;">Turnos coordinados</span>
+                        {% if info.coordinados %}
+                            <ul style="margin: 0.5rem 0 0 0; padding-left: 0; list-style: none;">
+                                {% for t in info.coordinados %}
+                                    <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid #b2dfdb;{% endif %} display: flex; justify-content: space-between; align-items: center; background: #e8f5e9; border-radius: 6px; margin-bottom: 0.5rem;">
+                                        <div>
+                                            <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                            <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p style="margin: 0.5rem 0 0 0; color: #388e3c; font-style: italic; font-size: 0.95rem;">No hay turnos coordinados para esta agenda.</p>
+                        {% endif %}
+                    </div>
+                    <!-- Turnos NO coordinados -->
+                    <div>
+                        <span style="font-weight: bold; color: #d32f2f; font-size: 1.1rem;">Turnos no coordinados</span>
+                        {% if info.no_coordinados %}
+                            <ul style="margin: 0.5rem 0 0 0; padding-left: 0; list-style: none;">
+                                {% for t in info.no_coordinados %}
+                                    <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid #ffcdd2;{% endif %} display: flex; justify-content: space-between; align-items: center; background: #fff3e0; border-radius: 6px; margin-bottom: 0.5rem;">
+                                        <div>
+                                            <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                            <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
+                                            <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
+                                            <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p style="margin: 0.5rem 0 0 0; color: #d32f2f; font-style: italic; font-size: 0.95rem;">No hay turnos no coordinados para esta agenda.</p>
+                        {% endif %}
                     </div>
                 </div>
-                
-                {% if info.turnos %}
+            {% endfor %}
+        {% else %}
+            <!-- Vista simple cuando se selecciona una agenda específica -->
+            <div style="background: var(--bg-card); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border: 2px solid rgba(0, 212, 255, 0.3); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);">
+                {% if turnos %}
                     <ul style="margin: 0; padding-left: 0; list-style: none;">
-                        {% for t in info.turnos %}
+                        {% for t in turnos %}
                             <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid rgba(0, 212, 255, 0.2);{% endif %} display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                    <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
+                                    <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem, font-weight: 500;">Det: {{ t.determinaciones }}</span>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem;">
                                     <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
@@ -196,38 +255,35 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <p style="margin: 0; color: var(--text-dark); font-style: italic; font-size: 0.95rem;">No hay turnos agendados para esta agenda.</p>
+                    <p style="margin: 0; color: var(--text-dark); font-size: 0.95rem; font-style: italic;">No hay turnos agendados.</p>
                 {% endif %}
             </div>
-        {% endfor %}
-    {% else %}
-        <!-- Vista simple cuando se selecciona una agenda específica -->
-        <div style="background: var(--bg-card); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border: 2px solid rgba(0, 212, 255, 0.3); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);">
-            {% if turnos %}
-                <ul style="margin: 0; padding-left: 0; list-style: none;">
-                    {% for t in turnos %}
-                        <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid rgba(0, 212, 255, 0.2);{% endif %} display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
-                            </div>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
-                                <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
-                                <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
-                            </div>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p style="margin: 0; color: var(--text-dark); font-size: 0.95rem; font-style: italic;">No hay turnos agendados.</p>
-            {% endif %}
-        </div>
+        {% endif %}
     {% endif %}
 
     <div style="margin-top: 2rem;">
         <a href="{% url 'turnos:calendario' %}" style="color: #00d4ff; text-decoration: none; font-weight: 600; font-size: 1rem; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 6px; display: inline-block; background: rgba(0, 212, 255, 0.1);">← Volver al calendario</a>
     </div>
+</div>
+
+<!-- Modal para agregar médico nuevo -->
+<div id="modalNuevoMedico" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:12px; padding:2rem; max-width:400px; margin:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3); position:relative;">
+    <button id="cerrarModalMedico" style="position:absolute; top:0.5rem; right:0.5rem; background:none; border:none; font-size:1.5rem; color:#888; cursor:pointer;">&times;</button>
+    <h3 style="margin-top:0; color:#4caf50;">Agregar nuevo médico</h3>
+    <form id="formNuevoMedico">
+      <div style="margin-bottom:1rem;">
+        <label for="nombreMedico" style="font-weight:600;">Apellido y Nombre</label>
+        <input type="text" id="nombreMedico" name="nombreMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
+      </div>
+      <div style="margin-bottom:1.5rem;">
+        <label for="matriculaMedico" style="font-weight:600;">Matrícula Provincial</label>
+        <input type="text" id="matriculaMedico" name="matriculaMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
+      </div>
+      <button type="submit" style="background:#4caf50; color:#fff; border:none; border-radius:8px; padding:0.7rem 1.5rem; font-weight:700; font-size:1rem; cursor:pointer; width:100%;">Guardar médico</button>
+      <div id="estadoNuevoMedico" style="margin-top:1rem; font-size:0.95rem;"></div>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -392,9 +448,10 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
     try {
         const response = await fetch(`/turnos/api/buscar-paciente/?dni=${dni}`);
         const data = await response.json();
-        
+        // Eliminar cartel previo si existe
+        const cartelExistente = document.getElementById('cartel-turno-pendiente');
+        if (cartelExistente) cartelExistente.remove();
         if (data.found) {
-            // Paciente encontrado - mostrar datos pero NO editable (excepto determinaciones)
             status.innerHTML = '<span style="color: #4caf50;">✅ Paciente encontrado</span>';
             document.getElementById('id_nombre').value = data.nombre;
             document.getElementById('id_apellido').value = data.apellido;
@@ -402,12 +459,28 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_sexo').value = data.sexo;
             document.getElementById('id_telefono').value = data.telefono || '';
             document.getElementById('id_email').value = data.email || '';
-            // medico NO se llena desde paciente, queda vacío y editable
-            
-            // Habilitar SOLO campos de determinaciones
+            document.getElementById('id_observaciones_paciente').value = data.observaciones || '';
             habilitarSoloDeterminaciones();
+            document.getElementById('id_observaciones_paciente').disabled = false;
+            document.getElementById('id_observaciones_paciente').style.opacity = '1';
+            document.getElementById('id_observaciones_paciente').style.cursor = 'text';
+            document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
+            // Mostrar cartel si tiene turno pendiente
+            if (data.tiene_turno_pendiente && data.proximo_turno) {
+                const cartel = document.createElement('div');
+                cartel.id = 'cartel-turno-pendiente';
+                cartel.style = 'background: #fff3cd; color: #856404; border: 2px solid #ffeeba; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-weight: 600; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(200, 155, 143, 0.15);';
+                cartel.innerHTML = `⚠️ El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b>.<br>¿Desea continuar con el turno de todos modos?<br><button id="btnContinuarTurno" style="margin: 0.5rem 1rem 0 0; padding: 0.5rem 1.2rem; background: #4caf50; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Sí</button><button id="btnVerTurnosPendientes" style="margin: 0.5rem 0 0 0; padding: 0.5rem 1.2rem; background: #2196f3; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Turnos pendientes</button>`;
+                const form = document.getElementById('turnoForm');
+                form.parentNode.insertBefore(cartel, form);
+                cartel.querySelector('#btnContinuarTurno').onclick = function() {
+                    cartel.remove();
+                };
+                cartel.querySelector('#btnVerTurnosPendientes').onclick = function() {
+                    window.location.href = `/turnos/buscar/?q=${dni}`;
+                };
+            }
         } else {
-            // Paciente NO encontrado - habilitar todos los campos para crear nuevo
             status.innerHTML = '<span style="color: #ff9999;">❌ Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
             document.getElementById('id_nombre').value = '';
             document.getElementById('id_apellido').value = '';
@@ -416,9 +489,12 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_telefono').value = '';
             document.getElementById('id_email').value = '';
             document.getElementById('id_medico').value = '';
-            
-            // Habilitar todos los campos
+            document.getElementById('id_observaciones_paciente').value = '';
             habilitarTodosCampos();
+            document.getElementById('id_observaciones_paciente').disabled = false;
+            document.getElementById('id_observaciones_paciente').style.opacity = '1';
+            document.getElementById('id_observaciones_paciente').style.cursor = 'text';
+            document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
         }
     } catch (error) {
         status.innerHTML = '<span style="color: #ff9999;">❌ Error al buscar</span>';
@@ -432,7 +508,6 @@ function habilitarSoloDeterminaciones() {
     document.getElementById('inputCodigo').disabled = false;
     document.getElementById('inputNombre').disabled = false;
     document.getElementById('btnAgregarDet').disabled = false;
-    
     document.getElementById('inputCodigo').style.opacity = '1';
     document.getElementById('inputCodigo').style.cursor = 'text';
     document.getElementById('inputNombre').style.opacity = '1';
@@ -455,7 +530,7 @@ function habilitarSoloDeterminaciones() {
     const camposEditables = ['id_telefono', 'id_email', 'id_medico', 'id_nota_interna'];
     camposEditables.forEach(campoId => {
         const campo = document.getElementById(campoId);
-        campo.disabled = false;
+        campo.disabled = false; // <-- Esto habilita el campo médico
         campo.readOnly = false;
         campo.style.opacity = '1';
         campo.style.cursor = 'text';
@@ -477,7 +552,7 @@ function habilitarTodosCampos() {
     document.getElementById('id_sexo').disabled = false;
     document.getElementById('id_telefono').disabled = false;
     document.getElementById('id_email').disabled = false;
-    document.getElementById('id_medico').disabled = false;
+    document.getElementById('id_medico').disabled = false; // <-- Esto habilita el campo médico
     document.getElementById('id_nota_interna').disabled = false;
     document.getElementById('inputCodigo').disabled = false;
     document.getElementById('inputNombre').disabled = false;
@@ -686,25 +761,29 @@ setInterval(function() {
 
 // Validar formulario antes de enviar
 document.getElementById('turnoForm')?.addEventListener('submit', function(e) {
+    // Copy printer name from localStorage to hidden input before submit
+    // Tomar impresora seleccionada desde el menú de opciones (clave correcta)
+    const printerName = localStorage.getItem('nombre_impresora') || document.getElementById('nombreImpresora')?.value || '';
+    document.getElementById('printer_name').value = printerName;
+
     const determinacionesInput = document.getElementById('id_determinaciones');
-    
     if (!determinacionesInput.value || determinacionesInput.value.trim() === '') {
         e.preventDefault();
         alert('⚠️ Debe agregar al menos una determinación antes de guardar el turno.');
         return false;
     }
-    
+
     // Validar que los campos requeridos estén completos
     const dni = document.getElementById('id_dni').value.trim();
     const nombre = document.getElementById('id_nombre').value.trim();
     const apellido = document.getElementById('id_apellido').value.trim();
-    
+
     if (!dni || !nombre || !apellido) {
         e.preventDefault();
         alert('⚠️ Complete todos los campos requeridos: DNI, Nombre y Apellido.');
         return false;
     }
-    
+
     console.log('Formulario válido, enviando datos...');
     return true;
 });
@@ -745,6 +824,65 @@ if (turnoCreado) {
         window.history.replaceState({}, '', newUrl);
     };
 }
+
+// Lógica modal médico
+const btnNuevoMedico = document.getElementById('btnNuevoMedico');
+const modalNuevoMedico = document.getElementById('modalNuevoMedico');
+const cerrarModalMedico = document.getElementById('cerrarModalMedico');
+const formNuevoMedico = document.getElementById('formNuevoMedico');
+const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
+
+btnNuevoMedico.addEventListener('click', function() {
+    modalNuevoMedico.style.display = 'flex';
+    estadoNuevoMedico.textContent = '';
+    formNuevoMedico.reset();
+});
+cerrarModalMedico.addEventListener('click', function() {
+    modalNuevoMedico.style.display = 'none';
+});
+modalNuevoMedico.addEventListener('click', function(e) {
+    if (e.target === modalNuevoMedico) {
+        modalNuevoMedico.style.display = 'none';
+    }
+});
+formNuevoMedico.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const nombre = document.getElementById('nombreMedico').value.trim();
+    const matricula = document.getElementById('matriculaMedico').value.trim();
+    if (!nombre || !matricula) {
+        estadoNuevoMedico.textContent = 'Complete ambos campos.';
+        estadoNuevoMedico.style.color = '#d32f2f';
+        return;
+    }
+    estadoNuevoMedico.textContent = 'Guardando...';
+    estadoNuevoMedico.style.color = '#333';
+    try {
+        const response = await fetch('/turnos/api/crear-medico/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ nombre_apellido: nombre, matricula_provincial: matricula })
+        });
+        const data = await response.json();
+        if (data.success) {
+            estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
+            estadoNuevoMedico.style.color = '#388e3c';
+            // Actualizar cache y autocompletado
+            medicosCache = null;
+            await cargarMedicos();
+            document.getElementById('id_medico').value = nombre;
+            setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
+        } else {
+            estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
+            estadoNuevoMedico.style.color = '#d32f2f';
+        }
+    } catch (err) {
+        estadoNuevoMedico.textContent = 'Error de red.';
+        estadoNuevoMedico.style.color = '#d32f2f';
+    }
+});
 </script>
 
 {% endblock %}

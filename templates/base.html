@@ -216,6 +216,25 @@
         <button class="user-menu-btn">⚙️ Opciones ▼</button>
         <div class="user-menu-content">
           <a href="{% url 'password_change' %}">🔐 Cambiar contraseña</a>
+          <button type="button" id="etiquetadoras-btn" class="dropdown-item">🏷️ Etiquetadoras ▼</button>
+          <div id="etiquetadoras-menu" style="display:none; margin-left:1.5em; margin-top:0.5em;">
+            <div>
+              <input type="radio" name="etiquetadora" id="etq-adm1" value="ADM1">
+              <label for="etq-adm1">ADM1</label>
+            </div>
+            <div>
+              <input type="radio" name="etiquetadora" id="etq-adm2" value="ADM2">
+              <label for="etq-adm2">ADM2</label>
+            </div>
+            <div>
+              <input type="radio" name="etiquetadora" id="etq-guardia" value="GUARDIA">
+              <label for="etq-guardia">GUARDIA</label>
+            </div>
+            <div>
+              <input type="radio" name="etiquetadora" id="etq-hemato" value="HEMATO">
+              <label for="etq-hemato">HEMATO</label>
+            </div>
+          </div>
           <form method="post" action="{% url 'logout' %}" style="display:inline; margin:0;">
             {% csrf_token %}
             <button type="submit">🚪 Cerrar sesión</button>
@@ -235,25 +254,47 @@
     {% block content %}{% endblock %}
   </main>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  
   <script>
     // Manejar el menú de opciones con click
     document.addEventListener('DOMContentLoaded', function() {
       const userMenu = document.querySelector('.user-menu');
       const userMenuBtn = document.querySelector('.user-menu-btn');
-      
+      const etiquetadorasBtn = document.getElementById('etiquetadoras-btn');
+      const etiquetadorasMenu = document.getElementById('etiquetadoras-menu');
+      // Mostrar/ocultar menú de opciones
       if (userMenuBtn) {
         userMenuBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           userMenu.classList.toggle('active');
         });
-        
-        // Cerrar el menú al hacer click fuera
         document.addEventListener('click', function(e) {
           if (!userMenu.contains(e.target)) {
             userMenu.classList.remove('active');
+            etiquetadorasMenu.style.display = 'none';
           }
         });
+      }
+      // Mostrar/ocultar submenú de etiquetadoras
+      if (etiquetadorasBtn) {
+        etiquetadorasBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          etiquetadorasMenu.style.display = etiquetadorasMenu.style.display === 'block' ? 'none' : 'block';
+        });
+      }
+      // Guardar selección en localStorage y reflejar selección
+      const radios = etiquetadorasMenu ? etiquetadorasMenu.querySelectorAll('input[type=radio][name=etiquetadora]') : [];
+      radios.forEach(radio => {
+        radio.addEventListener('change', function() {
+          if (this.checked) {
+            localStorage.setItem('nombre_impresora', this.value);
+          }
+        });
+      });
+      // Al cargar, marcar la opción guardada
+      const seleccionada = localStorage.getItem('nombre_impresora');
+      if (seleccionada && etiquetadorasMenu) {
+        const radioSel = etiquetadorasMenu.querySelector(`input[type=radio][value="${seleccionada}"]`);
+        if (radioSel) radioSel.checked = true;
       }
     });
   </script>

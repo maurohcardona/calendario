@@ -4,9 +4,9 @@ from .models import Turno, Cupo, Agenda
 class TurnoForm(forms.ModelForm):
     agenda = forms.ModelChoiceField(queryset=Agenda.objects.all(), required=True)
     fecha_nacimiento = forms.DateField(
-        required=True, 
+        required=True,
         label="Fecha de Nacimiento",
-        widget=forms.DateInput(attrs={'type':'date'})
+        widget=forms.DateInput(attrs={'type': 'date'})
     )
     sexo = forms.ChoiceField(
         choices=[('Desconocido', 'Desconocido'), ('Generico', 'Genérico'), ('Hombre', 'Hombre'), ('Mujer', 'Mujer')],
@@ -33,20 +33,24 @@ class TurnoForm(forms.ModelForm):
         widget=forms.Textarea(attrs={'rows': 2}),
         label="Nota Interna"
     )
+    observaciones_paciente = forms.CharField(
+        required=False,
+        max_length=255,
+        label="Observaciones de paciente"
+    )
 
     class Meta:
         model = Turno
-        fields = ['agenda','apellido','nombre','dni','determinaciones','fecha']
+        fields = ['agenda', 'apellido', 'nombre', 'dni', 'determinaciones', 'fecha']
         widgets = {
-            'fecha': forms.DateInput(attrs={'type':'date'}),
+            'fecha': forms.DateInput(attrs={'type': 'date'}),
             'determinaciones': forms.HiddenInput()
         }
-
 
 class CupoForm(forms.ModelForm):
     class Meta:
         model = Cupo
-        fields = ['agenda','fecha', 'cantidad_total']
+        fields = ['agenda', 'fecha', 'cantidad_total']
         widgets = {
-            'fecha': forms.DateInput(attrs={'type':'date'})
+            'fecha': forms.DateInput(attrs={'type': 'date'})
         }
