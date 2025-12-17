@@ -504,24 +504,32 @@ def dia(request, fecha):
                     'disponibles': disponibles_ag
                 }
         
-        # Agrupar turnos por agenda
+        # Obtener IDs de turnos coordinados para la fecha
+        turnos_coordinados_ids = set(Coordinados.objects.filter(id_turno__in=turnos_all.values_list('id', flat=True)).values_list('id_turno', flat=True))
+
+        # Agrupar turnos por agenda y por coordinación
         for turno in turnos_all:
             if turno.agenda.id not in turnos_por_agenda:
                 turnos_por_agenda[turno.agenda.id] = {
                     'agenda': turno.agenda,
-                    'turnos': [],
+                    'coordinados': [],
+                    'no_coordinados': [],
                     'capacidad': agendas_disponibilidad.get(turno.agenda.id, {}).get('capacidad', 0),
                     'usados': agendas_disponibilidad.get(turno.agenda.id, {}).get('usados', 0),
                     'disponibles': agendas_disponibilidad.get(turno.agenda.id, {}).get('disponibles', 0)
                 }
-            turnos_por_agenda[turno.agenda.id]['turnos'].append(turno)
-        
+            if turno.id in turnos_coordinados_ids:
+                turnos_por_agenda[turno.agenda.id]['coordinados'].append(turno)
+            else:
+                turnos_por_agenda[turno.agenda.id]['no_coordinados'].append(turno)
+
         # Agregar agendas con disponibilidad pero sin turnos (solo para fechas futuras con capacidad)
         for agenda_id, info in agendas_disponibilidad.items():
             if agenda_id not in turnos_por_agenda and info['capacidad'] > 0:
                 turnos_por_agenda[agenda_id] = {
                     'agenda': info['agenda'],
-                    'turnos': [],
+                    'coordinados': [],
+                    'no_coordinados': [],
                     'capacidad': info['capacidad'],
                     'usados': info['usados'],
                     'disponibles': info['disponibles']

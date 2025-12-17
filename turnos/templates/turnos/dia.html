@@ -53,6 +53,10 @@
             {% csrf_token %}
             
             {% if form.non_field_errors %}
+                    <!-- Selector de impresora oculto: ahora solo se usa el menú de opciones -->
+                    <input type="hidden" id="nombreImpresora" />
+            <!-- Hidden input for printer name -->
+            <input type="hidden" id="printer_name" name="nombre_impresora" />
                 <div style="background: rgba(216, 144, 144, 0.15); border: 2px solid var(--danger); color: #8c4a4a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 500;">
                     {{ form.non_field_errors }}
                 </div>
@@ -171,7 +175,7 @@
     <h3 style="margin-top: 2rem; color: var(--text-light);">📋 Turnos agendados</h3>
     
     {% if modo_vista == 'todas_agendas' and turnos_por_agenda %}
-        <!-- Vista agrupada por agenda -->
+        <!-- Vista agrupada por agenda y coordinación -->
         {% for agenda_id, info in turnos_por_agenda.items %}
             <div style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px solid var(--accent); box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid {{ info.agenda.color }};">
@@ -185,26 +189,52 @@
                         <span style="color: {% if info.disponibles > 0 %}#66ff66{% else %}#ff6666{% endif %}; font-weight: bold; font-size: 1.05rem;">{{ info.disponibles }}</span>
                     </div>
                 </div>
-                
-                {% if info.turnos %}
-                    <ul style="margin: 0; padding-left: 0; list-style: none;">
-                        {% for t in info.turnos %}
-                            <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid rgba(0, 212, 255, 0.2);{% endif %} display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                    <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
-                                </div>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
-                                    <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
-                                    <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p style="margin: 0; color: var(--text-dark); font-style: italic; font-size: 0.95rem;">No hay turnos agendados para esta agenda.</p>
-                {% endif %}
+
+                <!-- Turnos coordinados -->
+                <div style="margin-bottom: 1rem;">
+                    <span style="font-weight: bold; color: #388e3c; font-size: 1.1rem;">Turnos coordinados</span>
+                    {% if info.coordinados %}
+                        <ul style="margin: 0.5rem 0 0 0; padding-left: 0; list-style: none;">
+                            {% for t in info.coordinados %}
+                                <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid #b2dfdb;{% endif %} display: flex; justify-content: space-between; align-items: center; background: #e8f5e9; border-radius: 6px; margin-bottom: 0.5rem;">
+                                    <div>
+                                        <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                        <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p style="margin: 0.5rem 0 0 0; color: #388e3c; font-style: italic; font-size: 0.95rem;">No hay turnos coordinados para esta agenda.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Turnos NO coordinados -->
+                <div>
+                    <span style="font-weight: bold; color: #d32f2f; font-size: 1.1rem;">Turnos no coordinados</span>
+                    {% if info.no_coordinados %}
+                        <ul style="margin: 0.5rem 0 0 0; padding-left: 0; list-style: none;">
+                            {% for t in info.no_coordinados %}
+                                <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid #ffcdd2;{% endif %} display: flex; justify-content: space-between; align-items: center; background: #fff3e0; border-radius: 6px; margin-bottom: 0.5rem;">
+                                    <div>
+                                        <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                        <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.dni }}</span> | <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">Det: {{ t.determinaciones }}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
+                                        <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
+                                        <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p style="margin: 0.5rem 0 0 0; color: #d32f2f; font-style: italic; font-size: 0.95rem;">No hay turnos no coordinados para esta agenda.</p>
+                    {% endif %}
+                </div>
             </div>
         {% endfor %}
     {% else %}
@@ -732,25 +762,29 @@ setInterval(function() {
 
 // Validar formulario antes de enviar
 document.getElementById('turnoForm')?.addEventListener('submit', function(e) {
+    // Copy printer name from localStorage to hidden input before submit
+    // Tomar impresora seleccionada desde el menú de opciones (clave correcta)
+    const printerName = localStorage.getItem('nombre_impresora') || document.getElementById('nombreImpresora')?.value || '';
+    document.getElementById('printer_name').value = printerName;
+
     const determinacionesInput = document.getElementById('id_determinaciones');
-    
     if (!determinacionesInput.value || determinacionesInput.value.trim() === '') {
         e.preventDefault();
         alert('⚠️ Debe agregar al menos una determinación antes de guardar el turno.');
         return false;
     }
-    
+
     // Validar que los campos requeridos estén completos
     const dni = document.getElementById('id_dni').value.trim();
     const nombre = document.getElementById('id_nombre').value.trim();
     const apellido = document.getElementById('id_apellido').value.trim();
-    
+
     if (!dni || !nombre || !apellido) {
         e.preventDefault();
         alert('⚠️ Complete todos los campos requeridos: DNI, Nombre y Apellido.');
         return false;
     }
-    
+
     console.log('Formulario válido, enviando datos...');
     return true;
 });
