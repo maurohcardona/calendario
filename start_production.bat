@@ -1,16 +1,15 @@
 @echo off
-echo ==========================================
+title Django Agenda - Produccion
+
+echo =========================================
 echo  INICIANDO SERVIDOR DJANGO - AGENDA
-echo ==========================================
+echo =========================================
+echo.
 
-REM Ir a la carpeta del proyecto
-cd /d "%~dp0"
+REM Ir al proyecto
+cd /d C:\Users\Admin\Documents\Agenda\calendario
 
-REM Activar entorno virtual (si usas venv)
-REM Descomentá SOLO si tenés venv
-REM call venv\Scripts\activate
-
-REM Levantar servidor
-python manage.py runserver 0.0.0.0:8000
+REM Usar SIEMPRE el python del venv correcto
+C:\Users\Admin\Documents\Agenda\venv\Scripts\python.exe -m waitress --listen=0.0.0.0:8000 Agenda.wsgi:application
 
 pause
