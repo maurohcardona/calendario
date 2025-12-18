@@ -1,23 +1,20 @@
 # Python
 __pycache__/
-*.py[oc]
 *.pyc
 
 # Django
 staticfiles_collected/
-staticfiles/
 media/
 
-# Virtual environments
-.venv
+# Environment
+.env
 venv/
 
-# Logs
-*.log
-
-# Data / generated files
-mensajes/*.pet
-
 # Production scripts
-*.bat
+deploy.bat
+restart_production.bat
+stop_production.bat
 requirements.txt
+
+# Generated data
+mensajes/*.pet
