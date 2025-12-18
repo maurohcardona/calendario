@@ -244,6 +244,16 @@ document.addEventListener("DOMContentLoaded", function() {
                         info.el.classList.add('dia-todo-completo');
                     }
                 }
+                // Listener para click en el cuadrado del día (fuera de eventos/agendas)
+                info.el.addEventListener('click', function(e) {
+                    if (!e.target.closest('.fc-event')) {
+                        let url = "{% url 'turnos:dia' '0000-00-00' %}".replace('0000-00-00', fecha);
+                        if (selectedAgendaId) {
+                            url += '?agenda=' + selectedAgendaId;
+                        }
+                        window.location.href = url;
+                    }
+                });
             }
         });
 
