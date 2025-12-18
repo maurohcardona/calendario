@@ -1439,7 +1439,13 @@ def coordinar_turno(request, turno_id):
         lineas.append(f'P|1||{dni}||{apellido}^{nombre}^||{fecha_nac}|{sexo_astm}|{email_astm}|{telefono_astm}|{nota_interna_astm}|{observaciones_paciente}|||||| |||||{timestamp}||||||||||')
         # Construir línea O con todas las determinaciones/perfiles
         determinaciones_concatenadas = ''.join(determinaciones_astm)
-        lineas.append(f'O|1|{turno_id}||{determinaciones_concatenadas}||{nombre_impresora}|{nombre_medico}|{matricula_medico}||A||||||||||||||O')
+        # Insertar el nombre de usuario en el campo correspondiente (sin comillas)
+        usuario = request.user.username if request.user.is_authenticated else ''
+        # El campo de usuario va en la posición donde en el ejemplo aparece "nombre_usuario"
+        # O|1|46||^^^1000...|nombre_usuario|ADM2|MALVIDO  JOSE MARIA|332706||A||||||||||||||O
+        # Usamos el mismo orden de campos:
+        # O|1|<id>|...|<usuario>|<nombre_impresora>|<nombre_medico>|<matricula_medico>|...resto
+        lineas.append(f'O|1|{turno_id}||{determinaciones_concatenadas}||{usuario}|{nombre_impresora}|{nombre_medico}|{matricula_medico}||A||||||||||||||O')
         lineas.append('L|1|F')
         
         # Crear nombre de archivo único
