@@ -6,9 +6,14 @@
   <title>Agendador</title>
   {% load static %}
   <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
-  <link href="{% static 'vendor/fullcalendar/core/main.min.css' %}" rel="stylesheet">
-  <link href="{% static 'vendor/fullcalendar/daygrid/main.min.css' %}" rel="stylesheet">
-  <link href="{% static 'vendor/fullcalendar/bootstrap5/main.min.css' %}" rel="stylesheet">
+  <!-- FullCalendar CSS locales: solo si tienes los archivos, si no, usa los globales -->
+  <!-- <link href="{% static 'vendor/fullcalendar/core/main.min.css' %}" rel="stylesheet"> -->
+  <!-- <link href="{% static 'vendor/fullcalendar/daygrid/main.min.css' %}" rel="stylesheet"> -->
+  <!-- <link href="{% static 'vendor/fullcalendar/bootstrap5/main.min.css' %}" rel="stylesheet"> -->
+  <!-- Usar los globales si solo tienes index.global.min.js/css -->
+  <link href="{% static 'vendor/fullcalendar/core/index.global.min.js' %}" rel="preload" as="script">
+  <link href="{% static 'vendor/fullcalendar/daygrid/index.global.min.js' %}" rel="preload" as="script">
+  <link href="{% static 'vendor/fullcalendar/bootstrap5/index.global.min.js' %}" rel="preload" as="script">
   <!-- Quitar el script global de FullCalendar, se incluirá en la vista que lo use -->
   <style>
     :root {

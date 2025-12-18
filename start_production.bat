@@ -1,23 +1,16 @@
-@echo on
-echo ====================================
-echo Iniciando Agenda en modo produccion
-echo ====================================
-echo.
-echo Servidor: http://192.168.1.250:8000
-echo.
+@echo off
+echo ==========================================
+echo  INICIANDO SERVIDOR DJANGO - AGENDA
+echo ==========================================
 
-echo Estoy en:
-cd
+REM Ir a la carpeta del proyecto
+cd /d "%~dp0"
 
-cd /d C:\Users\Admin\Documents\Agenda\calendario
-echo Cambio de carpeta OK
+REM Activar entorno virtual (si usas venv)
+REM Descomentá SOLO si tenés venv
+REM call venv\Scripts\activate
 
-echo Probando Python:
-py --version
+REM Levantar servidor
+python manage.py runserver 0.0.0.0:8000
 
-echo Lanzando waitress...
-py -m waitress --listen=0.0.0.0:8000 Agenda.wsgi:application
-
-
-echo FIN DEL SCRIPT
 pause

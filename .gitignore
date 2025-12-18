@@ -5,17 +5,16 @@ __pycache__/
 # Django
 staticfiles_collected/
 media/
-static/
 
 # Environment
 .env
+.venv/
 venv/
 
-# Production scripts
+# Production scripts (locales)
 deploy.bat
 restart_production.bat
 stop_production.bat
-requirements.txt
 
 # Generated data
 mensajes/*.pet

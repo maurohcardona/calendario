@@ -27,6 +27,7 @@ INSTALLED_APPS = [
 # Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -84,9 +85,12 @@ USE_I18N = True
 USE_TZ = True
 
 # Archivos estáticos (CSS, JS, imágenes)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]  # Carpeta /static/ en el proyecto
 STATIC_ROOT = BASE_DIR / 'staticfiles_collected'  # Para producción
+
+# WhiteNoise (storage SIN manifest)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 # Archivos subidos (si los usás)
 MEDIA_URL = '/media/'
