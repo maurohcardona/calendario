@@ -1445,7 +1445,7 @@ def coordinar_turno(request, turno_id):
         # O|1|46||^^^1000...|nombre_usuario|ADM2|MALVIDO  JOSE MARIA|332706||A||||||||||||||O
         # Usamos el mismo orden de campos:
         # O|1|<id>|...|<usuario>|<nombre_impresora>|<nombre_medico>|<matricula_medico>|...resto
-        lineas.append(f'O|1|{turno_id}||{determinaciones_concatenadas}||{usuario}|{nombre_impresora}|{nombre_medico}|{matricula_medico}||A||||||||||||||O')
+        lineas.append(f'O|1|{turno_id}||{determinaciones_concatenadas}|||{nombre_impresora}|{nombre_medico}|{matricula_medico}|{usuario}|A||||||||||||||O')
         lineas.append('L|1|F')
         
         # Crear nombre de archivo único
