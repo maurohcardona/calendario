@@ -1,4 +1,114 @@
 from django.contrib.auth.decorators import login_required
+
+@login_required
+def precoordinacion_turno(request, turno_id):
+    """Vista de pre-coordinación: permite editar datos personales y coordinar el turno."""
+    import psycopg2
+    from django.conf import settings
+    from django.shortcuts import get_object_or_404, redirect, render
+    from django.urls import reverse
+    from .models import Turno, Agenda
+    turno = get_object_or_404(Turno, id=turno_id)
+
+    # Obtener datos del paciente desde PostgreSQL
+    paciente_data = None
+    try:
+        conn = psycopg2.connect(
+            dbname=settings.DATABASES['default']['NAME'],
+            user=settings.DATABASES['default']['USER'],
+            password=settings.DATABASES['default']['PASSWORD'],
+            host=settings.DATABASES['default']['HOST'],
+            port=settings.DATABASES['default']['PORT']
+        )
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones FROM pacientes WHERE dni = %s",
+            (turno.dni,)
+        )
+        result = cursor.fetchone()
+        if result:
+            paciente_data = {
+                'nombre': result[0],
+                'apellido': result[1],
+                'dni': result[2],
+                'fecha_nacimiento': result[3],
+                'sexo': result[4],
+                'telefono': result[5],
+                'email': result[6],
+                'observaciones': result[7] if len(result) > 7 else ''
+            }
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        pass
+
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        if accion == 'eliminar':
+            turno.delete()
+            return redirect('turnos:buscar')
+
+        # Actualizar datos personales
+        dni_nuevo = request.POST.get('dni', '').strip()
+        apellido_nuevo = request.POST.get('apellido', '').strip()
+        nombre_nuevo = request.POST.get('nombre', '').strip()
+        fecha_nac_nueva = request.POST.get('fecha_nacimiento', '')
+        sexo_nuevo = request.POST.get('sexo', '')
+        telefono = request.POST.get('telefono', '')
+        email = request.POST.get('email', '')
+        observaciones_paciente = request.POST.get('observaciones_paciente', '')
+
+        # Actualizar en tabla turnos_turno
+        turno.dni = dni_nuevo
+        turno.apellido = apellido_nuevo
+        turno.nombre = nombre_nuevo
+        turno.save()
+
+        # Actualizar en tabla pacientes (por dni original o nuevo)
+        try:
+            conn = psycopg2.connect(
+                dbname=settings.DATABASES['default']['NAME'],
+                user=settings.DATABASES['default']['USER'],
+                password=settings.DATABASES['default']['PASSWORD'],
+                host=settings.DATABASES['default']['HOST'],
+                port=settings.DATABASES['default']['PORT']
+            )
+            cursor = conn.cursor()
+            # Si el dni cambió, actualizar el registro correspondiente
+            cursor.execute("""
+                UPDATE pacientes SET nombre=%s, apellido=%s, dni=%s, fecha_nacimiento=%s, sexo=%s, telefono=%s, email=%s, observaciones=%s
+                WHERE dni = %s
+            """, (nombre_nuevo, apellido_nuevo, dni_nuevo, fecha_nac_nueva, sexo_nuevo, telefono, email, observaciones_paciente, turno.dni))
+            conn.commit()
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            pass
+
+        # Actualizar datos del turno (agenda, fecha, determinaciones, medico y nota_interna)
+        turno.agenda_id = request.POST.get('agenda')
+        turno.fecha = request.POST.get('fecha')
+        turno.determinaciones = request.POST.get('determinaciones', '')
+        turno.medico = request.POST.get('medico', '')
+        turno.nota_interna = request.POST.get('nota_interna', '')
+        turno.save()
+
+        # Si se presionó coordinar, redirigir a la acción de coordinación
+        if accion == 'coordinar':
+            # Redirigir por GET, nunca hacer POST directo
+            return redirect(reverse('turnos:coordinar_turno', args=[turno.id]))
+
+        return redirect('turnos:buscar')
+
+    agendas = Agenda.objects.all()
+    context = {
+        'turno': turno,
+        'paciente': paciente_data,
+        'agendas': agendas,
+        'es_precoordinacion': True,
+    }
+    return render(request, 'turnos/precoordinacion_turno.html', context)
+from django.contrib.auth.decorators import login_required
 @login_required
 def generar_ticket_retiro(request, turno_id):
     """Genera un ticket PDF de retiro para impresora térmica de 8cm de ancho"""

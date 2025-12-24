@@ -85,12 +85,12 @@ function limpiarOtrosCampos(campoActivo) {
                       🎫 Generar Ticket
                     </a>
                     {% if turno.fecha == hoy %}
-                    <button onclick="confirmarCoordinar({{ turno.id }}, '{{ turno.apellido }} {{ turno.nombre }}', '{{ turno.dni }}', '{{ turno.fecha }}')" style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(244, 67, 54, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(244, 67, 54, 0.3)';">
-                      📋 Coordinar Turno
-                    </button>
+                    <a href="{% url 'turnos:precoordinacion' turno.id %}" style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3); text-decoration: none; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(244, 67, 54, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(244, 67, 54, 0.3)';">
+                      📝 Pre-coordinacion
+                    </a>
                     {% else %}
                     <div style="padding: 0.75rem 1rem; background: rgba(128, 128, 128, 0.3); color: rgba(255, 255, 255, 0.4); border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; text-align: center; cursor: not-allowed;">
-                      📋 Coordinar Turno
+                      📝 Pre-coordinacion
                     </div>
                     {% endif %}
                   {% endif %}

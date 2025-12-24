@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 1100px;">
+    <h2>📝 Pre-coordinación de Turno</h2>
+    <form method="post" style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem;">
+            <!-- Datos personales -->
+            <div>
+                <div style="margin-bottom: 1.2rem;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">DNI</label>
+                    <input type="text" name="dni" value="{{ paciente.dni|default:turno.dni }}" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;" required />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem;">
+                    <div>
+                        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Apellido</label>
+                        <input type="text" name="apellido" value="{{ paciente.apellido|default:turno.apellido }}" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" required />
+                    </div>
+                    <div>
+                        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nombre</label>
+                        <input type="text" name="nombre" value="{{ paciente.nombre|default:turno.nombre }}" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" required />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem;">
+                    <div>
+                        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Fecha de Nacimiento</label>
+                        <input type="date" name="fecha_nacimiento" value="{{ paciente.fecha_nacimiento|date:'Y-m-d' }}" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                    </div>
+                    <div>
+                        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Sexo</label>
+                        <select name="sexo" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;">
+                            <option value="" {% if not paciente.sexo %}selected{% endif %}>-</option>
+                            <option value="Hombre" {% if paciente.sexo == 'Hombre' %}selected{% endif %}>Hombre</option>
+                            <option value="Mujer" {% if paciente.sexo == 'Mujer' %}selected{% endif %}>Mujer</option>
+                            <option value="Generico" {% if paciente.sexo == 'Generico' %}selected{% endif %}>Generico</option>
+                            <option value="Desconocido" {% if paciente.sexo == 'Desconocido' %}selected{% endif %}>Desconocido</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-bottom: 1.2rem;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Teléfono</label>
+                    <input type="text" name="telefono" value="{{ paciente.telefono }}" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                </div>
+                <div style="margin-bottom: 1.2rem;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Email</label>
+                    <input type="email" name="email" value="{{ paciente.email }}" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                </div>
+                <div style="margin-bottom: 1.2rem; position: relative;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
+                    <input type="text" id="id_medico" name="medico" value="{{ turno.medico }}" autocomplete="off" placeholder="Buscar médico..." style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                    <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);"></div>
+                </div>
+                <div style="margin-bottom: 1.2rem;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones</label>
+                    <textarea name="observaciones_paciente" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; min-height: 60px;">{{ paciente.observaciones }}</textarea>
+                </div>
+                <div style="margin-bottom: 1.2rem;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nota interna</label>
+                    <textarea name="nota_interna" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; min-height: 60px;">{{ turno.nota_interna }}</textarea>
+                </div>
+            </div>
+            <!-- Determinaciones y datos de turno -->
+            <div>
+                <div style="margin-bottom: 1.2rem;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Agenda</label>
+                    <select name="agenda" id="id_agenda" required style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;">
+                        {% for agenda in agendas %}
+                            <option value="{{ agenda.id }}" {% if agenda.id == turno.agenda.id %}selected{% endif %}>{{ agenda.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom: 1.2rem;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Fecha</label>
+                    <input type="date" name="fecha" value="{{ turno.fecha|date:'Y-m-d' }}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" required />
+                </div>
+                <div style="margin-bottom: 1.2rem;">
+                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Determinaciones</label>
+                    <div style="display: grid; grid-template-columns: 120px 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="text" id="inputCodigo" placeholder="Código" style="width: 100px; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                        <div style="position: relative; width: 100%;">
+                            <input type="text" id="inputNombre" placeholder="Buscar por nombre..." autocomplete="off" style="width: 100%; min-width: 300px; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                            <div id="autocompleteLista" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);"></div>
+                        </div>
+                        <button type="button" id="btnAgregarDet" style="padding: 0.75rem 1.5rem; background: #4caf50; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; font-size: 1rem;">➕ Agregar</button>
+                    </div>
+                    <div id="detStatus" style="margin-bottom: 0.5rem; font-size: 0.9rem;"></div>
+                    <div id="listaDeterminaciones" style="background: rgba(255, 255, 255, 0.15); border: 2px solid var(--accent); border-radius: 8px; padding: 1rem; min-height: 300px; max-height: 700px; overflow-y: auto;">
+                        <p style="color: rgba(200, 155, 143, 0.7); text-align: center; margin: 0;">No hay determinaciones agregadas</p>
+                    </div>
+                    <input type="hidden" id="id_determinaciones" name="determinaciones" value="{{ turno.determinaciones }}" />
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <button type="button" id="btnCoordinarTurno" style="padding: 0.75rem 1.5rem; background: #1976d2; color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 1.1rem; cursor: pointer;">Coordinar Turno</button>
+            <a href="{% url 'turnos:buscar' %}" style="padding: 0.75rem 1.5rem; background: #757575; color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 1.1rem; text-decoration: none; display: inline-block;">Cancelar</a>
+        </div>
+        <script>
+        // ...existing code...
+        document.getElementById('btnCoordinarTurno').addEventListener('click', async function() {
+            const form = this.closest('form');
+            const formData = new FormData(form);
+            formData.append('accion', 'coordinar');
+            // Guardar cambios primero
+            const response = await fetch(window.location.pathname, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
+                body: formData
+            });
+            // Si la respuesta es redirect, coordinar por AJAX
+            if (response.redirected) {
+                // Extraer turno_id de la URL de coordinación
+                const coordUrl = response.url;
+                // Hacer POST AJAX a coordinar_turno
+                const coordResp = await fetch(coordUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken'), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await coordResp.json();
+                if (data.success) {
+                    // Modal de éxito igual que buscar.html
+                    const modal = document.createElement('div');
+                    modal.id = 'modalCoordinacionExitosa';
+                    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+                    modal.innerHTML = `
+                      <div style="background: linear-gradient(135deg, #e0f7fa 0%, #b2dfdb 100%); border: 2px solid #4caf50; border-radius: 12px; padding: 2rem; max-width: 400px; box-shadow: 0 8px 32px rgba(76, 175, 80, 0.2); text-align: center;">
+                        <h3 style="color: #388e3c; margin-bottom: 1rem; font-size: 1.5rem;">✅ Turno coordinado exitosamente</h3>
+                        <p style="color: #333; margin-bottom: 1.2rem; font-size: 1.1rem;">Mensaje generado y enviado.<br>Puede imprimir el ticket de retiro:</p>
+                        <a href="${data.ticket_retiro_url}" target="_blank" style="background: #4caf50; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1rem; display: inline-block; margin-bottom: 1rem;">🖨️ Ticket de retiro</a>
+                        <br>
+                        <button onclick="window.location.href='{% url 'turnos:buscar' %}';" style="background: rgba(255,255,255,0.1); border: 1px solid #4caf50; color: #388e3c; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Cerrar</button>
+                      </div>
+                    `;
+                    document.body.appendChild(modal);
+                } else {
+                    alert(data.error || 'Error al coordinar turno');
+                }
+            } else {
+                alert('Error al guardar los cambios');
+            }
+        });
+        // ...existing code...
+        </script>
+    <script>
+    // Copia el JS de determinaciones de editar_turno.html aquí
+    let determinaciones = [];
+    let determinacionesCache = null;
+
+    window.addEventListener('DOMContentLoaded', async function() {
+        const codigosExistentes = '{{ turno.determinaciones }}'.split(',').map(c => c.trim()).filter(c => c);
+        if (codigosExistentes.length > 0) {
+            for (const codigo of codigosExistentes) {
+                try {
+                    const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+                    const data = await response.json();
+                    if (data.found) {
+                        if (data.tipo === 'perfil') {
+                            determinaciones.unshift({
+                                tipo: 'perfil',
+                                codigo: data.codigo,
+                                nombre: data.nombre,
+                                determinaciones: data.determinaciones
+                            });
+                        } else {
+                            determinaciones.unshift({
+                                tipo: 'determinacion',
+                                codigo: data.codigo,
+                                nombre: data.nombre
+                            });
+                        // Autocompletado de médicos
+                        let medicosCache = null;
+                        async function cargarMedicos() {
+                            if (medicosCache) return medicosCache;
+                            try {
+                                const response = await fetch('/turnos/api/listar-medicos/');
+                                medicosCache = await response.json();
+                                return medicosCache;
+                            } catch (error) {
+                                console.error('Error cargando médicos:', error);
+                                return [];
+                            }
+                        }
+                        document.getElementById('id_medico').addEventListener('input', async function() {
+                            const texto = this.value.trim().toLowerCase();
+                            const lista = document.getElementById('autocompleteMedicos');
+                            if (texto.length < 2) {
+                                lista.style.display = 'none';
+                                return;
+                            }
+                            const medicos = await cargarMedicos();
+                            const coincidencias = medicos.filter(m => 
+                                m.nombre_apellido.toLowerCase().includes(texto)
+                            ).slice(0, 15);
+                            if (coincidencias.length === 0) {
+                                lista.style.display = 'none';
+                                return;
+                            }
+                            lista.innerHTML = coincidencias.map(medico => {
+                                return `
+                                    <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
+                                        <span style="color: #c89b8f; font-weight: 600;">${medico.nombre_apellido}</span>
+                                        <span style="color: rgba(100, 100, 100, 0.7); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
+                                    </div>
+                                `;
+                            }).join('');
+                            lista.style.display = 'block';
+                            lista.querySelectorAll('.autocomplete-medico').forEach(item => {
+                                item.addEventListener('mouseenter', function() {
+                                    this.style.background = 'rgba(200, 155, 143, 0.2)';
+                                });
+                                item.addEventListener('mouseleave', function() {
+                                    this.style.background = 'transparent';
+                                });
+                                item.addEventListener('click', function() {
+                                    const nombre = this.dataset.nombre;
+                                    document.getElementById('id_medico').value = nombre;
+                                    lista.style.display = 'none';
+                                });
+                            });
+                        });
+                        document.addEventListener('click', function(e) {
+                            if (!e.target.closest('#id_medico') && !e.target.closest('#autocompleteMedicos')) {
+                                document.getElementById('autocompleteMedicos').style.display = 'none';
+                            }
+                        });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error cargando determinación:', codigo, error);
+                }
+            }
+            actualizarListaDeterminaciones();
+        }
+    });
+
+    async function cargarDeterminaciones() {
+        if (determinacionesCache) return determinacionesCache;
+        try {
+            const response = await fetch('/turnos/api/listar-determinaciones/');
+            determinacionesCache = await response.json();
+            return determinacionesCache;
+        } catch (error) {
+            console.error('Error cargando determinaciones:', error);
+            return [];
+        }
+    }
+
+    document.getElementById('inputNombre').addEventListener('input', async function() {
+        const texto = this.value.trim().toLowerCase();
+        const lista = document.getElementById('autocompleteLista');
+        if (texto.length < 2) {
+            lista.style.display = 'none';
+            return;
+        }
+        const items = await cargarDeterminaciones();
+        const coincidencias = items.filter(d => d.nombre.toLowerCase().includes(texto)).slice(0, 20);
+        if (coincidencias.length === 0) {
+            lista.style.display = 'none';
+            return;
+        }
+        lista.innerHTML = coincidencias.map(item => {
+            const tipoBadge = item.tipo === 'perfil' 
+                ? '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>'
+                : '';
+            return `
+                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}">
+                    <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}
+                </div>
+            `;
+        }).join('');
+        lista.style.display = 'block';
+        lista.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const codigo = this.dataset.codigo;
+                const nombre = this.dataset.nombre;
+                document.getElementById('inputCodigo').value = codigo;
+                document.getElementById('inputNombre').value = nombre;
+                lista.style.display = 'none';
+            });
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#inputNombre') && !e.target.closest('#autocompleteLista')) {
+            document.getElementById('autocompleteLista').style.display = 'none';
+        }
+    });
+
+    document.getElementById('btnAgregarDet').addEventListener('click', async function() {
+        const codigo = document.getElementById('inputCodigo').value.trim();
+        const status = document.getElementById('detStatus');
+        if (!codigo) {
+            status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ingrese un código</span>';
+            return;
+        }
+        status.innerHTML = '<span style="color: var(--accent); font-weight: 600;">⏳ Buscando...</span>';
+        try {
+            const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+            const data = await response.json();
+            if (data.found) {
+                if (data.tipo === 'perfil') {
+                    const yaExiste = determinaciones.find(d => d.tipo === 'perfil' && d.codigo === data.codigo);
+                    if (yaExiste) {
+                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Perfil ya agregado</span>';
+                        return;
+                    }
+                    determinaciones.unshift({
+                        tipo: 'perfil',
+                        codigo: data.codigo,
+                        nombre: data.nombre,
+                        determinaciones: data.determinaciones
+                    });
+                    const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
+                    status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (' + cantidadDets + ' determinaciones)</span>';
+                } else {
+                    const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
+                    if (yaExiste) {
+                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ya agregada</span>';
+                        return;
+                    }
+                    determinaciones.unshift({
+                        tipo: 'determinacion',
+                        codigo: data.codigo,
+                        nombre: data.nombre
+                    });
+                    status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Determinación agregada</span>';
+                }
+                actualizarListaDeterminaciones();
+                document.getElementById('inputCodigo').value = '';
+                document.getElementById('inputNombre').value = '';
+                setTimeout(() => status.innerHTML = '', 2000);
+            } else {
+                status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Código no encontrado</span>';
+            }
+        } catch (error) {
+            status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Error al buscar</span>';
+        }
+    });
+
+    document.getElementById('inputCodigo').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('btnAgregarDet').click();
+        }
+    });
+    document.getElementById('inputNombre').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('btnAgregarDet').click();
+        }
+    });
+
+    function actualizarListaDeterminaciones() {
+        const lista = document.getElementById('listaDeterminaciones');
+        if (determinaciones.length === 0) {
+            lista.innerHTML = '<p style="color: rgba(200, 155, 143, 0.7); text-align: center; margin: 0; font-weight: 600;">No hay determinaciones agregadas</p>';
+        } else {
+            lista.innerHTML = determinaciones.map((item, index) => {
+                if (item.tipo === 'perfil') {
+                    return `
+                        <div style="background: rgba(76, 175, 80, 0.15); border: 2px solid rgba(76, 175, 80, 0.4); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="background: #4caf50; color: #fff; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">PERFIL</span>
+                                    <strong style="color: #4caf50; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
+                                    <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(200, 155, 143, 0.8); font-weight: 600;">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
+                                </div>
+                                <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(200, 155, 143, 0.15); border: 2px solid rgba(200, 155, 143, 0.3); border-radius: 8px; margin-bottom: 0.5rem;">
+                            <div>
+                                <strong style="color: var(--accent); font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
+                            </div>
+                            <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+        // Actualizar campo oculto con códigos
+        const codigos = [];
+        determinaciones.forEach(item => {
+            if (item.tipo === 'perfil') {
+                codigos.push(item.codigo);
+            } else {
+                codigos.push(item.codigo.toString());
+            }
+        });
+        document.getElementById('id_determinaciones').value = codigos.join(',');
+    }
+    function eliminarItem(index) {
+        determinaciones.splice(index, 1);
+        actualizarListaDeterminaciones();
+    }
+    cargarDeterminaciones();
+    </script>
+    </form>
+</div>
+{% endblock %}
