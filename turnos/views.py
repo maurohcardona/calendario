@@ -1,3 +1,199 @@
+from django.contrib.auth.decorators import login_required
+@login_required
+def generar_ticket_retiro(request, turno_id):
+    """Genera un ticket PDF de retiro para impresora térmica de 8cm de ancho"""
+    import psycopg2
+    from datetime import date, timedelta
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import cm
+    from io import BytesIO
+
+    conn = psycopg2.connect(
+        dbname='Laboratorio',
+        user='postgres',
+        password='estufa10',
+        host='localhost',
+        port='5432'
+    )
+    cursor = conn.cursor()
+
+    # Obtener datos del turno
+    cursor.execute("""
+        SELECT 
+            t.id,
+            t.fecha,
+            t.medico,
+            t.nota_interna,
+            t.nombre,
+            t.apellido,
+            t.dni,
+            t.usuario,
+            a.name as agenda_nombre,
+            t.determinaciones
+        FROM turnos_turno t
+        JOIN turnos_agenda a ON t.agenda_id = a.id
+        WHERE t.id = %s
+    """, (turno_id,))
+    row = cursor.fetchone()
+
+    # Obtener datos adicionales del paciente de la tabla pacientes
+    paciente_data = None
+    if row:
+        cursor.execute("""
+            SELECT fecha_nacimiento, sexo, telefono, email
+            FROM pacientes
+            WHERE dni = %s
+            ORDER BY id DESC
+            LIMIT 1
+        """, (row[6],))
+        paciente_data = cursor.fetchone()
+
+    # Calcular edad del paciente
+    edad = None
+    if paciente_data and paciente_data[0]:
+        fecha_nacimiento = paciente_data[0]
+        fecha_turno = row[1]
+        edad = fecha_turno.year - fecha_nacimiento.year
+        if (fecha_turno.month, fecha_turno.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
+            edad -= 1
+
+    # Calcular fecha de retiro: hoy + máximo tiempo
+    hoy = date.today()
+    max_tiempo = 0
+    determinaciones_texto = row[9] if row[9] else ""
+    codigos = [d.strip() for d in determinaciones_texto.split(',') if d.strip()]
+    codigos_perfiles = [c for c in codigos if c.startswith('/')]
+    codigos_determinaciones = [c for c in codigos if not c.startswith('/')]
+
+    # Buscar tiempo en determinaciones
+    if codigos_determinaciones:
+        placeholders = ','.join(['%s'] * len(codigos_determinaciones))
+        cursor.execute(f"SELECT tiempo FROM determinaciones WHERE codigo IN ({placeholders})", codigos_determinaciones)
+        tiempos = [r[0] for r in cursor.fetchall() if r[0] is not None]
+        if tiempos:
+            max_tiempo = max(max_tiempo, max(tiempos))
+
+    # Buscar tiempo en perfiles
+    if codigos_perfiles:
+        placeholders = ','.join(['%s'] * len(codigos_perfiles))
+        cursor.execute(f"SELECT tiempo FROM perfiles WHERE codigo IN ({placeholders})", codigos_perfiles)
+        tiempos = [r[0] for r in cursor.fetchall() if r[0] is not None]
+        if tiempos:
+            max_tiempo = max(max_tiempo, max(tiempos))
+
+    fecha_retiro = hoy + timedelta(days=max_tiempo)
+
+    cursor.close()
+    conn.close()
+
+    if not row:
+        return HttpResponse("Turno no encontrado", status=404)
+
+    # Crear PDF para impresora térmica (8cm = 226.77 puntos)
+    buffer = BytesIO()
+    ancho_papel = 8 * cm  # 8 cm
+    alto_papel = 18 * cm  # Altura suficiente para los datos
+    p = canvas.Canvas(buffer, pagesize=(ancho_papel, alto_papel))
+
+    margen = 0.3 * cm
+    ancho_util = ancho_papel - (2 * margen)
+    y = alto_papel - margen
+
+    # ====== ENCABEZADO ======
+    p.setFont("Helvetica-Bold", 11)
+    p.drawCentredString(ancho_papel / 2, y, "Hospital Balestrini")
+    y -= 0.5 * cm
+    p.setFont("Helvetica", 9)
+    p.drawCentredString(ancho_papel / 2, y, row[8] or "")  # Nombre de la agenda
+    y -= 0.6 * cm
+    p.line(margen, y, ancho_papel - margen, y)
+    y -= 0.5 * cm
+
+    # ====== DATOS DEL PACIENTE ======
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(margen, y, "Paciente:")
+    p.setFont("Helvetica", 9)
+    apellido_formateado = row[5].strip().capitalize() if row[5] else ""
+    nombre_formateado = row[4].strip().capitalize() if row[4] else ""
+    nombre_completo = f"{apellido_formateado}, {nombre_formateado}"
+    p.drawString(margen + 2*cm, y, nombre_completo)
+    y -= 0.45 * cm
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(margen, y, "DNI:")
+    p.setFont("Helvetica", 9)
+    p.drawString(margen + 2*cm, y, str(row[6]))
+    y -= 0.45 * cm
+    if paciente_data and paciente_data[2]:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Teléfono:")
+        p.setFont("Helvetica", 9)
+        p.drawString(margen + 2*cm, y, str(paciente_data[2]))
+        y -= 0.45 * cm
+    if paciente_data and paciente_data[3]:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Email:")
+        p.setFont("Helvetica", 7)
+        email_str = str(paciente_data[3])
+        if len(email_str) > 30:
+            p.drawString(margen + 2*cm, y, email_str[:30])
+            y -= 0.35 * cm
+            p.drawString(margen + 2*cm, y, email_str[30:])
+            y -= 0.45 * cm
+        else:
+            p.setFont("Helvetica", 9)
+            p.drawString(margen + 2*cm, y, email_str)
+            y -= 0.45 * cm
+    if edad is not None:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Edad:")
+        p.setFont("Helvetica", 9)
+        p.drawString(margen + 2*cm, y, f"{edad} años")
+        y -= 0.45 * cm
+    if row[2]:
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(margen, y, "Médico:")
+        p.setFont("Helvetica", 9)
+        medico_str = str(row[2]).strip().capitalize()
+        if len(medico_str) > 30:
+            p.drawString(margen + 2*cm, y, medico_str[:30])
+            y -= 0.35 * cm
+            p.drawString(margen + 2*cm, y, medico_str[30:])
+            y -= 0.45 * cm
+        else:
+            p.drawString(margen + 2*cm, y, medico_str)
+            y -= 0.45 * cm
+
+    # ====== FECHA DE RETIRO ======
+    p.setFont("Helvetica-Bold", 10)
+    fecha_retiro_str = fecha_retiro.strftime('%d/%m/%Y')
+    p.drawString(margen, y, f"Fecha de retiro: a partir de {fecha_retiro_str}")
+    y -= 0.45 * cm
+    p.setFont("Helvetica", 9)
+    p.drawString(margen, y, "De lunes a viernes de 10 a 17 hs")
+    y -= 0.45 * cm
+    p.line(margen, y, ancho_papel - margen, y)
+    y -= 0.5 * cm
+
+    # ====== PIE DE PÁGINA ======
+    p.setFont("Helvetica", 7)
+    p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {row[7]}")
+    y -= 0.3 * cm
+    p.drawCentredString(ancho_papel / 2, y, "laboratoriobalestrini@gmail.com")
+    y -= 0.3 * cm
+    p.setFont("Helvetica-Bold", 11)
+    p.drawCentredString(ancho_papel / 2, y, f"Ticket N° {turno_id}")
+    y -= 0.35 * cm
+    p.setFont("Helvetica", 6)
+    from datetime import datetime
+    p.drawCentredString(ancho_papel / 2, y, datetime.now().strftime('%d/%m/%Y %H:%M'))
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="ticket_retiro_{turno_id}.pdf"'
+    return response
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -1470,9 +1666,13 @@ def coordinar_turno(request, turno_id):
             usuario=request.user.username
         )
         
+        # Construir URL del ticket de retiro
+        from django.urls import reverse
+        ticket_retiro_url = reverse('turnos:generar_ticket_retiro', args=[turno_id])
         return JsonResponse({
             'success': True,
-            'mensaje': f'Turno coordinado exitosamente. Archivo generado: {nombre_archivo}'
+            'mensaje': f'Turno coordinado exitosamente. Mensaje generado: {nombre_archivo}',
+            'ticket_retiro_url': ticket_retiro_url
         })
         
     except Exception as e:
@@ -2436,3 +2636,6 @@ def crear_medico_api(request):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required

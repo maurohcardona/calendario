@@ -23,6 +23,7 @@ urlpatterns = [
     path("turno/<int:turno_id>/coordinar/", views.coordinar_turno, name="coordinar_turno"),
     path("api/turnos-historicos/<str:fecha>/", views.turnos_historicos_api, name="turnos_historicos_api"),
     path("turno/<int:turno_id>/ticket/", views.generar_ticket_turno, name="generar_ticket_turno"),
+    path("turno/<int:turno_id>/retiro/", views.generar_ticket_retiro, name="generar_ticket_retiro"),
     path("administrar-tablas/", views.administrar_tablas, name="administrar_tablas"),
     path("administrar-tablas/<str:tabla>/", views.administrar_tabla_detalle, name="administrar_tabla_detalle"),
     path("administrar-tablas/<str:tabla>/crear/", views.crear_registro, name="crear_registro"),
