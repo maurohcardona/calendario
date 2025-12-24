@@ -1,13 +1,19 @@
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+from dotenv import find_dotenv
 
 # Base del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Configuración básica
-SECRET_KEY = 'django-insecure-pq8xm2k9v5w7n4j3h6r8t1y9u0i2o5p7a9s1d3f5g7h9j2k4'
-DEBUG = False
-ALLOWED_HOSTS = ['*', 'localhost', '127.0.0.1']
 
+# Cargar .env desde la carpeta calendario
+load_dotenv(find_dotenv(filename='.env', raise_error_if_not_found=False) or 'calendario/.env')
+
+# Configuración básica
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG')
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
 # Apps instaladas
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -61,12 +67,12 @@ WSGI_APPLICATION = 'Agenda.wsgi.application'
 # Base de datos
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "Laboratorio",
-        "USER": "postgres",
-        "PASSWORD": "estufa10",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "ENGINE": os.getenv('DB_ENGINE'),
+        "NAME": os.getenv('DB_NAME'),
+        "USER": os.getenv('DB_USER'),
+        "PASSWORD": os.getenv('DB_PASSWORD'),
+        "HOST": os.getenv('DB_HOST'),
+        "PORT": os.getenv('DB_PORT'),
     }
 }
 
