@@ -19,18 +19,18 @@
         <!-- DNI (No editable) -->
         <div style="margin-bottom: 1.5rem;">
             <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">DNI</label>
-            <input type="text" value="{% if paciente %}{{ paciente.dni }}{% else %}{{ turno.dni }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+            <input type="text" value="{% if paciente %}{{ paciente.dni }}{% else %}{{ turno.dni }}{% endif %}" style="width: 100%; background: #ffffff; border: 2pxtext-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;" />
         </div>
 
         <!-- Campos Apellido y Nombre en la misma fila -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
             <div>
                 <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Apellido</label>
-                <input type="text" value="{% if paciente %}{{ paciente.apellido }}{% else %}{{ turno.apellido }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                <input type="text" value="{% if paciente %}{{ paciente.apellido }}{% else %}{{ turno.apellido }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
             </div>
             <div>
                 <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nombre</label>
-                <input type="text" value="{% if paciente %}{{ paciente.nombre }}{% else %}{{ turno.nombre }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                <input type="text" value="{% if paciente %}{{ paciente.nombre }}{% else %}{{ turno.nombre }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
             </div>
         </div>
 
@@ -38,11 +38,11 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
             <div>
                 <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Fecha de Nacimiento</label>
-                <input type="date" value="{% if paciente %}{{ paciente.fecha_nacimiento|date:'Y-m-d' }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                <input type="date" value="{% if paciente %}{{ paciente.fecha_nacimiento|date:'Y-m-d' }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
             </div>
             <div>
                 <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Sexo</label>
-                <input type="text" value="{% if paciente %}{{ paciente.sexo }}{% endif %}" readonly style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;" />
+                <input type="text" value="{% if paciente %}{{ paciente.sexo }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
             </div>
         </div>
 
