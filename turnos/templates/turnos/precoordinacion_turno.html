@@ -9,7 +9,7 @@
             <div>
                 <div style="margin-bottom: 1.2rem;">
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">DNI</label>
-                    <input type="text" name="dni" value="{{ paciente.dni|default:turno.dni }}" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;" required />
+                    <input type="text" name="dni" value="{{ paciente.dni|default:turno.dni }}" readonly style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;" required />
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem;">
                     <div>
@@ -45,10 +45,13 @@
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Email</label>
                     <input type="email" name="email" value="{{ paciente.email }}" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
                 </div>
-                <div style="margin-bottom: 1.2rem; position: relative;">
-                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
-                    <input type="text" id="id_medico" name="medico" value="{{ turno.medico }}" autocomplete="off" placeholder="Buscar médico..." style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
-                    <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);"></div>
+                <div style="margin-bottom: 1.2rem; position: relative; display: flex; align-items: flex-end; gap: 0.5rem;">
+                    <div style="flex: 1; position: relative;">
+                        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
+                        <input type="text" id="id_medico" name="medico" value="{{ turno.medico }}" autocomplete="off" placeholder="Buscar médico..." style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                        <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);"></div>
+                    </div>
+                    <button type="button" id="btnNuevoMedico" title="Agregar médico nuevo" style="height: 2.6rem; width: 2.6rem; background: #4caf50; color: #fff; border: none; border-radius: 50%; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2); margin-bottom: 0.2rem;">+</button>
                 </div>
                 <div style="margin-bottom: 1.2rem;">
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones</label>
@@ -399,6 +402,151 @@
     }
     cargarDeterminaciones();
     </script>
+    <script>
+    // Lógica modal médico (idéntica a dia.html)
+    const btnNuevoMedico = document.getElementById('btnNuevoMedico');
+    const modalNuevoMedico = document.getElementById('modalNuevoMedico');
+    const cerrarModalMedico = document.getElementById('cerrarModalMedico');
+    const formNuevoMedico = document.getElementById('formNuevoMedico');
+    const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
+
+    btnNuevoMedico.addEventListener('click', function() {
+        modalNuevoMedico.style.display = 'flex';
+        estadoNuevoMedico.textContent = '';
+        formNuevoMedico.reset();
+    });
+    cerrarModalMedico.addEventListener('click', function() {
+        modalNuevoMedico.style.display = 'none';
+    });
+    modalNuevoMedico.addEventListener('click', function(e) {
+        if (e.target === modalNuevoMedico) {
+            modalNuevoMedico.style.display = 'none';
+        }
+    });
+    formNuevoMedico.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const nombre = document.getElementById('nombreMedico').value.trim();
+        const matricula = document.getElementById('matriculaMedico').value.trim();
+        if (!nombre || !matricula) {
+            estadoNuevoMedico.textContent = 'Complete ambos campos.';
+            estadoNuevoMedico.style.color = '#d32f2f';
+            return;
+        }
+        estadoNuevoMedico.textContent = 'Guardando...';
+        estadoNuevoMedico.style.color = '#333';
+        try {
+            const response = await fetch('/turnos/api/crear-medico/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ nombre_apellido: nombre, matricula_provincial: matricula })
+            });
+            const data = await response.json();
+            if (data.success) {
+                estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
+                estadoNuevoMedico.style.color = '#388e3c';
+                // Actualizar cache y autocompletado
+                if (typeof medicosCache !== 'undefined') medicosCache = null;
+                if (typeof cargarMedicos === 'function') await cargarMedicos();
+                document.getElementById('id_medico').value = nombre;
+                setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
+            } else {
+                estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
+                estadoNuevoMedico.style.color = '#d32f2f';
+            }
+        } catch (err) {
+            estadoNuevoMedico.textContent = 'Error de red.';
+            estadoNuevoMedico.style.color = '#d32f2f';
+        }
+    });
+    </script>
+
     </form>
 </div>
+
+<!-- Modal para agregar médico nuevo -->
+<div id="modalNuevoMedico" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:2rem; max-width:400px; margin:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3); position:relative;">
+        <button id="cerrarModalMedico" style="position:absolute; top:0.5rem; right:0.5rem; background:none; border:none; font-size:1.5rem; color:#888; cursor:pointer;">&times;</button>
+        <h3 style="margin-top:0; color:#4caf50;">Agregar nuevo médico</h3>
+        <form id="formNuevoMedico">
+            <div style="margin-bottom:1rem;">
+                <label for="nombreMedico" style="font-weight:600;">Apellido y Nombre</label>
+                <input type="text" id="nombreMedico" name="nombreMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
+            </div>
+            <div style="margin-bottom:1.5rem;">
+                <label for="matriculaMedico" style="font-weight:600;">Matrícula Provincial</label>
+                <input type="text" id="matriculaMedico" name="matriculaMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
+            </div>
+            <button type="submit" style="background:#4caf50; color:#fff; border:none; border-radius:8px; padding:0.7rem 1.5rem; font-weight:700; font-size:1rem; cursor:pointer; width:100%;">Guardar médico</button>
+            <div id="estadoNuevoMedico" style="margin-top:1rem; font-size:0.95rem;"></div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnNuevoMedico = document.getElementById('btnNuevoMedico');
+    const modalNuevoMedico = document.getElementById('modalNuevoMedico');
+    const cerrarModalMedico = document.getElementById('cerrarModalMedico');
+    const formNuevoMedico = document.getElementById('formNuevoMedico');
+    const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
+
+    btnNuevoMedico.addEventListener('click', function() {
+        modalNuevoMedico.style.display = 'flex';
+        estadoNuevoMedico.textContent = '';
+        formNuevoMedico.reset();
+    });
+    cerrarModalMedico.addEventListener('click', function() {
+        modalNuevoMedico.style.display = 'none';
+    });
+    modalNuevoMedico.addEventListener('click', function(e) {
+        if (e.target === modalNuevoMedico) {
+            modalNuevoMedico.style.display = 'none';
+        }
+    });
+    formNuevoMedico.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const nombre = document.getElementById('nombreMedico').value.trim();
+        const matricula = document.getElementById('matriculaMedico').value.trim();
+        if (!nombre || !matricula) {
+            estadoNuevoMedico.textContent = 'Complete ambos campos.';
+            estadoNuevoMedico.style.color = '#d32f2f';
+            return;
+        }
+        estadoNuevoMedico.textContent = 'Guardando...';
+        estadoNuevoMedico.style.color = '#333';
+        try {
+            const response = await fetch('/turnos/api/crear-medico/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ nombre_apellido: nombre, matricula_provincial: matricula })
+            });
+            const data = await response.json();
+            if (data.success) {
+                estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
+                estadoNuevoMedico.style.color = '#388e3c';
+                // Actualizar cache y autocompletado
+                if (typeof medicosCache !== 'undefined') medicosCache = null;
+                if (typeof cargarMedicos === 'function') await cargarMedicos();
+                document.getElementById('id_medico').value = nombre;
+                setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
+            } else {
+                estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
+                estadoNuevoMedico.style.color = '#d32f2f';
+            }
+        } catch (err) {
+            estadoNuevoMedico.textContent = 'Error de red.';
+            estadoNuevoMedico.style.color = '#d32f2f';
+        }
+    });
+});
+</script>
+
 {% endblock %}
+
