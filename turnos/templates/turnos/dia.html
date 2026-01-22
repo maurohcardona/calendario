@@ -107,10 +107,9 @@
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Sexo</label>
                     <select id="id_sexo" name="sexo" required style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;">
                         <option value="">Seleccione...</option>
-                        <option value="Hombre">Hombre</option>
-                        <option value="Mujer">Mujer</option>
-                        <option value="Generico">Genérico</option>
-                        <option value="Desconocido">Desconocido</option>
+                        <option value="Hombre">Masculino</option>
+                        <option value="Mujer">Femenino</option>
+                        <option value="Generico">Sin asignar</option>
                     </select>
                 </div>
             </div>
@@ -311,7 +310,7 @@ async function cargarDeterminaciones() {
     if (determinacionesCache) return determinacionesCache;
     
     try {
-        const response = await fetch('/turnos/api/listar-determinaciones/');
+        const response = await fetch('/determinaciones/api/listar-determinaciones/');
         determinacionesCache = await response.json();
         return determinacionesCache;
     } catch (error) {
@@ -447,7 +446,7 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
     status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
     
     try {
-        const response = await fetch(`/turnos/api/buscar-paciente/?dni=${dni}`);
+        const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${dni}`);
         const data = await response.json();
         // Eliminar cartel previo si existe
         const cartelExistente = document.getElementById('cartel-turno-pendiente');
@@ -612,26 +611,41 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
     status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
     
     try {
-        const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+        const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
         const data = await response.json();
         
         if (data.found) {
             if (data.tipo === 'perfil') {
-                // Agregar perfil completo
-                const yaExiste = determinaciones.find(d => d.tipo === 'perfil' && d.codigo === data.codigo);
-                if (yaExiste) {
-                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Perfil ya agregado</span>';
+                const detCodesRaw = Array.isArray(data.determinaciones)
+                    ? data.determinaciones
+                    : (data.determinaciones || '').split(',').map(d => d.trim()).filter(Boolean);
+
+                if (detCodesRaw.length === 0) {
+                    status.innerHTML = '<span style="color: #ff9999;">⚠️ El perfil no tiene determinaciones</span>';
                     return;
                 }
-                
-                determinaciones.push({
-                    tipo: 'perfil',
-                    codigo: data.codigo,
-                    nombre: data.nombre,
-                    determinaciones: data.determinaciones
+
+                const catalogo = await cargarDeterminaciones();
+                let agregadas = 0;
+
+                detCodesRaw.forEach(code => {
+                    const yaExisteDet = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === code);
+                    if (yaExisteDet) return;
+                    const itemCat = catalogo.find(d => d.codigo === code && d.tipo === 'determinacion');
+                    const nombreDet = itemCat ? itemCat.nombre : code;
+                    determinaciones.push({
+                        tipo: 'determinacion',
+                        codigo: code,
+                        nombre: nombreDet
+                    });
+                    agregadas += 1;
                 });
-                const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
-                status.innerHTML = '<span style="color: #4caf50;">✅ Perfil agregado (' + cantidadDets + ' determinaciones)</span>';
+
+                if (agregadas === 0) {
+                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Todas las determinaciones del perfil ya estaban agregadas</span>';
+                } else {
+                    status.innerHTML = `<span style="color: #4caf50;">✅ Perfil agregado (${agregadas} determinaciones)</span>`;
+                }
             } else {
                 // Agregar determinación individual
                 const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);

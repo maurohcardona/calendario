@@ -166,7 +166,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (codigosExistentes.length > 0) {
         for (const codigo of codigosExistentes) {
             try {
-                const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+                const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
                 const data = await response.json();
                 
                 if (data.found) {
@@ -198,7 +198,7 @@ async function cargarDeterminaciones() {
     if (determinacionesCache) return determinacionesCache;
     
     try {
-        const response = await fetch('/turnos/api/listar-determinaciones/');
+        const response = await fetch('/determinaciones/api/listar-determinaciones/');
         determinacionesCache = await response.json();
         return determinacionesCache;
     } catch (error) {
@@ -320,7 +320,7 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
     status.innerHTML = '<span style="color: var(--accent); font-weight: 600;">⏳ Buscando...</span>';
     
     try {
-        const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+        const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
         const data = await response.json();
         
         if (data.found) {

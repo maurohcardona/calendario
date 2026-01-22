@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cupo, Turno, CapacidadDia, Agenda, TurnoMensual, Coordinados
+from .models import Cupo, Turno, Agenda, Coordinados, Feriados
 
 
 @admin.register(Agenda)
@@ -83,133 +83,142 @@ class TurnoAdmin(admin.ModelAdmin):
 	list_filter = ('agenda', 'fecha')
 
 
-@admin.register(CapacidadDia)
-class CapacidadDiaAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'fecha', 'capacidad')
-	list_filter = ('agenda',)
+@admin.register(Feriados)
+class FeriadosAdmin(admin.ModelAdmin):
+	list_display = ('fecha', 'descripcion')
+	list_filter = ('fecha',)
+	search_fields = ('descripcion',)
+	ordering = ('-fecha',)
+
+
+
+# @admin.register(CapacidadDia)
+# class CapacidadDiaAdmin(admin.ModelAdmin):
+# 	list_display = ('agenda', 'fecha', 'capacidad')
+# 	list_filter = ('agenda',)
 
 # Registered models so admins can manage daily capacities and agendas
 
-from .models import WeeklyAvailability
+#from .models import WeeklyAvailability
 
 
-@admin.register(WeeklyAvailability)
-class WeeklyAvailabilityAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'weekday', 'capacidad', 'active', 'rango_display')
-	list_filter = ('agenda', 'weekday', 'active')
-	fieldsets = (
-		('Información básica', {
-			'fields': ('agenda', 'weekday', 'capacidad', 'active')
-		}),
-		('Rango de fechas (opcional)', {
-			'fields': ('desde_fecha', 'hasta_fecha'),
-			'description': 'Deja en blanco para aplicar indefinidamente. Si especificas un rango, esta disponibilidad solo se aplicará dentro de esas fechas.'
-		}),
-	)
-	actions = ['create_cupos_for_range']
+# @admin.register(WeeklyAvailability)
+# class WeeklyAvailabilityAdmin(admin.ModelAdmin):
+# 	list_display = ('agenda', 'weekday', 'capacidad', 'active', 'rango_display')
+# 	list_filter = ('agenda', 'weekday', 'active')
+# 	fieldsets = (
+# 		('Información básica', {
+# 			'fields': ('agenda', 'weekday', 'capacidad', 'active')
+# 		}),
+# 		('Rango de fechas (opcional)', {
+# 			'fields': ('desde_fecha', 'hasta_fecha'),
+# 			'description': 'Deja en blanco para aplicar indefinidamente. Si especificas un rango, esta disponibilidad solo se aplicará dentro de esas fechas.'
+# 		}),
+# 	)
+# 	actions = ['create_cupos_for_range']
 
-	def rango_display(self, obj):
-		if obj.desde_fecha or obj.hasta_fecha:
-			desde = obj.desde_fecha or 'inicio'
-			hasta = obj.hasta_fecha or 'fin'
-			return f"{desde} → {hasta}"
-		return "Sin rango"
-	rango_display.short_description = 'Rango'
+# 	def rango_display(self, obj):
+# 		if obj.desde_fecha or obj.hasta_fecha:
+# 			desde = obj.desde_fecha or 'inicio'
+# 			hasta = obj.hasta_fecha or 'fin'
+# 			return f"{desde} → {hasta}"
+# 		return "Sin rango"
+# 	rango_display.short_description = 'Rango'
 
-	def create_cupos_for_range(self, request, queryset):
-		"""Admin action: prompt for start/end dates and then create Cupo records
-		for each WeeklyAvailability selected, filling all dates in the range where the weekday matches."""
-		from django.shortcuts import render, redirect
-		from django import forms
-		from django.urls import path
-		from datetime import datetime, timedelta
-		from django.contrib import messages
+# 	def create_cupos_for_range(self, request, queryset):
+# 		"""Admin action: prompt for start/end dates and then create Cupo records
+# 		for each WeeklyAvailability selected, filling all dates in the range where the weekday matches."""
+# 		from django.shortcuts import render, redirect
+# 		from django import forms
+# 		from django.urls import path
+# 		from datetime import datetime, timedelta
+# 		from django.contrib import messages
 
-		class _RangeForm(forms.Form):
-			_selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
-			start = forms.DateField(required=True, widget=forms.DateInput(attrs={'type':'date'}))
-			end = forms.DateField(required=True, widget=forms.DateInput(attrs={'type':'date'}))
+# 		class _RangeForm(forms.Form):
+# 			_selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
+# 			start = forms.DateField(required=True, widget=forms.DateInput(attrs={'type':'date'}))
+# 			end = forms.DateField(required=True, widget=forms.DateInput(attrs={'type':'date'}))
 
-		if 'apply' in request.POST:
-			form = _RangeForm(request.POST)
-			if form.is_valid():
-				start = form.cleaned_data['start']
-				end = form.cleaned_data['end']
-				total_created = 0
-				total_skipped = 0
-				for wa in queryset:
-					agenda = wa.agenda
-					# iterate dates strictly within the range
-					cur = start
-					while cur <= end:
-						if cur.weekday() == wa.weekday and wa.active:
-							# create Cupo for this agenda+date only if it does not exist
-							Cupo = self.model._meta.apps.get_model('turnos', 'Cupo')
-							obj, created = Cupo.objects.get_or_create(agenda=agenda, fecha=cur, defaults={'cantidad_total': wa.capacidad})
-							if created:
-								total_created += 1
-							else:
-								total_skipped += 1
-						cur += timedelta(days=1)
+# 		if 'apply' in request.POST:
+# 			form = _RangeForm(request.POST)
+# 			if form.is_valid():
+# 				start = form.cleaned_data['start']
+# 				end = form.cleaned_data['end']
+# 				total_created = 0
+# 				total_skipped = 0
+# 				for wa in queryset:
+# 					agenda = wa.agenda
+# 					# iterate dates strictly within the range
+# 					cur = start
+# 					while cur <= end:
+# 						if cur.weekday() == wa.weekday and wa.active:
+# 							# create Cupo for this agenda+date only if it does not exist
+# 							Cupo = self.model._meta.apps.get_model('turnos', 'Cupo')
+# 							obj, created = Cupo.objects.get_or_create(agenda=agenda, fecha=cur, defaults={'cantidad_total': wa.capacidad})
+# 							if created:
+# 								total_created += 1
+# 							else:
+# 								total_skipped += 1
+# 						cur += timedelta(days=1)
 
-				messages.success(request, f"Cupos creados: {total_created} nuevos. Existentes omitidos: {total_skipped}. Rango: {start} a {end}.")
-				return None
-		else:
-			form = _RangeForm(initial={'_selected_action': queryset.values_list('pk', flat=True)})
+# 				messages.success(request, f"Cupos creados: {total_created} nuevos. Existentes omitidos: {total_skipped}. Rango: {start} a {end}.")
+# 				return None
+# 		else:
+# 			form = _RangeForm(initial={'_selected_action': queryset.values_list('pk', flat=True)})
 
-		return render(request, 'admin/turnos/weeklyavailability_create_range.html', {'queryset': queryset, 'form': form, 'title': 'Crear Cupos desde rango de fechas'})
+# 		return render(request, 'admin/turnos/weeklyavailability_create_range.html', {'queryset': queryset, 'form': form, 'title': 'Crear Cupos desde rango de fechas'})
 
-	create_cupos_for_range.short_description = "Crear/Actualizar Cupos desde rango de fechas (para las entries seleccionadas)"
+# 	create_cupos_for_range.short_description = "Crear/Actualizar Cupos desde rango de fechas (para las entries seleccionadas)"
 
 
-@admin.register(TurnoMensual)
-class TurnoMensualAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'desde_fecha', 'hasta_fecha', 'cantidad', 'estado_display', 'creado')
-	list_filter = ('agenda', 'aplicado', 'creado')
-	readonly_fields = ('aplicado', 'creado')
-	fieldsets = (
-		('Información', {
-			'fields': ('agenda', 'desde_fecha', 'hasta_fecha', 'cantidad')
-		}),
-		('Estado', {
-			'fields': ('aplicado', 'creado'),
-			'classes': ('collapse',)
-		}),
-	)
-	actions = ['aplicar_turnos_mensuales']
+# @admin.register(TurnoMensual)
+# class TurnoMensualAdmin(admin.ModelAdmin):
+# 	list_display = ('agenda', 'desde_fecha', 'hasta_fecha', 'cantidad', 'estado_display', 'creado')
+# 	list_filter = ('agenda', 'aplicado', 'creado')
+# 	readonly_fields = ('aplicado', 'creado')
+# 	fieldsets = (
+# 		('Información', {
+# 			'fields': ('agenda', 'desde_fecha', 'hasta_fecha', 'cantidad')
+# 		}),
+# 		('Estado', {
+# 			'fields': ('aplicado', 'creado'),
+# 			'classes': ('collapse',)
+# 		}),
+# 	)
+# 	actions = ['aplicar_turnos_mensuales']
 
-	def estado_display(self, obj):
-		if obj.aplicado:
-			return "✅ Aplicado"
-		return "⏳ Pendiente"
-	estado_display.short_description = "Estado"
+# 	def estado_display(self, obj):
+# 		if obj.aplicado:
+# 			return "✅ Aplicado"
+# 		return "⏳ Pendiente"
+# 	estado_display.short_description = "Estado"
 
-	def aplicar_turnos_mensuales(self, request, queryset):
-		"""Aplicar los turnos mensuales seleccionados (crear cupos)."""
-		from django.contrib import messages
-		from django.db import transaction
+# 	def aplicar_turnos_mensuales(self, request, queryset):
+# 		"""Aplicar los turnos mensuales seleccionados (crear cupos)."""
+# 		from django.contrib import messages
+# 		from django.db import transaction
 		
-		total_aplicados = 0
-		total_cupos = 0
-		ya_aplicados = 0
+# 		total_aplicados = 0
+# 		total_cupos = 0
+# 		ya_aplicados = 0
 		
-		for turno_mens in queryset:
-			if not turno_mens.aplicado:
-				try:
-					with transaction.atomic():
-						cupos_count = turno_mens.aplicar()
-						total_cupos += cupos_count
-						total_aplicados += 1
-				except Exception as e:
-					messages.error(request, f"Error al aplicar {turno_mens.agenda.name}: {str(e)}")
-			else:
-				ya_aplicados += 1
+# 		for turno_mens in queryset:
+# 			if not turno_mens.aplicado:
+# 				try:
+# 					with transaction.atomic():
+# 						cupos_count = turno_mens.aplicar()
+# 						total_cupos += cupos_count
+# 						total_aplicados += 1
+# 				except Exception as e:
+# 					messages.error(request, f"Error al aplicar {turno_mens.agenda.name}: {str(e)}")
+# 			else:
+# 				ya_aplicados += 1
 		
-		if total_aplicados > 0:
-			msg = f"✓ {total_aplicados} configuración(es) aplicada(s). {total_cupos} cupos creados (lunes-viernes)."
-			messages.success(request, msg)
+# 		if total_aplicados > 0:
+# 			msg = f"✓ {total_aplicados} configuración(es) aplicada(s). {total_cupos} cupos creados (lunes-viernes)."
+# 			messages.success(request, msg)
 		
-		if ya_aplicados > 0:
-			messages.warning(request, f"⚠ {ya_aplicados} registro(s) ya estaban aplicados.")
+# 		if ya_aplicados > 0:
+# 			messages.warning(request, f"⚠ {ya_aplicados} registro(s) ya estaban aplicados.")
 
-	aplicar_turnos_mensuales.short_description = "Aplicar turnos mensuales seleccionados"
+# 	aplicar_turnos_mensuales.short_description = "Aplicar turnos mensuales seleccionados"

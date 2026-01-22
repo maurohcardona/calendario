@@ -149,7 +149,7 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
     status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
     
     try {
-        const response = await fetch(`/turnos/api/buscar-paciente/?dni=${dni}`);
+        const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${dni}`);
         const data = await response.json();
         
         if (data.found) {
@@ -185,7 +185,7 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
     status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
     
     try {
-        const response = await fetch(`/turnos/api/buscar-determinacion/?codigo=${codigo}`);
+        const response = await fetch(`/determinaciones/api/buscar-determinacion/?codigo=${codigo}`);
         const data = await response.json();
         
         if (data.found) {
