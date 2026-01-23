@@ -46,6 +46,8 @@ class DeterminacionCompleja(models.Model):
         unique=True
     )
 
+    tiempo = models.IntegerField(default=3)  # Tiempo en dias
+
     nombre = models.CharField(
         max_length=50,
         help_text="Nombre descriptivo del perfil del perfil",
