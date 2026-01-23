@@ -1,7 +1,8 @@
 import psycopg2
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from determinaciones.models import Determinacion, PerfilDeterminacion
+from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+from medicos.models import Medico
 from datetime import timedelta
 
 
@@ -16,23 +17,42 @@ def get_db_conn():
 
 
 def calcular_max_tiempo(determinaciones_texto):
-    """Devuelve el máximo tiempo (en días) entre todas las determinaciones y perfiles."""
+    """Devuelve el máximo tiempo (en días) entre todas las determinaciones, perfiles y determinaciones complejas."""
     if not determinaciones_texto:
         return 0
 
     codigos = [c.strip() for c in determinaciones_texto.split(',') if c.strip()]
     det_codes = [c for c in codigos if not c.startswith('/')]
-    perfil_codes = [c.lstrip('/') for c in codigos if c.startswith('/')]
+    complejas_codes = [c for c in codigos if c.startswith('/')]
 
     tiempos = []
     if det_codes:
         tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=det_codes)])
 
-    if perfil_codes:
+    if complejas_codes:
+        # Procesar determinaciones complejas (código incluye /)
+        complejas = DeterminacionCompleja.objects.filter(codigo__in=complejas_codes)
+        dets_complejas = []
+        for compleja in complejas:
+            dets_complejas.extend(compleja.determinaciones)
+        if dets_complejas:
+            tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=dets_complejas)])
+        
+        # Procesar perfiles (buscar sin /)
+        perfil_codes = [c.lstrip('/') for c in complejas_codes]
         perfiles = PerfilDeterminacion.objects.filter(codigo__in=perfil_codes)
         dets_perfiles = []
         for perfil in perfiles:
-            dets_perfiles.extend(perfil.determinaciones)
+            for det_code in perfil.determinaciones:
+                # Si el código dentro del perfil es una determinación compleja
+                if det_code.startswith('/'):
+                    compleja_en_perfil = DeterminacionCompleja.objects.filter(codigo=det_code).first()
+                    if compleja_en_perfil:
+                        # Expandir la determinación compleja
+                        dets_perfiles.extend(compleja_en_perfil.determinaciones)
+                else:
+                    # Es una determinación simple
+                    dets_perfiles.append(det_code)
         if dets_perfiles:
             tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=dets_perfiles)])
 
@@ -128,7 +148,21 @@ def precoordinacion_turno(request, turno_id):
         turno.agenda_id = request.POST.get('agenda')
         turno.fecha = request.POST.get('fecha')
         turno.determinaciones = request.POST.get('determinaciones', '')
-        turno.medico = request.POST.get('medico', '')
+        
+        # Manejar el médico correctamente
+        medico_nombre = request.POST.get('medico', '')
+        if medico_nombre:
+            try:
+                turno.medico = Medico.objects.get(nombre=medico_nombre)
+            except Medico.DoesNotExist:
+                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
+                if medicos.exists():
+                    turno.medico = medicos.first()
+                else:
+                    turno.medico = None
+        else:
+            turno.medico = None
+        
         turno.nota_interna = request.POST.get('nota_interna', '')
         turno.save()
 
@@ -178,7 +212,7 @@ def generar_ticket_retiro(request, turno_id):
     telefono = paciente_obj.telefono if paciente_obj else ""
     email = paciente_obj.email if paciente_obj else ""
     usuario_asignador = turno.usuario or request.user.username
-    medico_nombre = turno.medico or ""
+    medico_nombre = turno.medico.nombre if turno.medico else ""
     determinaciones_texto = turno.determinaciones or ""
 
     # Crear PDF para impresora térmica (8cm = 226.77 puntos)
@@ -656,8 +690,19 @@ def dia(request, fecha):
                         telefono = form.cleaned_data.get('telefono', '')
                         email = form.cleaned_data.get('email', '')
                         observaciones_paciente = form.cleaned_data.get('observaciones_paciente', '')
-                        medico = form.cleaned_data.get('medico', '')  # Este va al turno, no al paciente
+                        medico_nombre = form.cleaned_data.get('medico', '')  # Este va al turno, no al paciente
                         nota_interna = form.cleaned_data.get('nota_interna', '')  # Este va al turno
+                        
+                        # Obtener la instancia de Médico por nombre
+                        medico_obj = None
+                        if medico_nombre:
+                            try:
+                                medico_obj = Medico.objects.get(nombre=medico_nombre)
+                            except Medico.DoesNotExist:
+                                # Si no existe, intenta por coincidencia parcial (para nombres guardados como texto)
+                                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
+                                if medicos.exists():
+                                    medico_obj = medicos.first()
                         
                         # Guardar o actualizar paciente usando ORM (tabla pacientes_paciente)
                         Paciente.objects.update_or_create(
@@ -696,7 +741,7 @@ def dia(request, fecha):
                             # Crear el turno
                             nuevo = form.save(commit=False)
                             nuevo.fecha = fecha
-                            nuevo.medico = medico
+                            nuevo.medico = medico_obj  # Asignar la instancia de Médico (puede ser None)
                             nuevo.nota_interna = nota_interna
                             nuevo.usuario = request.user.username
                             nuevo.full_clean()
@@ -990,7 +1035,21 @@ def editar_turno(request, turno_id):
         turno.agenda_id = request.POST.get('agenda')
         turno.fecha = request.POST.get('fecha')
         turno.determinaciones = request.POST.get('determinaciones', '')
-        turno.medico = request.POST.get('medico', '')
+        
+        # Manejar el médico correctamente
+        medico_nombre = request.POST.get('medico', '')
+        if medico_nombre:
+            try:
+                turno.medico = Medico.objects.get(nombre=medico_nombre)
+            except Medico.DoesNotExist:
+                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
+                if medicos.exists():
+                    turno.medico = medicos.first()
+                else:
+                    turno.medico = None
+        else:
+            turno.medico = None
+        
         turno.nota_interna = request.POST.get('nota_interna', '')
         turno.save()
 
@@ -1243,23 +1302,16 @@ def borrar_cupos_masivo(request):
 @login_required
 def listar_medicos_api(request):
     """API para listar todos los médicos"""
-    import psycopg2
-    from django.conf import settings
-    
     try:
-        conn = get_db_conn()
-        cursor = conn.cursor()
-        
-        # Obtener médicos ordenados por nombre
-        cursor.execute("SELECT matricula_provincial, nombre_apellido FROM medicos ORDER BY nombre_apellido")
-        medicos = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
+        medicos = Medico.objects.all().order_by('nombre').values('id', 'nombre', 'matricula')
         
         items = []
-        for row in medicos:
-            items.append({'matricula_provincial': row[0], 'nombre_apellido': row[1]})
+        for medico in medicos:
+            items.append({
+                'id': medico['id'],
+                'nombre_apellido': medico['nombre'],
+                'matricula_provincial': medico['matricula']
+            })
         
         return JsonResponse(items, safe=False)
             
@@ -1302,7 +1354,7 @@ def coordinar_turno(request, turno_id):
         email = paciente_obj.email
         
         # Convertir sexo al formato ASTM (M/F/U)
-        sexo_astm = 'M' if sexo == 'Hombre' else ('F' if sexo == 'Mujer' else 'U')
+        sexo_astm = 'M' if sexo == 'Masculino' else ('F' if sexo == 'Femenino' else 'U')
         
         # Preparar telefono y email (sin comillas)
         telefono_astm = telefono if telefono else ''
@@ -1313,32 +1365,47 @@ def coordinar_turno(request, turno_id):
         timestamp = ahora.strftime('%Y%m%d%H%M%S')  # AAAAMMDDHHMMSS
         fecha_nac = fecha_nacimiento.strftime('%Y%m%d')  # AAAAMMDD
         
-        # Procesar determinaciones/perfiles
+        # Procesar determinaciones/perfiles/complejas
         determinaciones_str = turno.determinaciones if turno.determinaciones else ''
         codigos = [c.strip() for c in determinaciones_str.split(',') if c.strip()]
         det_codes = [c for c in codigos if not c.startswith('/')]
-        perfil_codes = [c.lstrip('/') for c in codigos if c.startswith('/')]
+        complejas_codes = [c for c in codigos if c.startswith('/')]
 
         determinaciones_astm = []
         if det_codes:
             determinaciones_astm.extend([f'^^^{c}\\' for c in det_codes])
 
-        if perfil_codes:
+        if complejas_codes:
+            # Procesar determinaciones complejas (código incluye /)
+            complejas = DeterminacionCompleja.objects.filter(codigo__in=complejas_codes)
+            for compleja in complejas:
+                for det_code in compleja.determinaciones:
+                    determinaciones_astm.append(f'^^^{det_code}\\')
+            
+            # Procesar perfiles (buscar sin /)
+            perfil_codes = [c.lstrip('/') for c in complejas_codes]
             perfiles = PerfilDeterminacion.objects.filter(codigo__in=perfil_codes)
             for perfil in perfiles:
                 for det_code in perfil.determinaciones:
-                    determinaciones_astm.append(f'^^^{det_code}\\')
+                    # Si el código dentro del perfil es una determinación compleja
+                    if det_code.startswith('/'):
+                        compleja_en_perfil = DeterminacionCompleja.objects.filter(codigo=det_code).first()
+                        if compleja_en_perfil:
+                            # Expandir la determinación compleja
+                            for sub_det_code in compleja_en_perfil.determinaciones:
+                                determinaciones_astm.append(f'^^^{sub_det_code}\\')
+                    else:
+                        # Es una determinación simple
+                        determinaciones_astm.append(f'^^^{det_code}\\')
         
         # Preparar nota_interna (sin comillas)
         nota_interna_astm = turno.nota_interna if turno.nota_interna else ''
         # Observaciones de paciente (sin comillas)
         # Buscar en la tabla pacientes
         observaciones_paciente = paciente_obj.observaciones or ''
-        # Nombre del médico (sin comillas)
-        nombre_medico = turno.medico or ''
-        # Obtener matrícula del médico si existe
-        matricula_medico = ''
-        # Nota: matrícula no disponible en ORM aquí; se deja vacío por ahora
+        # Nombre y matrícula del médico (sin comillas)
+        nombre_medico = turno.medico.nombre if turno.medico else ''
+        matricula_medico = turno.medico.matricula if turno.medico else ''
         # Impresora desde JSON (body) o POST clásico
         if request.content_type == 'application/json':
             try:
@@ -1410,7 +1477,7 @@ def generar_ticket_turno(request, turno_id):
     from reportlab.pdfgen import canvas
     from django.shortcuts import get_object_or_404
     from pacientes.models import Paciente
-    from determinaciones.models import Determinacion, PerfilDeterminacion
+    from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
 
     turno = get_object_or_404(Turno.objects.select_related('agenda'), id=turno_id)
 
@@ -1425,26 +1492,50 @@ def generar_ticket_turno(request, turno_id):
         if (fecha_turno.month, fecha_turno.day) < (fecha_nac.month, fecha_nac.day):
             edad -= 1
 
-    # Determinaciones y perfiles
+    # Determinaciones, perfiles y complejas
     determinaciones_texto = turno.determinaciones or ""
     codigos = [c.strip() for c in determinaciones_texto.split(',') if c.strip()]
-    perfil_codigos = [c.lstrip('/') for c in codigos if c.startswith('/')]
+    codigos_con_slash = [c for c in codigos if c.startswith('/')]
     det_codigos = [c for c in codigos if not c.startswith('/')]
 
+    # Determinaciones simples
     det_objs = Determinacion.objects.filter(codigo__in=det_codigos)
     det_map = {d.codigo: d.nombre for d in det_objs}
     determinaciones_list = [(code, det_map.get(code, code)) for code in det_codigos]
 
-    perfil_objs = PerfilDeterminacion.objects.filter(codigo__in=perfil_codigos)
-    perfil_map = {p.codigo: p.determinaciones for p in perfil_objs}
-    # Para mostrar el nombre del perfil usamos el código y listamos sus determinaciones
+    # Procesar códigos con / (pueden ser perfiles o complejas)
     perfiles_list = []
-    for code in perfil_codigos:
-        dets_codes = perfil_map.get(code, [])
-        sub_dets = Determinacion.objects.filter(codigo__in=dets_codes)
-        sub_names = [d.nombre for d in sub_dets]
-        display = f"{code}: " + ', '.join(sub_names or dets_codes)
-        perfiles_list.append((code, display))
+    complejas_list = []
+    
+    for code in codigos_con_slash:
+        code_sin_slash = code.lstrip('/')
+        
+        # Intentar primero como determinación compleja (con /)
+        compleja_obj = DeterminacionCompleja.objects.filter(codigo=code).first()
+        if compleja_obj:
+            complejas_list.append((code, compleja_obj.nombre))
+            continue
+        
+        # Si no es compleja, buscar como perfil (sin /)
+        perfil_obj = PerfilDeterminacion.objects.filter(codigo=code_sin_slash).first()
+        if perfil_obj:
+            dets_codes = perfil_obj.determinaciones
+            # Expandir subdeterminaciones del perfil
+            sub_dets = []
+            for sub_code in dets_codes:
+                if sub_code.startswith('/'):
+                    # Es una compleja dentro del perfil
+                    sub_compleja = DeterminacionCompleja.objects.filter(codigo=sub_code).first()
+                    if sub_compleja:
+                        sub_dets.append(sub_compleja.nombre)
+                else:
+                    # Es una determinación simple
+                    det_obj = Determinacion.objects.filter(codigo=sub_code).first()
+                    if det_obj:
+                        sub_dets.append(det_obj.nombre)
+            
+            display = f"{code_sin_slash}: " + ', '.join(sub_dets) if sub_dets else code_sin_slash
+            perfiles_list.append((code_sin_slash, display))
 
     agenda_nombre = turno.agenda.name if turno.agenda else ""
     apellido = turno.apellido or ""
@@ -1453,7 +1544,7 @@ def generar_ticket_turno(request, turno_id):
     telefono = paciente_obj.telefono if paciente_obj else ""
     email = paciente_obj.email if paciente_obj else ""
     usuario_asignador = turno.usuario or request.user.username
-    medico_nombre = turno.medico or ""
+    medico_nombre = turno.medico.nombre if turno.medico else ""
     fecha_turno = turno.fecha
     
     # Crear PDF para impresora térmica (8cm = 226.77 puntos)
@@ -1578,6 +1669,21 @@ def generar_ticket_turno(request, turno_id):
                 p.drawString(margen + 0.2*cm, y, texto_perfil)
                 y -= 0.4 * cm
     
+    # Mostrar determinaciones complejas
+    if complejas_list:
+        p.setFont("Helvetica", 8)
+        for compleja in complejas_list:
+            texto_compleja = f"• {compleja[1].upper()}"
+            # Dividir si es muy largo
+            if len(texto_compleja) > 40:
+                p.drawString(margen + 0.2*cm, y, texto_compleja[:40])
+                y -= 0.35 * cm
+                p.drawString(margen + 0.4*cm, y, texto_compleja[40:])
+                y -= 0.4 * cm
+            else:
+                p.drawString(margen + 0.2*cm, y, texto_compleja)
+                y -= 0.4 * cm
+    
     # Mostrar determinaciones individuales
     if determinaciones_list:
         p.setFont("Helvetica", 8)
@@ -1593,8 +1699,8 @@ def generar_ticket_turno(request, turno_id):
                 p.drawString(margen + 0.2*cm, y, texto_det)
                 y -= 0.4 * cm
     
-    # Si no hay ni perfiles ni determinaciones
-    if not perfiles_list and not determinaciones_list:
+    # Si no hay ni perfiles ni determinaciones ni complejas
+    if not perfiles_list and not determinaciones_list and not complejas_list:
         p.setFont("Helvetica", 8)
         p.drawString(margen + 0.2*cm, y, "(Sin estudios especificados)")
         y -= 0.4 * cm
@@ -1764,5 +1870,34 @@ def crear_medico_api(request):
         cursor.close()
         conn.close()
         return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def crear_medico_api(request):
+    """API para crear un nuevo médico"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=400)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        nombre = data.get('nombre_apellido', '').strip()
+        matricula = data.get('matricula_provincial', '').strip()
+        
+        if not nombre or not matricula:
+            return JsonResponse({'success': False, 'error': 'Nombre y matrícula son requeridos'})
+        
+        # Crear el médico
+        medico, created = Medico.objects.get_or_create(
+            matricula=matricula,
+            defaults={'nombre': nombre}
+        )
+        
+        if created:
+            return JsonResponse({'success': True, 'message': 'Médico creado correctamente'})
+        else:
+            return JsonResponse({'success': False, 'error': 'La matrícula ya existe'})
+    
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)

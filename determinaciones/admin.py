@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Determinacion, PerfilDeterminacion
+from .models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
 
 
 @admin.register(Determinacion)
@@ -12,6 +12,13 @@ class DeterminacionAdmin(admin.ModelAdmin):
 
 @admin.register(PerfilDeterminacion)
 class PerfilDeterminacionAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'determinaciones')
-    search_fields = ('codigo',)
+    list_display = ('codigo', 'nombre', 'determinaciones')
+    search_fields = ('codigo', 'nombre')
+    ordering = ('codigo',)
+
+
+@admin.register(DeterminacionCompleja)
+class DeterminacionComplejaAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'nombre', 'determinaciones')
+    search_fields = ('codigo', 'nombre')
     ordering = ('codigo',)

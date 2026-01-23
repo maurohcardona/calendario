@@ -30,9 +30,9 @@
                         <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Sexo</label>
                         <select name="sexo" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;">
                             <option value="" {% if not paciente.sexo %}selected{% endif %}>-</option>
-                            <option value="Hombre" {% if paciente.sexo == 'Hombre' %}selected{% endif %}>Hombre</option>
-                            <option value="Mujer" {% if paciente.sexo == 'Mujer' %}selected{% endif %}>Mujer</option>
-                            <option value="Generico" {% if paciente.sexo == 'Generico' %}selected{% endif %}>Generico</option>
+                            <option value="Masculino" {% if paciente.sexo == 'Masculino' %}selected{% endif %}>Masculino</option>
+                            <option value="Femenino" {% if paciente.sexo == 'Femenino' %}selected{% endif %}>Femenino</option>
+                            <option value="Sin asignar" {% if paciente.sexo == 'Sin asignar' %}selected{% endif %}>Sin asignar</option>
                             <option value="Desconocido" {% if paciente.sexo == 'Desconocido' %}selected{% endif %}>Desconocido</option>
                         </select>
                     </div>
@@ -48,7 +48,7 @@
                 <div style="margin-bottom: 1.2rem; position: relative; display: flex; align-items: flex-end; gap: 0.5rem;">
                     <div style="flex: 1; position: relative;">
                         <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
-                        <input type="text" id="id_medico" name="medico" value="{{ turno.medico }}" autocomplete="off" placeholder="Buscar médico..." style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                        <input type="text" id="id_medico" name="medico" value="{% if turno.medico %}{{ turno.medico.nombre }}{% endif %}" autocomplete="off" placeholder="Buscar médico..." style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
                         <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);"></div>
                     </div>
                     <button type="button" id="btnNuevoMedico" title="Agregar médico nuevo" style="height: 2.6rem; width: 2.6rem; background: #4caf50; color: #fff; border: none; border-radius: 50%; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2); margin-bottom: 0.2rem;">+</button>
@@ -115,10 +115,11 @@
                 // Extraer turno_id de la URL de coordinación
                 const coordUrl = response.url;
                 // Hacer POST AJAX a coordinar_turno
+                const nombreImpresora = localStorage.getItem('nombre_impresora') || '';
                 const coordResp = await fetch(coordUrl, {
                     method: 'POST',
                     headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken'), 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    body: JSON.stringify({ nombre_impresora: nombreImpresora })
                 });
                 const data = await coordResp.json();
                 if (data.success) {
@@ -161,6 +162,13 @@
                         if (data.tipo === 'perfil') {
                             determinaciones.unshift({
                                 tipo: 'perfil',
+                                codigo: data.codigo,
+                                nombre: data.nombre,
+                                determinaciones: data.determinaciones
+                            });
+                        } else if (data.tipo === 'compleja') {
+                            determinaciones.unshift({
+                                tipo: 'compleja',
                                 codigo: data.codigo,
                                 nombre: data.nombre,
                                 determinaciones: data.determinaciones
@@ -263,9 +271,12 @@
             return;
         }
         lista.innerHTML = coincidencias.map(item => {
-            const tipoBadge = item.tipo === 'perfil' 
-                ? '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>'
-                : '';
+            let tipoBadge = '';
+            if (item.tipo === 'perfil') {
+                tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>';
+            } else if (item.tipo === 'compleja') {
+                tipoBadge = '<span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">COMPLEJA</span>';
+            }
             return `
                 <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}">
                     <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}
@@ -302,20 +313,20 @@
             const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
             const data = await response.json();
             if (data.found) {
-                if (data.tipo === 'perfil') {
-                    const yaExiste = determinaciones.find(d => d.tipo === 'perfil' && d.codigo === data.codigo);
+                if (data.tipo === 'perfil' || data.tipo === 'compleja') {
+                    const yaExiste = determinaciones.find(d => (d.tipo === 'perfil' || d.tipo === 'compleja') && d.codigo === data.codigo);
                     if (yaExiste) {
-                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Perfil ya agregado</span>';
+                        status.innerHTML = `<span style="color: #ff7066; font-weight: 600;">⚠️ ${data.tipo === 'compleja' ? 'Determinación compleja' : 'Perfil'} ya agregado</span>`;
                         return;
                     }
                     determinaciones.unshift({
-                        tipo: 'perfil',
+                        tipo: data.tipo,
                         codigo: data.codigo,
                         nombre: data.nombre,
                         determinaciones: data.determinaciones
                     });
                     const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
-                    status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (' + cantidadDets + ' determinaciones)</span>';
+                    status.innerHTML = `<span style="color: #4caf50; font-weight: 600;">✅ ${data.tipo === 'compleja' ? 'Determinación compleja' : 'Perfil'} agregado (${cantidadDets} determinaciones)</span>`;
                 } else {
                     const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
                     if (yaExiste) {
@@ -369,8 +380,18 @@
                                     <strong style="color: #4caf50; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
                                     <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(200, 155, 143, 0.8); font-weight: 600;">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
                                 </div>
-                                <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
+                                <button type="button" class="btn-eliminar" data-index="${index}" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
                             </div>
+                        </div>
+                    `;
+                } else if (item.tipo === 'compleja') {
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(156, 39, 176, 0.15); border: 2px solid rgba(156, 39, 176, 0.3); border-radius: 8px; margin-bottom: 0.5rem;">
+                            <div>
+                                <span style="background: #9c27b0; color: #fff; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">COMPLEJA</span>
+                                <strong style="color: #9c27b0; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
+                            </div>
+                            <button type="button" class="btn-eliminar" data-index="${index}" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
                         </div>
                     `;
                 } else {
@@ -379,16 +400,23 @@
                             <div>
                                 <strong style="color: var(--accent); font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
                             </div>
-                            <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
+                            <button type="button" class="btn-eliminar" data-index="${index}" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
                         </div>
                     `;
                 }
             }).join('');
+            
+            // Event delegation para botones de eliminar
+            lista.querySelectorAll('.btn-eliminar').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    eliminarItem(parseInt(this.dataset.index));
+                });
+            });
         }
         // Actualizar campo oculto con códigos
         const codigos = [];
         determinaciones.forEach(item => {
-            if (item.tipo === 'perfil') {
+            if (item.tipo === 'perfil' || item.tipo === 'compleja') {
                 codigos.push(item.codigo);
             } else {
                 codigos.push(item.codigo.toString());

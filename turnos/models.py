@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from medicos.models import Medico
 
 
 class Agenda(models.Model):
@@ -53,7 +54,7 @@ class Turno(models.Model):
     nombre = models.CharField(max_length=200)
     determinaciones = models.TextField(blank=True)
     fecha = models.DateField()
-    medico = models.CharField(max_length=200, blank=True, default='')
+    medico = models.ForeignKey(Medico, on_delete=models.SET_NULL, null=True, blank=True, related_name='turnos')
     nota_interna = models.TextField(blank=True, default='')
     usuario = models.CharField(max_length=150, blank=True, default='')
     creado = models.DateTimeField(auto_now_add=True)

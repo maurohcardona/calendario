@@ -403,7 +403,7 @@ document.getElementById('id_medico').addEventListener('input', async function() 
         return `
             <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
                 <span style="color: #c89b8f; font-weight: 600;">${medico.nombre_apellido}</span>
-                <span style="color: rgba(224, 224, 224, 0.6); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
+                <span style="color: rgba(224, 224, 224, 0.6); font-size: 0.85rem; margin-left: 0.5rem;">Mat: ${medico.matricula_provincial}</span>
             </div>
         `;
     }).join('');
@@ -615,7 +615,23 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
         const data = await response.json();
         
         if (data.found) {
-            if (data.tipo === 'perfil') {
+            if (data.tipo === 'compleja') {
+                // Para complejas: agregar solo el código de la compleja
+                const yaExiste = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === data.codigo);
+                if (yaExiste) {
+                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Ya agregada</span>';
+                    return;
+                }
+                
+                determinaciones.unshift({
+                    tipo: 'compleja',
+                    codigo: data.codigo,
+                    nombre: data.nombre,
+                    determinaciones: data.determinaciones
+                });
+                status.innerHTML = '<span style="color: #4caf50;">✅ Determinación compleja agregada</span>';
+            } else if (data.tipo === 'perfil') {
+                // Para perfiles: expandir subdeterminaciones (simples o complejas)
                 const detCodesRaw = Array.isArray(data.determinaciones)
                     ? data.determinaciones
                     : (data.determinaciones || '').split(',').map(d => d.trim()).filter(Boolean);
@@ -628,18 +644,38 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                 const catalogo = await cargarDeterminaciones();
                 let agregadas = 0;
 
-                detCodesRaw.forEach(code => {
-                    const yaExisteDet = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === code);
-                    if (yaExisteDet) return;
-                    const itemCat = catalogo.find(d => d.codigo === code && d.tipo === 'determinacion');
-                    const nombreDet = itemCat ? itemCat.nombre : code;
-                    determinaciones.push({
-                        tipo: 'determinacion',
-                        codigo: code,
-                        nombre: nombreDet
-                    });
-                    agregadas += 1;
-                });
+                for (const code of detCodesRaw) {
+                    // Si comienza con /, es una determinación compleja
+                    if (code.startsWith('/')) {
+                        const yaExisteCompleja = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === code);
+                        if (yaExisteCompleja) continue;
+                        
+                        // Buscar la determinación compleja en el catálogo
+                        const itemCompleja = catalogo.find(d => d.codigo === code && d.tipo === 'compleja');
+                        if (itemCompleja) {
+                            determinaciones.unshift({
+                                tipo: 'compleja',
+                                codigo: itemCompleja.codigo,
+                                nombre: itemCompleja.nombre,
+                                determinaciones: itemCompleja.determinaciones
+                            });
+                            agregadas += 1;
+                        }
+                    } else {
+                        // Es una determinación simple
+                        const yaExisteDet = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === code);
+                        if (yaExisteDet) continue;
+                        
+                        const itemCat = catalogo.find(d => d.codigo === code && d.tipo === 'determinacion');
+                        const nombreDet = itemCat ? itemCat.nombre : code;
+                        determinaciones.unshift({
+                            tipo: 'determinacion',
+                            codigo: code,
+                            nombre: nombreDet
+                        });
+                        agregadas += 1;
+                    }
+                }
 
                 if (agregadas === 0) {
                     status.innerHTML = '<span style="color: #ff9999;">⚠️ Todas las determinaciones del perfil ya estaban agregadas</span>';
@@ -654,7 +690,7 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                     return;
                 }
                 
-                determinaciones.push({
+                determinaciones.unshift({
                     tipo: 'determinacion',
                     codigo: data.codigo,
                     nombre: data.nombre
@@ -705,8 +741,18 @@ function actualizarListaDeterminaciones() {
                                 <strong style="color: #4caf50; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: var(--text-light);">${item.nombre}</span>
                                 <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(224, 224, 224, 0.7);">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
                             </div>
-                            <button type="button" onclick="eliminarItem(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+                            <button type="button" class="btn-eliminar" data-index="${index}" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
                         </div>
+                    </div>
+                `;
+            } else if (item.tipo === 'compleja') {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(156, 39, 176, 0.2); border: 1px solid rgba(156, 39, 176, 0.4); border-radius: 6px; margin-bottom: 0.5rem;">
+                        <div>
+                            <span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">COMPLEJA</span>
+                            <strong style="color: #9c27b0; font-weight: 700; font-size: 1rem; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: #1a1a2e; font-weight: 600; font-size: 0.95rem;">${item.nombre}</span>
+                        </div>
+                        <button type="button" class="btn-eliminar" data-index="${index}" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
                     </div>
                 `;
             } else {
@@ -715,18 +761,25 @@ function actualizarListaDeterminaciones() {
                         <div>
                             <strong style="color: #2196F3; font-weight: 700; font-size: 1rem;">${item.codigo}</strong> - <span style="color: #1a1a2e; font-weight: 600; font-size: 0.95rem;">${item.nombre}</span>
                         </div>
-                        <button type="button" onclick="eliminarItem(${index})" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+                        <button type="button" class="btn-eliminar" data-index="${index}" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
                     </div>
                 `;
             }
         }).join('');
+        
+        // Event delegation para botones de eliminar
+        lista.querySelectorAll('.btn-eliminar').forEach(btn => {
+            btn.addEventListener('click', function() {
+                eliminarItem(parseInt(this.dataset.index));
+            });
+        });
     }
     
     // Actualizar campo oculto con códigos
     // Para perfiles: código del perfil, para determinaciones: código individual
     const codigos = [];
     determinaciones.forEach(item => {
-        if (item.tipo === 'perfil') {
+        if (item.tipo === 'perfil' || item.tipo === 'compleja') {
             codigos.push(item.codigo);
         } else {
             codigos.push(item.codigo.toString());

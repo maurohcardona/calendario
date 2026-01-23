@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from determinaciones.models import Determinacion, PerfilDeterminacion
+from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
 
 
 @login_required
@@ -25,13 +25,15 @@ def buscar_determinacion_api(request):
 
 @login_required
 def listar_determinaciones_api(request):
-    """API para listar todas las determinaciones y perfiles"""
+    """API para listar todas las determinaciones, perfiles y determinaciones complejas"""
     try:
         items = []
         for det in Determinacion.objects.filter(activa=True).order_by('nombre'):
             items.append({'codigo': det.codigo, 'nombre': det.nombre, 'tipo': 'determinacion'})
         for perf in PerfilDeterminacion.objects.order_by('codigo'):
             items.append({'codigo': perf.codigo, 'nombre': perf.codigo, 'tipo': 'perfil', 'determinaciones': perf.determinaciones})
+        for compleja in DeterminacionCompleja.objects.order_by('codigo'):
+            items.append({'codigo': compleja.codigo, 'nombre': compleja.nombre, 'tipo': 'compleja', 'determinaciones': compleja.determinaciones})
         return JsonResponse(items, safe=False)
     except Exception:
         return JsonResponse([], safe=False)
@@ -39,15 +41,25 @@ def listar_determinaciones_api(request):
 
 @login_required
 def buscar_codigo_api(request):
-    """API para buscar por código (determinación o perfil)"""
+    """API para buscar por código (determinación, perfil o determinación compleja)"""
     codigo = request.GET.get('codigo', '').strip()
     if not codigo:
         return JsonResponse({'found': False})
     
     try:
-        codigo_sin_prefijo = codigo.lstrip('/')
+        # Buscar en determinaciones complejas (el / es parte del código)
+        compleja = DeterminacionCompleja.objects.filter(codigo=codigo).first()
+        if compleja:
+            return JsonResponse({
+                'found': True,
+                'tipo': 'compleja',
+                'codigo': compleja.codigo,
+                'nombre': compleja.nombre,
+                'determinaciones': compleja.determinaciones
+            })
 
-        perfil = PerfilDeterminacion.objects.filter(codigo=codigo_sin_prefijo).first()
+        # Buscar perfil
+        perfil = PerfilDeterminacion.objects.filter(codigo=codigo).first()
         if perfil:
             return JsonResponse({
                 'found': True,
@@ -57,7 +69,8 @@ def buscar_codigo_api(request):
                 'determinaciones': perfil.determinaciones
             })
 
-        determinacion = Determinacion.objects.filter(codigo=codigo_sin_prefijo).first()
+        # Buscar determinación
+        determinacion = Determinacion.objects.filter(codigo=codigo).first()
         if determinacion:
             return JsonResponse({
                 'found': True,

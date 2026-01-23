@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'pacientes',
     'determinaciones',
+    'medicos',
    
     # Apps de terceros
     'auditlog',

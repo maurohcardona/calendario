@@ -79,8 +79,30 @@ class CupoAdmin(admin.ModelAdmin):
 
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'fecha', 'nombre', 'dni', 'creado')
-	list_filter = ('agenda', 'fecha')
+	list_display = ('agenda', 'fecha', 'nombre', 'dni', 'medico', 'creado')
+	list_filter = ('agenda', 'fecha', 'medico')
+	search_fields = ('nombre', 'apellido', 'dni', 'medico__nombre', 'medico__matricula')
+	readonly_fields = ('creado',)
+	fieldsets = (
+		('Información del Paciente', {
+			'fields': ('nombre', 'apellido', 'dni')
+		}),
+		('Turno', {
+			'fields': ('agenda', 'fecha', 'medico')
+		}),
+		('Información Adicional', {
+			'fields': ('determinaciones', 'nota_interna')
+		}),
+		('Auditoría', {
+			'fields': ('usuario', 'creado'),
+			'classes': ('collapse',)
+		}),
+	)
+	
+	def get_search_results(self, request, queryset, search_term):
+		"""Personalizar búsqueda para incluir búsqueda de médicos."""
+		queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+		return queryset, use_distinct
 
 
 @admin.register(Feriados)
