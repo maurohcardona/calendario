@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <h2 style="color: var(--text-light); margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
+        🔍 Buscador de Determinaciones
+    </h2>
+
+    <!-- Buscador -->
+    <div style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">
+            Buscar Determinación
+        </label>
+        <div style="position: relative;">
+            <input 
+                type="text" 
+                id="inputBuscador" 
+                placeholder="Escriba para buscar determinación simple o compleja..." 
+                autocomplete="off"
+                style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;"
+            />
+            <div 
+                id="resultadosBuscador" 
+                style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 400px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);">
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div id="seccionResultados" style="display: none;">
+        <!-- Información de la determinación seleccionada -->
+        <div style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+            <h3 style="color: var(--accent); margin: 0 0 1rem 0; font-size: 1.3rem;">
+                📊 Determinación Seleccionada
+            </h3>
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.75rem 1.5rem; color: var(--text-light);">
+                <strong>Código:</strong>
+                <span id="detCodigo">-</span>
+                <strong>Nombre:</strong>
+                <span id="detNombre">-</span>
+                <strong>Tipo:</strong>
+                <span id="detTipo">-</span>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+            <h3 style="color: var(--accent); margin: 0 0 1rem 0; font-size: 1.3rem;">
+                📈 Estadísticas de Uso
+            </h3>
+            
+            <div style="background: linear-gradient(135deg, rgba(200, 155, 143, 0.1), rgba(200, 155, 143, 0.05)); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 0.9rem; color: rgba(200, 155, 143, 0.8); font-weight: 600; margin-bottom: 0.5rem;">
+                    TOTAL DE TURNOS
+                </div>
+                <div id="totalTurnos" style="font-size: 3rem; color: var(--accent); font-weight: 700;">
+                    0
+                </div>
+            </div>
+
+            <div id="loadingEstadisticas" style="text-align: center; color: var(--accent); padding: 2rem; display: none;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⏳</div>
+                <div>Cargando estadísticas...</div>
+            </div>
+
+            <div id="contenedorPorDia">
+                <h4 style="color: var(--text-light); margin: 0 0 1rem 0; font-size: 1.1rem; font-weight: 600;">
+                    Turnos por Día
+                </h4>
+                <div id="listaPorDia" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Se llenará con JavaScript -->
+                </div>
+            </div>
+
+            <div id="sinResultados" style="text-align: center; color: rgba(200, 155, 143, 0.6); padding: 2rem; display: none;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📭</div>
+                <div>No se encontraron turnos con esta determinación</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let determinacionesCache = null;
+let determinacionSeleccionada = null;
+
+// Cargar todas las determinaciones
+async function cargarDeterminaciones() {
+    if (determinacionesCache) return determinacionesCache;
+    
+    try {
+        const response = await fetch('/determinaciones/api/listar-determinaciones/');
+        determinacionesCache = await response.json();
+        return determinacionesCache;
+    } catch (error) {
+        console.error('Error cargando determinaciones:', error);
+        return [];
+    }
+}
+
+// Buscador con autocompletado
+document.getElementById('inputBuscador').addEventListener('input', async function() {
+    const texto = this.value.trim().toLowerCase();
+    const resultados = document.getElementById('resultadosBuscador');
+    
+    if (texto.length < 2) {
+        resultados.style.display = 'none';
+        return;
+    }
+    
+    const items = await cargarDeterminaciones();
+    const coincidencias = items.filter(d => 
+        d.nombre.toLowerCase().includes(texto) || 
+        d.codigo.toLowerCase().includes(texto)
+    ).slice(0, 30);
+    
+    if (coincidencias.length === 0) {
+        resultados.style.display = 'none';
+        return;
+    }
+    
+    resultados.innerHTML = coincidencias.map(item => {
+        let tipoBadge = '';
+        let tipoTexto = '';
+        if (item.tipo === 'perfil') {
+            tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>';
+            tipoTexto = 'Perfil';
+        } else if (item.tipo === 'compleja') {
+            tipoBadge = '<span style="background: #2196f3; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">COMPLEJA</span>';
+            tipoTexto = 'Determinación Compleja';
+        } else {
+            tipoTexto = 'Determinación Simple';
+        }
+        
+        return `
+            <div class="resultado-item" 
+                 data-codigo="${item.codigo}" 
+                 data-nombre="${item.nombre}" 
+                 data-tipo="${tipoTexto}"
+                 style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - 
+                        <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>
+                    </div>
+                    ${tipoBadge}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    resultados.style.display = 'block';
+    
+    // Agregar eventos a los resultados
+    resultados.querySelectorAll('.resultado-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(200, 155, 143, 0.2)';
+        });
+        item.addEventListener('mouseleave', function() {
+            this.style.background = 'transparent';
+        });
+        item.addEventListener('click', function() {
+            seleccionarDeterminacion({
+                codigo: this.dataset.codigo,
+                nombre: this.dataset.nombre,
+                tipo: this.dataset.tipo
+            });
+            resultados.style.display = 'none';
+            document.getElementById('inputBuscador').value = `${this.dataset.codigo} - ${this.dataset.nombre}`;
+        });
+    });
+});
+
+// Cerrar resultados al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#inputBuscador') && !e.target.closest('#resultadosBuscador')) {
+        document.getElementById('resultadosBuscador').style.display = 'none';
+    }
+});
+
+// Seleccionar determinación y cargar estadísticas
+async function seleccionarDeterminacion(det) {
+    determinacionSeleccionada = det;
+    
+    // Mostrar información de la determinación
+    document.getElementById('detCodigo').textContent = det.codigo;
+    document.getElementById('detNombre').textContent = det.nombre;
+    document.getElementById('detTipo').textContent = det.tipo;
+    
+    // Mostrar sección de resultados
+    document.getElementById('seccionResultados').style.display = 'block';
+    
+    // Mostrar loading
+    document.getElementById('loadingEstadisticas').style.display = 'block';
+    document.getElementById('contenedorPorDia').style.display = 'none';
+    document.getElementById('sinResultados').style.display = 'none';
+    
+    // Cargar estadísticas
+    try {
+        const response = await fetch(`/determinaciones/api/estadisticas-determinacion/?codigo=${encodeURIComponent(det.codigo)}`);
+        const data = await response.json();
+        
+        document.getElementById('loadingEstadisticas').style.display = 'none';
+        
+        if (data.success) {
+            // Mostrar total
+            document.getElementById('totalTurnos').textContent = data.total_turnos;
+            
+            if (data.total_turnos > 0) {
+                // Mostrar lista por día
+                document.getElementById('contenedorPorDia').style.display = 'block';
+                const listaPorDia = document.getElementById('listaPorDia');
+                
+                listaPorDia.innerHTML = data.por_dia.map(dia => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(200, 155, 143, 0.05); border-left: 4px solid var(--accent); margin-bottom: 0.5rem; border-radius: 4px;">
+                        <span style="color: var(--text-light); font-weight: 600;">${dia.fecha}</span>
+                        <span style="background: var(--accent); color: #fff; padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 700; font-size: 0.95rem;">${dia.cantidad}</span>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('sinResultados').style.display = 'block';
+            }
+        } else {
+            alert('Error al cargar estadísticas: ' + (data.error || 'Error desconocido'));
+        }
+    } catch (error) {
+        document.getElementById('loadingEstadisticas').style.display = 'none';
+        alert('Error al cargar estadísticas: ' + error.message);
+    }
+}
+
+// Precargar determinaciones al cargar la página
+cargarDeterminaciones();
+</script>
+
+<style>
+.resultado-item:last-child {
+    border-bottom: none;
+}
+</style>
+{% endblock %}

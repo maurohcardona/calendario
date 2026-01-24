@@ -2,6 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from medicos.models import Medico
+from pacientes.models import Paciente
 
 
 class Agenda(models.Model):
@@ -49,9 +50,7 @@ class Cupo(models.Model):
 
 class Turno(models.Model):
     agenda = models.ForeignKey(Agenda, on_delete=models.PROTECT, related_name='turnos')
-    dni = models.CharField(max_length=20)
-    apellido = models.CharField(max_length=200, default='')
-    nombre = models.CharField(max_length=200)
+    dni = models.ForeignKey(Paciente, on_delete=models.SET_NULL, null=True, blank=True, related_name='turnos')
     determinaciones = models.TextField(blank=True)
     fecha = models.DateField()
     medico = models.ForeignKey(Medico, on_delete=models.SET_NULL, null=True, blank=True, related_name='turnos')
@@ -61,6 +60,19 @@ class Turno(models.Model):
 
     class Meta:
         ordering = ['fecha', 'creado']
+    
+    # Propiedades de compatibilidad para acceder a datos del paciente
+    @property
+    def nombre(self):
+        return self.dni.nombre if self.dni else ''
+    
+    @property
+    def apellido(self):
+        return self.dni.apellido if self.dni else ''
+    
+    @property
+    def paciente_dni(self):
+        return self.dni.iden if self.dni else ''
 
     def clean(self):
         # Verificar si la fecha es un feriado
@@ -103,128 +115,10 @@ class Feriados(models.Model):
         return f"{self.fecha} - {self.descripcion}"
 
 
-# class CapacidadDia(models.Model):
-#     """(Opcional) capacidad por día y agenda si se usa aparte de Cupo."""
-#     agenda = models.ForeignKey(Agenda, on_delete=models.CASCADE, related_name='capacidades')
-#     fecha = models.DateField()
-#     capacidad = models.PositiveIntegerField(default=20)
-#     usuario = models.CharField(max_length=150, blank=True, default='')
-
-#     class Meta:
-#         unique_together = (('agenda', 'fecha'),)
-
-#     def __str__(self):
-#         return f"{self.agenda.name} - {self.fecha}: {self.capacidad} turnos"
-
-
-# class WeeklyAvailability(models.Model):
-#     """Define la capacidad recurrente por día de la semana para una agenda.
-#     weekday: 0=Lunes .. 4=Viernes (coincide con date.weekday()).
-#     active: si False, significa que ese día no se trabaja.
-#     desde_fecha y hasta_fecha: rango opcional para aplicar esta disponibilidad."""
-#     WEEKDAY_CHOICES = (
-#         (0, 'Lunes'),
-#         (1, 'Martes'),
-#         (2, 'Miércoles'),
-#         (3, 'Jueves'),
-#         (4, 'Viernes'),
-#     )
-
-#     agenda = models.ForeignKey(Agenda, on_delete=models.CASCADE, related_name='weekly_availability')
-#     weekday = models.IntegerField(choices=WEEKDAY_CHOICES)
-#     capacidad = models.PositiveIntegerField(default=0)
-#     active = models.BooleanField(default=True)
-#     desde_fecha = models.DateField(null=True, blank=True, help_text="Fecha desde la cual aplicar esta disponibilidad (opcional)")
-#     hasta_fecha = models.DateField(null=True, blank=True, help_text="Fecha hasta la cual aplicar esta disponibilidad (opcional)")
-#     usuario = models.CharField(max_length=150, blank=True, default='')
-
-#     class Meta:
-#         unique_together = (('agenda', 'weekday'),)
-
-#     def __str__(self):
-#         rango = ""
-#         if self.desde_fecha or self.hasta_fecha:
-#             rango = f" ({self.desde_fecha or 'inicio'} a {self.hasta_fecha or 'fin'})"
-#         return f"{self.agenda.name} - {self.get_weekday_display()}: {self.capacidad} ({'activo' if self.active else 'inactivo'}){rango}"
-
-
-# class TurnoMensual(models.Model):
-#     """Define cupos mensuales: aplicar una cantidad específica de cupos 
-#     de lunes a viernes en un rango de fechas determinado."""
-#     agenda = models.ForeignKey(Agenda, on_delete=models.CASCADE, related_name='turnos_mensuales')
-#     desde_fecha = models.DateField(help_text="Fecha de inicio del rango")
-#     hasta_fecha = models.DateField(help_text="Fecha de fin del rango")
-#     cantidad = models.PositiveIntegerField(default=5, help_text="Cantidad de cupos para cada día de lunes a viernes")
-#     aplicado = models.BooleanField(default=False, help_text="Si está aplicado, los cupos ya fueron creados")
-#     usuario = models.CharField(max_length=150, blank=True, default='')
-#     creado = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         verbose_name = "Turno Mensual"
-#         verbose_name_plural = "Turnos Mensuales"
-#         ordering = ['-creado']
-
-#     def __str__(self):
-#         estado = "✅ Aplicado" if self.aplicado else "⏳ Pendiente"
-#         return f"{self.agenda.name} - {self.desde_fecha} a {self.hasta_fecha} ({self.cantidad} cupos) {estado}"
-
-#     def aplicar(self):
-#         """Crear cupos para todas las fechas en el rango (solo lunes a viernes)."""
-#         from datetime import timedelta
-        
-#         cur = self.desde_fecha
-#         count = 0
-#         while cur <= self.hasta_fecha:
-#             if cur.weekday() < 5:  # Lunes a viernes
-#                 Cupo.objects.get_or_create(
-#                     agenda=self.agenda,
-#                     fecha=cur,
-#                     defaults={'cantidad_total': self.cantidad}
-#                 )
-#                 count += 1
-#             cur += timedelta(days=1)
-        
-#         self.aplicado = True
-#         self.save()
-#         return count
-
-
-# def agenda_get_capacity_for_date(agenda, fecha):
-#     """Helper: devuelve la capacidad para una agenda en una fecha concreta.
-#     Prioriza un Cupo explícito (objeto Cupo) si existe; si no existe, consulta WeeklyAvailability; si nada, devuelve 0.
-#     Respeta los rangos desde_fecha y hasta_fecha de WeeklyAvailability."""
-#     try:
-#         cupo = Cupo.objects.get(agenda=agenda, fecha=fecha)
-#         return cupo.cantidad_total
-#     except Cupo.DoesNotExist:
-#         # buscar disponibilidad semanal
-#         try:
-#             wa = WeeklyAvailability.objects.get(agenda=agenda, weekday=fecha.weekday())
-#             if not wa.active:
-#                 return 0
-#             # Verificar si la fecha está dentro del rango
-#             if wa.desde_fecha and fecha < wa.desde_fecha:
-#                 return 0
-#             if wa.hasta_fecha and fecha > wa.hasta_fecha:
-#                 return 0
-#             return wa.capacidad
-#         except WeeklyAvailability.DoesNotExist:
-#             return 0
-
-
-# # Attach method to Agenda dynamically for convenience
-# def _agenda_get_capacity(self, fecha):
-#     return agenda_get_capacity_for_date(self, fecha)
-
-# Agenda.get_capacity_for_date = _agenda_get_capacity
-
-
 class Coordinados(models.Model):
     """Registro de turnos coordinados (enviados al equipo)"""
     id_turno = models.IntegerField(unique=True, verbose_name='ID del Turno')
-    nombre = models.CharField(max_length=200, verbose_name='Nombre')
-    apellido = models.CharField(max_length=200, verbose_name='Apellido')
-    dni = models.CharField(max_length=20, verbose_name='DNI')
+    dni = models.ForeignKey(Paciente, on_delete=models.PROTECT, verbose_name='Paciente')
     fecha_coordinacion = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Coordinación')
     determinaciones = models.TextField(blank=True, verbose_name='Determinaciones')
     usuario = models.CharField(max_length=150, blank=True, default='')
@@ -235,5 +129,7 @@ class Coordinados(models.Model):
         ordering = ['-fecha_coordinacion']
 
     def __str__(self):
-        return f"Turno #{self.id_turno} - {self.apellido}, {self.nombre} - {self.fecha_coordinacion.strftime('%Y-%m-%d %H:%M')}"
+        if self.dni:
+            return f"Turno #{self.id_turno} - {self.dni.apellido}, {self.dni.nombre} - {self.fecha_coordinacion.strftime('%Y-%m-%d %H:%M')}"
+        return f"Turno #{self.id_turno} - {self.fecha_coordinacion.strftime('%Y-%m-%d %H:%M')}"
 

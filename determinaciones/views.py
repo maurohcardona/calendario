@@ -1,6 +1,10 @@
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.db.models import Count, Q
 from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+from turnos.models import Turno
+from datetime import date
 
 
 @login_required
@@ -82,6 +86,44 @@ def buscar_codigo_api(request):
         return JsonResponse({'found': False})
     except Exception as e:
         return JsonResponse({'found': False, 'error': str(e)})
+
+
+@login_required
+def buscador_determinaciones(request):
+    """Vista principal del buscador de determinaciones"""
+    return render(request, 'determinaciones/buscador.html')
+
+
+@login_required
+def estadisticas_determinacion_api(request):
+    """API para obtener estadísticas de una determinación"""
+    codigo = request.GET.get('codigo', '').strip()
+    if not codigo:
+        return JsonResponse({'error': 'Código no proporcionado'}, status=400)
+    
+    try:
+        # Buscar turnos que contengan este código en determinaciones (desde hoy en adelante)
+        hoy = date.today()
+        turnos = Turno.objects.filter(
+            Q(determinaciones__icontains=codigo) & Q(fecha__gte=hoy)
+        ).values('fecha').annotate(cantidad=Count('id')).order_by('fecha')
+        
+        # Calcular total de turnos
+        total_turnos = sum(t['cantidad'] for t in turnos)
+        
+        # Preparar datos por día
+        por_dia = [{
+            'fecha': t['fecha'].strftime('%d-%m-%Y'),
+            'cantidad': t['cantidad']
+        } for t in turnos]
+        
+        return JsonResponse({
+            'success': True,
+            'total_turnos': total_turnos,
+            'por_dia': por_dia
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required

@@ -1,7 +1,24 @@
 from django import forms
 from .models import Turno, Cupo, Agenda
+from pacientes.models import Paciente
 
 class TurnoForm(forms.ModelForm):
+    # DNI como CharField para buscar/crear paciente
+    dni = forms.CharField(
+        required=True,
+        max_length=15,
+        label="DNI"
+    )
+    nombre = forms.CharField(
+        required=True,
+        max_length=30,
+        label="Nombre"
+    )
+    apellido = forms.CharField(
+        required=True,
+        max_length=30,
+        label="Apellido"
+    )
     agenda = forms.ModelChoiceField(queryset=Agenda.objects.all(), required=True)
     fecha_nacimiento = forms.DateField(
         required=True,
@@ -9,7 +26,7 @@ class TurnoForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'type': 'date'})
     )
     sexo = forms.ChoiceField(
-        choices=[('Desconocido', 'Desconocido'), ('Generico', 'Genérico'), ('Hombre', 'Hombre'), ('Mujer', 'Mujer')],
+        choices=Paciente.SEXO_CHOICES,
         required=True,
         label="Sexo"
     )
@@ -41,7 +58,7 @@ class TurnoForm(forms.ModelForm):
 
     class Meta:
         model = Turno
-        fields = ['agenda', 'apellido', 'nombre', 'dni', 'determinaciones', 'fecha']
+        fields = ['agenda', 'determinaciones', 'fecha']
         widgets = {
             'fecha': forms.DateInput(attrs={'type': 'date'}),
             'determinaciones': forms.HiddenInput()

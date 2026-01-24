@@ -68,7 +68,7 @@ def precoordinacion_turno(request, turno_id):
     from .models import Turno, Agenda
     turno = get_object_or_404(Turno, id=turno_id)
 
-    paciente_obj = Paciente.objects.filter(iden=turno.dni).first()
+    paciente_obj = turno.dni  # Ya es una FK
     paciente_data = None
     if paciente_obj:
         paciente_data = {
@@ -98,12 +98,6 @@ def precoordinacion_turno(request, turno_id):
         email = request.POST.get('email', '')
         observaciones_paciente = request.POST.get('observaciones_paciente', '')
 
-        # Actualizar en tabla turnos_turno
-        turno.dni = dni_nuevo
-        turno.apellido = apellido_nuevo
-        turno.nombre = nombre_nuevo
-        turno.save()
-
         # Mapear sexo a opciones del modelo Paciente
         sexo_map = {
             'Hombre': 'Masculino',
@@ -124,25 +118,21 @@ def precoordinacion_turno(request, turno_id):
                 fecha_nac_parsed = paciente_obj.fecha_nacimiento if paciente_obj else None
 
         # Crear o actualizar Paciente
-        paciente_obj, _ = Paciente.objects.get_or_create(
-            iden=turno.dni,
+        paciente_obj, _ = Paciente.objects.update_or_create(
+            iden=dni_nuevo,
             defaults={
                 'nombre': nombre_nuevo,
                 'apellido': apellido_nuevo,
                 'fecha_nacimiento': fecha_nac_parsed or date.today(),
                 'sexo': sexo_model,
+                'telefono': telefono or None,
+                'email': email or None,
+                'observaciones': observaciones_paciente or ''
             }
         )
-        paciente_obj.iden = dni_nuevo
-        paciente_obj.nombre = nombre_nuevo
-        paciente_obj.apellido = apellido_nuevo
-        if fecha_nac_parsed:
-            paciente_obj.fecha_nacimiento = fecha_nac_parsed
-        paciente_obj.sexo = sexo_model
-        paciente_obj.telefono = telefono or None
-        paciente_obj.email = email or None
-        paciente_obj.observaciones = observaciones_paciente or ''
-        paciente_obj.save()
+        
+        # Asignar paciente al turno
+        turno.dni = paciente_obj
 
         # Actualizar datos del turno (agenda, fecha, determinaciones, medico y nota_interna)
         turno.agenda_id = request.POST.get('agenda')
@@ -191,8 +181,8 @@ def generar_ticket_retiro(request, turno_id):
     from django.shortcuts import get_object_or_404
     from pacientes.models import Paciente
 
-    turno = get_object_or_404(Turno.objects.select_related('agenda'), id=turno_id)
-    paciente_obj = Paciente.objects.filter(iden=turno.dni).order_by('-id').first()
+    turno = get_object_or_404(Turno.objects.select_related('agenda', 'dni'), id=turno_id)
+    paciente_obj = turno.dni  # Ya es FK
 
     edad = None
     if paciente_obj and paciente_obj.fecha_nacimiento:
@@ -208,7 +198,7 @@ def generar_ticket_retiro(request, turno_id):
     agenda_nombre = turno.agenda.name if turno.agenda else ""
     apellido = turno.apellido or ""
     nombre = turno.nombre or ""
-    dni = turno.dni or ""
+    dni = turno.paciente_dni or ""
     telefono = paciente_obj.telefono if paciente_obj else ""
     email = paciente_obj.email if paciente_obj else ""
     usuario_asignador = turno.usuario or request.user.username
@@ -597,7 +587,7 @@ def turnos_historicos_api(request, fecha):
         
         turno_data = {
             'id': turno.id,
-            'dni': turno.dni,
+            'dni': turno.paciente_dni,
             'nombre': turno.nombre,
             'apellido': turno.apellido,
             'determinaciones': turno.determinaciones,
@@ -705,7 +695,7 @@ def dia(request, fecha):
                                     medico_obj = medicos.first()
                         
                         # Guardar o actualizar paciente usando ORM (tabla pacientes_paciente)
-                        Paciente.objects.update_or_create(
+                        paciente_obj, created = Paciente.objects.update_or_create(
                             iden=dni,
                             defaults={
                                 'nombre': nombre,
@@ -741,6 +731,7 @@ def dia(request, fecha):
                             # Crear el turno
                             nuevo = form.save(commit=False)
                             nuevo.fecha = fecha
+                            nuevo.dni = paciente_obj  # Asignar la instancia de Paciente
                             nuevo.medico = medico_obj  # Asignar la instancia de Médico (puede ser None)
                             nuevo.nota_interna = nota_interna
                             nuevo.usuario = request.user.username
@@ -840,9 +831,9 @@ def dia(request, fecha):
 
 @login_required
 def buscar(request):
-    import psycopg2
     from datetime import date
     from .models import Coordinados
+    from determinaciones.models import DeterminacionCompleja
     
     q = request.GET.get('q', '').strip()
     turno_id = request.GET.get('turno_id', '').strip()
@@ -854,11 +845,11 @@ def buscar(request):
     if q or turno_id or apellido:
         # Buscar por DNI, apellido o por ID de turno
         if turno_id:
-            resultados = Turno.objects.filter(id=turno_id)
+            resultados = Turno.objects.filter(id=turno_id).select_related('dni', 'agenda')
         elif apellido:
-            resultados = Turno.objects.filter(apellido__icontains=apellido).order_by('-fecha')
+            resultados = Turno.objects.filter(dni__apellido__icontains=apellido).select_related('dni', 'agenda').order_by('-fecha')
         else:
-            resultados = Turno.objects.filter(dni__icontains=q).order_by('-fecha')
+            resultados = Turno.objects.filter(dni__iden__icontains=q).select_related('dni', 'agenda').order_by('-fecha')
             
         hoy = date.today()
         
@@ -872,20 +863,31 @@ def buscar(request):
             if turno.determinaciones:
                 codigos = [c.strip() for c in turno.determinaciones.split(',') if c.strip()]
                 det_codes = [c for c in codigos if not c.startswith('/')]
-                perfil_codes = [c.lstrip('/') for c in codigos if c.startswith('/')]
+                codigos_con_slash = [c for c in codigos if c.startswith('/')]
 
+                # Determinaciones simples
                 det_map = {d.codigo: d.nombre for d in Determinacion.objects.filter(codigo__in=det_codes)}
-                perfiles = list(PerfilDeterminacion.objects.filter(codigo__in=perfil_codes))
                 nombres = []
 
                 # determinaciones individuales
                 for code in det_codes:
                     nombres.append(det_map.get(code, code))
 
-                # perfiles (muestra código y cantidad de determinaciones)
-                for perfil in perfiles:
-                    cant = len(perfil.determinaciones or [])
-                    nombres.append(f"Perfil {perfil.codigo} ({cant} dets)")
+                # Procesar códigos con / (pueden ser complejas o perfiles)
+                for code in codigos_con_slash:
+                    code_sin_slash = code.lstrip('/')
+                    
+                    # Primero intentar como determinación compleja (con /)
+                    compleja = DeterminacionCompleja.objects.filter(codigo=code).first()
+                    if compleja:
+                        nombres.append(compleja.nombre)
+                        continue
+                    
+                    # Si no es compleja, buscar como perfil (sin /)
+                    perfil = PerfilDeterminacion.objects.filter(codigo=code_sin_slash).first()
+                    if perfil:
+                        cant = len(perfil.determinaciones or [])
+                        nombres.append(f"Perfil {perfil.codigo} ({cant} dets)")
 
                 turno.determinaciones_nombres = ', '.join(nombres) if nombres else turno.determinaciones
             else:
@@ -909,50 +911,34 @@ def buscar(request):
 @login_required
 def ver_coordinacion(request, turno_id):
     """Ver detalles completos de un turno coordinado (solo lectura)."""
-    import psycopg2
     from datetime import date
     from .models import Coordinados
     
-    turno = get_object_or_404(Turno, id=turno_id)
+    turno = get_object_or_404(Turno.objects.select_related('dni', 'medico', 'agenda'), id=turno_id)
     
     # Verificar que el turno esté coordinado
     coordinacion = Coordinados.objects.filter(id_turno=turno_id).first()
     
-    # Conectar a PostgreSQL
-    conn = get_db_conn()
-    cursor = conn.cursor()
-    
-    # Obtener datos del paciente
+    # Obtener datos del paciente desde la FK
     paciente_data = None
-    cursor.execute(
-        "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE dni = %s",
-        (turno.dni,)
-    )
-    result = cursor.fetchone()
-    if result:
+    if turno.dni:
         paciente_data = {
-            'nombre': result[0],
-            'apellido': result[1],
-            'dni': result[2],
-            'fecha_nacimiento': result[3],
-            'sexo': result[4],
-            'telefono': result[5] or '',
-            'email': result[6] or ''
+            'nombre': turno.dni.nombre,
+            'apellido': turno.dni.apellido,
+            'dni': turno.dni.iden,
+            'fecha_nacimiento': turno.dni.fecha_nacimiento,
+            'sexo': turno.dni.sexo,
+            'telefono': turno.dni.telefono or '',
+            'email': turno.dni.email or ''
         }
     
-    # Obtener datos del médico
+    # Obtener datos del médico desde la FK
     medico_data = None
     if turno.medico:
-        cursor.execute(
-            "SELECT matricula_provincial, nombre_apellido FROM medicos WHERE nombre_apellido = %s",
-            (turno.medico,)
-        )
-        result = cursor.fetchone()
-        if result:
-            medico_data = {
-                'matricula': result[0],
-                'nombre': result[1]
-            }
+        medico_data = {
+            'matricula': turno.medico.matricula_provincial,
+            'nombre': turno.medico.nombre
+        }
     
     # Obtener nombres de determinaciones y perfiles
     determinaciones_nombres = []
@@ -1001,34 +987,21 @@ def ver_coordinacion(request, turno_id):
 @login_required
 def editar_turno(request, turno_id):
     """Editar un turno existente."""
-    import psycopg2
     turno = get_object_or_404(Turno, id=turno_id)
     
-    # Obtener datos del paciente desde PostgreSQL
+    # Obtener datos del paciente desde la FK
     paciente_data = None
-    try:
-        conn = get_db_conn()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones FROM pacientes WHERE dni = %s",
-            (turno.dni,)
-        )
-        result = cursor.fetchone()
-        if result:
-            paciente_data = {
-                'nombre': result[0],
-                'apellido': result[1],
-                'dni': result[2],
-                'fecha_nacimiento': result[3],
-                'sexo': result[4],
-                'telefono': result[5],
-                'email': result[6],
-                'observaciones': result[7] if len(result) > 7 else ''
-            }
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        pass
+    if turno.dni:
+        paciente_data = {
+            'nombre': turno.dni.nombre,
+            'apellido': turno.dni.apellido,
+            'dni': turno.dni.iden,
+            'fecha_nacimiento': turno.dni.fecha_nacimiento,
+            'sexo': turno.dni.sexo,
+            'telefono': turno.dni.telefono,
+            'email': turno.dni.email,
+            'observaciones': turno.dni.observaciones or ''
+        }
     
     if request.method == 'POST':
         # Actualizar turno (agenda, fecha, determinaciones, medico y nota_interna)
@@ -1058,20 +1031,11 @@ def editar_turno(request, turno_id):
         email = request.POST.get('email', '')
         observaciones_paciente = request.POST.get('observaciones_paciente', '')
 
-        if telefono or email or observaciones_paciente:
-            try:
-                conn = get_db_conn()
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE pacientes 
-                    SET telefono = %s, email = %s, observaciones = %s
-                    WHERE dni = %s
-                """, (telefono, email, observaciones_paciente, turno.dni))
-                conn.commit()
-                cursor.close()
-                conn.close()
-            except Exception as e:
-                pass
+        if turno.dni and (telefono or email or observaciones_paciente):
+            turno.dni.telefono = telefono or turno.dni.telefono
+            turno.dni.email = email or turno.dni.email
+            turno.dni.observaciones = observaciones_paciente or turno.dni.observaciones
+            turno.dni.save()
 
         return redirect(reverse('turnos:dia', args=[turno.fecha]) + f'?agenda={turno.agenda.id}')
     
@@ -1323,7 +1287,6 @@ def listar_medicos_api(request):
 @login_required
 def coordinar_turno(request, turno_id):
     """Genera archivo ASTM para coordinar turno y registra en Coordinados"""
-    import psycopg2
     from datetime import datetime
     import os
     from .models import Coordinados
@@ -1338,10 +1301,10 @@ def coordinar_turno(request, turno_id):
         if Coordinados.objects.filter(id_turno=turno_id).exists():
             return JsonResponse({'success': False, 'error': 'Este turno ya fue coordinado anteriormente'})
         
-        # Obtener el turno
-        turno = get_object_or_404(Turno, id=turno_id)
+        # Obtener el turno con FK
+        turno = get_object_or_404(Turno.objects.select_related('dni'), id=turno_id)
         
-        paciente_obj = Paciente.objects.filter(iden=turno.dni).first()
+        paciente_obj = turno.dni
         if not paciente_obj:
             return JsonResponse({'success': False, 'error': 'Paciente no encontrado'})
 
@@ -1479,10 +1442,10 @@ def generar_ticket_turno(request, turno_id):
     from pacientes.models import Paciente
     from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
 
-    turno = get_object_or_404(Turno.objects.select_related('agenda'), id=turno_id)
+    turno = get_object_or_404(Turno.objects.select_related('agenda', 'dni', 'medico'), id=turno_id)
 
-    # Paciente por DNI (iden)
-    paciente_obj = Paciente.objects.filter(iden=turno.dni).order_by('-id').first()
+    # Paciente desde FK
+    paciente_obj = turno.dni
 
     edad = None
     if paciente_obj and paciente_obj.fecha_nacimiento:
@@ -1540,7 +1503,7 @@ def generar_ticket_turno(request, turno_id):
     agenda_nombre = turno.agenda.name if turno.agenda else ""
     apellido = turno.apellido or ""
     nombre = turno.nombre or ""
-    dni = turno.dni or ""
+    dni = turno.paciente_dni or ""
     telefono = paciente_obj.telefono if paciente_obj else ""
     email = paciente_obj.email if paciente_obj else ""
     usuario_asignador = turno.usuario or request.user.username

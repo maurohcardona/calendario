@@ -19,24 +19,18 @@ def buscar_paciente_api(request):
         tiene_turno_pendiente = False
         proximo_turno = None
         if paciente:
-            turnos_pendientes = Turno.objects.filter(dni=dni, fecha__gte=date.today()).order_by('fecha')
+            turnos_pendientes = Turno.objects.filter(dni=paciente, fecha__gte=date.today()).order_by('fecha')
             if turnos_pendientes.exists():
                 tiene_turno_pendiente = True
                 proximo_turno = turnos_pendientes.first().fecha.strftime('%d-%m-%y')
 
         if paciente:
-            sexo_map = {
-                'Masculino': 'Hombre',
-                'Femenino': 'Mujer',
-                'Sin asignar': 'Generico'
-            }
-            sexo_front = sexo_map.get(paciente.sexo, 'Generico')
             return JsonResponse({
                 'found': True,
                 'nombre': paciente.nombre,
                 'apellido': paciente.apellido,
                 'fecha_nacimiento': paciente.fecha_nacimiento.isoformat() if paciente.fecha_nacimiento else '',
-                'sexo': sexo_front,
+                'sexo': paciente.sexo,  # Devolver el valor directo del modelo
                 'telefono': paciente.telefono or '',
                 'email': paciente.email or '',
                 'observaciones': paciente.observaciones or '',
