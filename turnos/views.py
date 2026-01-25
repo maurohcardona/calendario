@@ -66,7 +66,7 @@ def precoordinacion_turno(request, turno_id):
     from django.shortcuts import get_object_or_404, redirect, render
     from django.urls import reverse
     from .models import Turno, Agenda
-    turno = get_object_or_404(Turno, id=turno_id)
+    turno = get_object_or_404(Turno.objects.select_related('medico', 'dni', 'agenda'), id=turno_id)
 
     paciente_obj = turno.dni  # Ya es una FK
     paciente_data = None
@@ -201,7 +201,11 @@ def generar_ticket_retiro(request, turno_id):
     dni = turno.paciente_dni or ""
     telefono = paciente_obj.telefono if paciente_obj else ""
     email = paciente_obj.email if paciente_obj else ""
-    usuario_asignador = turno.usuario or request.user.username
+    # Obtener apellido y nombre del usuario
+    if turno.usuario:
+        usuario_asignador = f"{turno.usuario.last_name}, {turno.usuario.first_name}" if turno.usuario.last_name and turno.usuario.first_name else turno.usuario.username
+    else:
+        usuario_asignador = f"{request.user.last_name}, {request.user.first_name}" if request.user.last_name and request.user.first_name else request.user.username
     medico_nombre = turno.medico.nombre if turno.medico else ""
     determinaciones_texto = turno.determinaciones or ""
 
@@ -734,7 +738,7 @@ def dia(request, fecha):
                             nuevo.dni = paciente_obj  # Asignar la instancia de Paciente
                             nuevo.medico = medico_obj  # Asignar la instancia de Médico (puede ser None)
                             nuevo.nota_interna = nota_interna
-                            nuevo.usuario = request.user.username
+                            nuevo.usuario = request.user  # Asignar la instancia de User, no el username
                             nuevo.full_clean()
                             nuevo.save()
                             
@@ -936,41 +940,41 @@ def ver_coordinacion(request, turno_id):
     medico_data = None
     if turno.medico:
         medico_data = {
-            'matricula': turno.medico.matricula_provincial,
+            'matricula': turno.medico.matricula,
             'nombre': turno.medico.nombre
         }
     
     # Obtener nombres de determinaciones y perfiles
+    from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+    
     determinaciones_nombres = []
     if turno.determinaciones:
         codigos = [c.strip() for c in turno.determinaciones.split(',') if c.strip()]
         
         for codigo in codigos:
             if codigo.startswith('/'):
-                # Es un perfil
-                cursor.execute(
-                    "SELECT nombre FROM perfiles WHERE codigo = %s",
-                    (codigo,)
-                )
-                result = cursor.fetchone()
-                if result:
-                    determinaciones_nombres.append(f"{codigo} - {result[0]}")
+                # Es un perfil o determinación compleja
+                # Intentar buscar como determinación compleja primero
+                compleja = DeterminacionCompleja.objects.filter(codigo=codigo).first()
+                if compleja:
+                    determinaciones_nombres.append(f"{codigo} - {compleja.nombre}")
+                    continue
+                
+                # Si no, buscar como perfil (sin el /)
+                codigo_sin_slash = codigo.lstrip('/')
+                perfil = PerfilDeterminacion.objects.filter(codigo=codigo_sin_slash).first()
+                if perfil:
+                    determinaciones_nombres.append(f"{codigo} - {perfil.nombre}")
             else:
-                # Es una determinación
+                # Es una determinación simple
                 try:
-                    codigo_int = int(codigo)
-                    cursor.execute(
-                        "SELECT nombre FROM determinaciones WHERE codigo = %s",
-                        (codigo_int,)
-                    )
-                    result = cursor.fetchone()
-                    if result:
-                        determinaciones_nombres.append(f"{codigo} - {result[0]}")
-                except ValueError:
+                    det = Determinacion.objects.filter(codigo=codigo).first()
+                    if det:
+                        determinaciones_nombres.append(f"{codigo} - {det.nombre}")
+                    else:
+                        determinaciones_nombres.append(codigo)
+                except Exception:
                     determinaciones_nombres.append(codigo)
-    
-    cursor.close()
-    conn.close()
     
     context = {
         'turno': turno,
@@ -1411,11 +1415,9 @@ def coordinar_turno(request, turno_id):
         # Crear registro en Coordinados
         Coordinados.objects.create(
             id_turno=turno_id,
-            nombre=nombre,
-            apellido=apellido,
-            dni=dni,
+            dni=paciente_obj,  # Usar la instancia de Paciente, no el string del DNI
             determinaciones=turno.determinaciones,
-            usuario=request.user.username
+            usuario=request.user if request.user.is_authenticated else None
         )
         
         # Construir URL del ticket de retiro
@@ -1506,7 +1508,11 @@ def generar_ticket_turno(request, turno_id):
     dni = turno.paciente_dni or ""
     telefono = paciente_obj.telefono if paciente_obj else ""
     email = paciente_obj.email if paciente_obj else ""
-    usuario_asignador = turno.usuario or request.user.username
+    # Obtener apellido y nombre del usuario
+    if turno.usuario:
+        usuario_asignador = f"{turno.usuario.last_name}, {turno.usuario.first_name}" if turno.usuario.last_name and turno.usuario.first_name else turno.usuario.username
+    else:
+        usuario_asignador = f"{request.user.last_name}, {request.user.first_name}" if request.user.last_name and request.user.first_name else request.user.username
     medico_nombre = turno.medico.nombre if turno.medico else ""
     fecha_turno = turno.fecha
     

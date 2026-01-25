@@ -430,66 +430,6 @@
     }
     cargarDeterminaciones();
     </script>
-    <script>
-    // Lógica modal médico (idéntica a dia.html)
-    const btnNuevoMedico = document.getElementById('btnNuevoMedico');
-    const modalNuevoMedico = document.getElementById('modalNuevoMedico');
-    const cerrarModalMedico = document.getElementById('cerrarModalMedico');
-    const formNuevoMedico = document.getElementById('formNuevoMedico');
-    const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
-
-    btnNuevoMedico.addEventListener('click', function() {
-        modalNuevoMedico.style.display = 'flex';
-        estadoNuevoMedico.textContent = '';
-        formNuevoMedico.reset();
-    });
-    cerrarModalMedico.addEventListener('click', function() {
-        modalNuevoMedico.style.display = 'none';
-    });
-    modalNuevoMedico.addEventListener('click', function(e) {
-        if (e.target === modalNuevoMedico) {
-            modalNuevoMedico.style.display = 'none';
-        }
-    });
-    formNuevoMedico.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const nombre = document.getElementById('nombreMedico').value.trim();
-        const matricula = document.getElementById('matriculaMedico').value.trim();
-        if (!nombre || !matricula) {
-            estadoNuevoMedico.textContent = 'Complete ambos campos.';
-            estadoNuevoMedico.style.color = '#d32f2f';
-            return;
-        }
-        estadoNuevoMedico.textContent = 'Guardando...';
-        estadoNuevoMedico.style.color = '#333';
-        try {
-            const response = await fetch('/turnos/api/crear-medico/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({ nombre_apellido: nombre, matricula_provincial: matricula })
-            });
-            const data = await response.json();
-            if (data.success) {
-                estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
-                estadoNuevoMedico.style.color = '#388e3c';
-                // Actualizar cache y autocompletado
-                if (typeof medicosCache !== 'undefined') medicosCache = null;
-                if (typeof cargarMedicos === 'function') await cargarMedicos();
-                document.getElementById('id_medico').value = nombre;
-                setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
-            } else {
-                estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
-                estadoNuevoMedico.style.color = '#d32f2f';
-            }
-        } catch (err) {
-            estadoNuevoMedico.textContent = 'Error de red.';
-            estadoNuevoMedico.style.color = '#d32f2f';
-        }
-    });
-    </script>
 
     </form>
 </div>

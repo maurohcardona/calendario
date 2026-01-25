@@ -894,13 +894,18 @@ if (turnoCreado) {
 }
 
 // Lógica modal médico
-const btnNuevoMedico = document.getElementById('btnNuevoMedico');
-const modalNuevoMedico = document.getElementById('modalNuevoMedico');
-const cerrarModalMedico = document.getElementById('cerrarModalMedico');
-const formNuevoMedico = document.getElementById('formNuevoMedico');
-const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
+document.addEventListener('DOMContentLoaded', function() {
+    const btnNuevoMedico = document.getElementById('btnNuevoMedico');
+    const modalNuevoMedico = document.getElementById('modalNuevoMedico');
+    const cerrarModalMedico = document.getElementById('cerrarModalMedico');
+    const formNuevoMedico = document.getElementById('formNuevoMedico');
+    const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
 
-btnNuevoMedico.addEventListener('click', function() {
+    if (!btnNuevoMedico || !modalNuevoMedico || !cerrarModalMedico || !formNuevoMedico || !estadoNuevoMedico) {
+        return; // Si algún elemento no existe, salir
+    }
+
+    btnNuevoMedico.addEventListener('click', function() {
     modalNuevoMedico.style.display = 'flex';
     estadoNuevoMedico.textContent = '';
     formNuevoMedico.reset();
@@ -950,6 +955,7 @@ formNuevoMedico.addEventListener('submit', async function(e) {
         estadoNuevoMedico.textContent = 'Error de red.';
         estadoNuevoMedico.style.color = '#d32f2f';
     }
+    });
 });
 </script>
 

@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from medicos.models import Medico
 from pacientes.models import Paciente
+from django.contrib.auth.models import User
 
 
 class Agenda(models.Model):
@@ -55,7 +56,7 @@ class Turno(models.Model):
     fecha = models.DateField()
     medico = models.ForeignKey(Medico, on_delete=models.SET_NULL, null=True, blank=True, related_name='turnos')
     nota_interna = models.TextField(blank=True, default='')
-    usuario = models.CharField(max_length=150, blank=True, default='')
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='turnos')
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -121,7 +122,7 @@ class Coordinados(models.Model):
     dni = models.ForeignKey(Paciente, on_delete=models.PROTECT, verbose_name='Paciente')
     fecha_coordinacion = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Coordinación')
     determinaciones = models.TextField(blank=True, verbose_name='Determinaciones')
-    usuario = models.CharField(max_length=150, blank=True, default='')
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Usuario que coordinó')
 
     class Meta:
         verbose_name = 'Turno Coordinado'
