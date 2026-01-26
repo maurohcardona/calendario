@@ -340,12 +340,24 @@ document.getElementById('inputNombre').addEventListener('input', async function(
     }
     
     lista.innerHTML = coincidencias.map(item => {
-        const tipoBadge = item.tipo === 'perfil' 
-            ? '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL</span>'
-            : '';
+        let tipoBadge = '';
+        let sinStockBadge = '';
+        let estiloGris = '';
+        
+        if (item.tipo === 'perfil') {
+            tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL</span>';
+        } else if (item.tipo === 'compleja') {
+            tipoBadge = '<span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">COMPLEJA</span>';
+        }
+        
+        if (item.stock === false) {
+            sinStockBadge = '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">SIN STOCK</span>';
+            estiloGris = 'opacity: 0.5;';
+        }
+        
         return `
-            <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(0, 212, 255, 0.1); transition: background 0.2s;">
-                <span style="color: #00d4ff; font-weight: bold;">${item.codigo}</span> - <span style="color: #ffffff; font-weight: 600;">${item.nombre}</span>${tipoBadge}
+            <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(0, 212, 255, 0.1); transition: background 0.2s; ${estiloGris}">
+                <span style="color: #00d4ff; font-weight: bold;">${item.codigo}</span> - <span style="color: #ffffff; font-weight: 600;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
             </div>
         `;
     }).join('');
@@ -627,7 +639,8 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                     tipo: 'compleja',
                     codigo: data.codigo,
                     nombre: data.nombre,
-                    determinaciones: data.determinaciones
+                    determinaciones: data.determinaciones,
+                    stock: data.stock !== undefined ? data.stock : true
                 });
                 status.innerHTML = '<span style="color: #4caf50;">✅ Determinación compleja agregada</span>';
             } else if (data.tipo === 'perfil') {
@@ -657,7 +670,8 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                                 tipo: 'compleja',
                                 codigo: itemCompleja.codigo,
                                 nombre: itemCompleja.nombre,
-                                determinaciones: itemCompleja.determinaciones
+                                determinaciones: itemCompleja.determinaciones,
+                                stock: itemCompleja.stock !== undefined ? itemCompleja.stock : true
                             });
                             agregadas += 1;
                         }
@@ -671,7 +685,8 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                         determinaciones.unshift({
                             tipo: 'determinacion',
                             codigo: code,
-                            nombre: nombreDet
+                            nombre: nombreDet,
+                            stock: itemCat && itemCat.stock !== undefined ? itemCat.stock : true
                         });
                         agregadas += 1;
                     }
@@ -693,7 +708,8 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                 determinaciones.unshift({
                     tipo: 'determinacion',
                     codigo: data.codigo,
-                    nombre: data.nombre
+                    nombre: data.nombre,
+                    stock: data.stock !== undefined ? data.stock : true
                 });
                 status.innerHTML = '<span style="color: #4caf50;">✅ Determinación agregada</span>';
             }
@@ -746,20 +762,24 @@ function actualizarListaDeterminaciones() {
                     </div>
                 `;
             } else if (item.tipo === 'compleja') {
+                const sinStockBadge = item.stock === false ? '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: bold;">SIN STOCK</span>' : '';
+                const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
                 return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(156, 39, 176, 0.2); border: 1px solid rgba(156, 39, 176, 0.4); border-radius: 6px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(156, 39, 176, 0.2); border: 1px solid rgba(156, 39, 176, 0.4); border-radius: 6px; margin-bottom: 0.5rem; ${estiloGris}">
                         <div>
                             <span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">COMPLEJA</span>
-                            <strong style="color: #9c27b0; font-weight: 700; font-size: 1rem; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: #1a1a2e; font-weight: 600; font-size: 0.95rem;">${item.nombre}</span>
+                            <strong style="color: #9c27b0; font-weight: 700; font-size: 1rem; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: #1a1a2e; font-weight: 600; font-size: 0.95rem;">${item.nombre}</span>${sinStockBadge}
                         </div>
                         <button type="button" class="btn-eliminar" data-index="${index}" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
                     </div>
                 `;
             } else {
+                const sinStockBadge = item.stock === false ? '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: bold;">SIN STOCK</span>' : '';
+                const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
                 return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(33, 150, 243, 0.2); border: 1px solid rgba(33, 150, 243, 0.4); border-radius: 6px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(33, 150, 243, 0.2); border: 1px solid rgba(33, 150, 243, 0.4); border-radius: 6px; margin-bottom: 0.5rem; ${estiloGris}">
                         <div>
-                            <strong style="color: #2196F3; font-weight: 700; font-size: 1rem;">${item.codigo}</strong> - <span style="color: #1a1a2e; font-weight: 600; font-size: 0.95rem;">${item.nombre}</span>
+                            <strong style="color: #2196F3; font-weight: 700; font-size: 1rem;">${item.codigo}</strong> - <span style="color: #1a1a2e; font-weight: 600; font-size: 0.95rem;">${item.nombre}</span>${sinStockBadge}
                         </div>
                         <button type="button" class="btn-eliminar" data-index="${index}" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
                     </div>

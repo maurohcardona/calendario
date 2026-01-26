@@ -14,6 +14,7 @@ class Determinacion(models.Model):
     tiempo = models.IntegerField(default=3)  # Tiempo en dias
     visible = models.BooleanField(default=True)
     activa = models.BooleanField(default=True)
+    stock = models.BooleanField(default=True)
     
 
 
@@ -59,6 +60,10 @@ class DeterminacionCompleja(models.Model):
         default=list,
         help_text="Códigos de determinaciones Complejas"
     )
+
+    visible = models.BooleanField(default=True)
+    activa = models.BooleanField(default=True)
+    stock = models.BooleanField(default=True)
 
     def __str__(self):
         return self.codigo

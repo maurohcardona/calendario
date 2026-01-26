@@ -151,6 +151,7 @@
     let determinaciones = [];
     let determinacionesCache = null;
 
+    // Cargar determinaciones existentes al cargar la página
     window.addEventListener('DOMContentLoaded', async function() {
         const codigosExistentes = '{{ turno.determinaciones }}'.split(',').map(c => c.trim()).filter(c => c);
         if (codigosExistentes.length > 0) {
@@ -171,70 +172,16 @@
                                 tipo: 'compleja',
                                 codigo: data.codigo,
                                 nombre: data.nombre,
-                                determinaciones: data.determinaciones
+                                determinaciones: data.determinaciones,
+                                stock: data.stock !== undefined ? data.stock : true
                             });
                         } else {
                             determinaciones.unshift({
                                 tipo: 'determinacion',
                                 codigo: data.codigo,
-                                nombre: data.nombre
+                                nombre: data.nombre,
+                                stock: data.stock !== undefined ? data.stock : true
                             });
-                        // Autocompletado de médicos
-                        let medicosCache = null;
-                        async function cargarMedicos() {
-                            if (medicosCache) return medicosCache;
-                            try {
-                                const response = await fetch('/turnos/api/listar-medicos/');
-                                medicosCache = await response.json();
-                                return medicosCache;
-                            } catch (error) {
-                                console.error('Error cargando médicos:', error);
-                                return [];
-                            }
-                        }
-                        document.getElementById('id_medico').addEventListener('input', async function() {
-                            const texto = this.value.trim().toLowerCase();
-                            const lista = document.getElementById('autocompleteMedicos');
-                            if (texto.length < 2) {
-                                lista.style.display = 'none';
-                                return;
-                            }
-                            const medicos = await cargarMedicos();
-                            const coincidencias = medicos.filter(m => 
-                                m.nombre_apellido.toLowerCase().includes(texto)
-                            ).slice(0, 15);
-                            if (coincidencias.length === 0) {
-                                lista.style.display = 'none';
-                                return;
-                            }
-                            lista.innerHTML = coincidencias.map(medico => {
-                                return `
-                                    <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
-                                        <span style="color: #c89b8f; font-weight: 600;">${medico.nombre_apellido}</span>
-                                        <span style="color: rgba(100, 100, 100, 0.7); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
-                                    </div>
-                                `;
-                            }).join('');
-                            lista.style.display = 'block';
-                            lista.querySelectorAll('.autocomplete-medico').forEach(item => {
-                                item.addEventListener('mouseenter', function() {
-                                    this.style.background = 'rgba(200, 155, 143, 0.2)';
-                                });
-                                item.addEventListener('mouseleave', function() {
-                                    this.style.background = 'transparent';
-                                });
-                                item.addEventListener('click', function() {
-                                    const nombre = this.dataset.nombre;
-                                    document.getElementById('id_medico').value = nombre;
-                                    lista.style.display = 'none';
-                                });
-                            });
-                        });
-                        document.addEventListener('click', function(e) {
-                            if (!e.target.closest('#id_medico') && !e.target.closest('#autocompleteMedicos')) {
-                                document.getElementById('autocompleteMedicos').style.display = 'none';
-                            }
-                        });
                         }
                     }
                 } catch (error) {
@@ -242,6 +189,65 @@
                 }
             }
             actualizarListaDeterminaciones();
+        }
+    });
+
+    // Autocompletado de médicos
+    let medicosCache = null;
+    async function cargarMedicos() {
+        if (medicosCache) return medicosCache;
+        try {
+            const response = await fetch('/turnos/api/listar-medicos/');
+            medicosCache = await response.json();
+            return medicosCache;
+        } catch (error) {
+            console.error('Error cargando médicos:', error);
+            return [];
+        }
+    }
+    
+    document.getElementById('id_medico').addEventListener('input', async function() {
+        const texto = this.value.trim().toLowerCase();
+        const lista = document.getElementById('autocompleteMedicos');
+        if (texto.length < 2) {
+            lista.style.display = 'none';
+            return;
+        }
+        const medicos = await cargarMedicos();
+        const coincidencias = medicos.filter(m => 
+            m.nombre_apellido.toLowerCase().includes(texto)
+        ).slice(0, 15);
+        if (coincidencias.length === 0) {
+            lista.style.display = 'none';
+            return;
+        }
+        lista.innerHTML = coincidencias.map(medico => {
+            return `
+                <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
+                    <span style="color: #c89b8f; font-weight: 600;">${medico.nombre_apellido}</span>
+                    <span style="color: rgba(100, 100, 100, 0.7); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
+                </div>
+            `;
+        }).join('');
+        lista.style.display = 'block';
+        lista.querySelectorAll('.autocomplete-medico').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(200, 155, 143, 0.2)';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.background = 'transparent';
+            });
+            item.addEventListener('click', function() {
+                const nombre = this.dataset.nombre;
+                document.getElementById('id_medico').value = nombre;
+                lista.style.display = 'none';
+            });
+        });
+    });
+    
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#id_medico') && !e.target.closest('#autocompleteMedicos')) {
+            document.getElementById('autocompleteMedicos').style.display = 'none';
         }
     });
 
@@ -272,14 +278,23 @@
         }
         lista.innerHTML = coincidencias.map(item => {
             let tipoBadge = '';
+            let sinStockBadge = '';
+            let estiloGris = '';
+            
             if (item.tipo === 'perfil') {
                 tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>';
             } else if (item.tipo === 'compleja') {
                 tipoBadge = '<span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">COMPLEJA</span>';
             }
+            
+            if (item.stock === false) {
+                sinStockBadge = '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">SIN STOCK</span>';
+                estiloGris = 'opacity: 0.5;';
+            }
+            
             return `
-                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}">
-                    <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}
+                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="${estiloGris}">
+                    <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
                 </div>
             `;
         }).join('');
@@ -323,7 +338,8 @@
                         tipo: data.tipo,
                         codigo: data.codigo,
                         nombre: data.nombre,
-                        determinaciones: data.determinaciones
+                        determinaciones: data.determinaciones,
+                        stock: data.stock !== undefined ? data.stock : true
                     });
                     const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
                     status.innerHTML = `<span style="color: #4caf50; font-weight: 600;">✅ ${data.tipo === 'compleja' ? 'Determinación compleja' : 'Perfil'} agregado (${cantidadDets} determinaciones)</span>`;
@@ -336,7 +352,8 @@
                     determinaciones.unshift({
                         tipo: 'determinacion',
                         codigo: data.codigo,
-                        nombre: data.nombre
+                        nombre: data.nombre,
+                        stock: data.stock !== undefined ? data.stock : true
                     });
                     status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Determinación agregada</span>';
                 }
@@ -385,20 +402,24 @@
                         </div>
                     `;
                 } else if (item.tipo === 'compleja') {
+                    const sinStockBadge = item.stock === false ? '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 700;">SIN STOCK</span>' : '';
+                    const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
                     return `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(156, 39, 176, 0.15); border: 2px solid rgba(156, 39, 176, 0.3); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(156, 39, 176, 0.15); border: 2px solid rgba(156, 39, 176, 0.3); border-radius: 8px; margin-bottom: 0.5rem; ${estiloGris}">
                             <div>
                                 <span style="background: #9c27b0; color: #fff; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">COMPLEJA</span>
-                                <strong style="color: #9c27b0; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
+                                <strong style="color: #9c27b0; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>${sinStockBadge}
                             </div>
                             <button type="button" class="btn-eliminar" data-index="${index}" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
                         </div>
                     `;
                 } else {
+                    const sinStockBadge = item.stock === false ? '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 700;">SIN STOCK</span>' : '';
+                    const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
                     return `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(200, 155, 143, 0.15); border: 2px solid rgba(200, 155, 143, 0.3); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(200, 155, 143, 0.15); border: 2px solid rgba(200, 155, 143, 0.3); border-radius: 8px; margin-bottom: 0.5rem; ${estiloGris}">
                             <div>
-                                <strong style="color: var(--accent); font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
+                                <strong style="color: var(--accent); font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>${sinStockBadge}
                             </div>
                             <button type="button" class="btn-eliminar" data-index="${index}" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
                         </div>
