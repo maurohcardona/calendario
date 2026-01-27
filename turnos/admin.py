@@ -1,5 +1,7 @@
 from django.contrib import admin
 from .models import Cupo, Turno, Agenda, Coordinados, Feriados
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as DefaultUserAdmin
 
 
 @admin.register(Agenda)
@@ -131,6 +133,23 @@ class FeriadosAdmin(admin.ModelAdmin):
 	list_filter = ('fecha',)
 	search_fields = ('descripcion',)
 	ordering = ('-fecha',)
+
+
+# Mostrar nombre y apellido en el admin de usuarios
+class UserAdmin(DefaultUserAdmin):
+	list_display = ('username', 'first_name', 'last_name', 'email', 'is_staff')
+	add_fieldsets = (
+		(None, {
+			'classes': ('wide',),
+			'fields': ('username', 'first_name', 'last_name', 'email', 'password1', 'password2'),
+		}),
+	)
+
+try:
+	admin.site.unregister(User)
+except Exception:
+	pass
+admin.site.register(User, UserAdmin)
 
 
 

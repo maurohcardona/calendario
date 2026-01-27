@@ -288,18 +288,21 @@ def generar_ticket_retiro(request, turno_id):
     fecha_retiro_str = fecha_retiro.strftime('%d/%m/%Y')
     p.drawString(margen, y, f"Fecha de retiro: a partir de {fecha_retiro_str}")
     y -= 0.45 * cm
-    p.setFont("Helvetica", 9)
+    # Aumentar tamaño de las indicaciones
+    p.setFont("Helvetica", 11)
     p.drawString(margen, y, "De lunes a viernes de 10 a 17 hs")
-    y -= 0.45 * cm
+    y -= 0.5 * cm
+
+    
     p.line(margen, y, ancho_papel - margen, y)
     y -= 0.5 * cm
 
     # ====== PIE DE PÁGINA ======
-    p.setFont("Helvetica", 7)
+    p.setFont("Helvetica", 10)
     p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {usuario_asignador}")
-    y -= 0.3 * cm
-    p.drawCentredString(ancho_papel / 2, y, "laboratoriobalestrini@gmail.com")
-    y -= 0.3 * cm
+    y -= 0.5 * cm
+    p.drawCentredString(ancho_papel / 2, y, "admlabobalestrini@gmail.com")
+    y -= 0.5 * cm
     p.setFont("Helvetica-Bold", 11)
     p.drawCentredString(ancho_papel / 2, y, f"Ticket N° {turno_id}")
     y -= 0.35 * cm
@@ -1681,11 +1684,11 @@ def generar_ticket_turno(request, turno_id):
     y -= 0.5 * cm
     
     # ====== INDICACIONES FIJAS ======
-    p.setFont("Helvetica-Bold", 8)
+    p.setFont("Helvetica-Bold", 9)
     p.drawCentredString(ancho_papel / 2, y, "INDICACIONES")
     y -= 0.45 * cm
     
-    p.setFont("Helvetica", 7)
+    p.setFont("Helvetica", 10)
     indicaciones = [
         "Concurrir al laboratorio de 7:00 a 9:00 hs",
         "con su DNI, receta médica (autorizada por",
@@ -1709,12 +1712,12 @@ def generar_ticket_turno(request, turno_id):
     y -= 0.4 * cm
     
     # ====== PIE DE PÁGINA ======
-    p.setFont("Helvetica", 7)
+    p.setFont("Helvetica", 10)
     p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {usuario_asignador}")
-    y -= 0.3 * cm
+    y -= 0.5 * cm
     # Agregar el email debajo del nombre de usuario
-    p.drawCentredString(ancho_papel / 2, y, "laboratoriobalestrini@gmail.com")
-    y -= 0.3 * cm
+    p.drawCentredString(ancho_papel / 2, y, "admlabobalestrini@gmail.com")
+    y -= 0.5 * cm
     p.setFont("Helvetica-Bold", 11)
     p.drawCentredString(ancho_papel / 2, y, f"Ticket N° {turno_id}")
     y -= 0.35 * cm
