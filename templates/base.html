@@ -215,8 +215,11 @@
       <div class="nav-center">
         <a href="{% url 'turnos:calendario' %}">📅 Agenda</a>
         <a href="{% url 'turnos:buscar' %}">🔍 Buscar</a>
+        <a href="{% url 'determinaciones:buscador' %}">📊 Estadísticas</a>
         {% if user.is_superuser %}
         <a href="{% url 'turnos:audit_log' %}" style="color: #667eea;">📋 Auditoría</a>
+        <a href="{% url 'turnos:generar_cupos_masivo' %}">⚙️ Cupos</a>
+        <a href="/admin/">📊 Tablas</a>
         {% endif %}
       </div>
       
