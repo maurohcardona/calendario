@@ -35,7 +35,7 @@ def listar_determinaciones_api(request):
         for det in Determinacion.objects.filter(activa=True).order_by('nombre'):
             items.append({'codigo': det.codigo, 'nombre': det.nombre, 'tipo': 'determinacion', 'stock': det.stock})
         for perf in PerfilDeterminacion.objects.order_by('codigo'):
-            items.append({'codigo': perf.codigo, 'nombre': perf.nombre, 'tipo': 'perfil', 'determinaciones': perf.determinaciones, 'stock': True})
+            items.append({'codigo': perf.codigo, 'nombre': perf.codigo, 'tipo': 'perfil', 'determinaciones': perf.determinaciones, 'stock': True})
         for compleja in DeterminacionCompleja.objects.order_by('codigo'):
             items.append({'codigo': compleja.codigo, 'nombre': compleja.nombre, 'tipo': 'compleja', 'determinaciones': compleja.determinaciones, 'stock': compleja.stock})
         return JsonResponse(items, safe=False)
