@@ -19,18 +19,18 @@
         <!-- DNI (No editable) -->
         <div style="margin-bottom: 1.5rem;">
             <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">DNI</label>
-            <input type="text" value="{% if paciente %}{{ paciente.dni }}{% else %}{{ turno.dni }}{% endif %}" style="width: 100%; background: #ffffff; border: 2pxtext-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;" />
+            <input type="text" value="{% if paciente %}{{ paciente.dni }}{% else %}{{ turno.paciente_dni }}{% endif %}" readonly style="width: 100%; background: #f0f0f0; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;" />
         </div>
 
         <!-- Campos Apellido y Nombre en la misma fila -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
             <div>
                 <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Apellido</label>
-                <input type="text" value="{% if paciente %}{{ paciente.apellido }}{% else %}{{ turno.apellido }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                <input type="text" value="{% if paciente %}{{ paciente.apellido }}{% else %}{{ turno.apellido }}{% endif %}" readonly style="width: 100%; background: #f0f0f0; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
             </div>
             <div>
                 <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nombre</label>
-                <input type="text" value="{% if paciente %}{{ paciente.nombre }}{% else %}{{ turno.nombre }}{% endif %}" style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                <input type="text" value="{% if paciente %}{{ paciente.nombre }}{% else %}{{ turno.nombre }}{% endif %}" readonly style="width: 100%; background: #f0f0f0; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
             </div>
         </div>
 
@@ -58,7 +58,7 @@
             </div>
             <div style="position: relative;">
                 <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
-                <input type="text" id="id_medico" name="medico" value="{{ turno.medico }}" autocomplete="off" placeholder="Buscar médico..." style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                <input type="text" id="id_medico" name="medico" value="{% if turno.medico %}{{ turno.medico.nombre }}{% endif %}" autocomplete="off" placeholder="Buscar médico..." style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
                 <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);"></div>
             </div>
         </div>
@@ -166,7 +166,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (codigosExistentes.length > 0) {
         for (const codigo of codigosExistentes) {
             try {
-                const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+                const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
                 const data = await response.json();
                 
                 if (data.found) {
@@ -177,11 +177,20 @@ window.addEventListener('DOMContentLoaded', async function() {
                             nombre: data.nombre,
                             determinaciones: data.determinaciones
                         });
+                    } else if (data.tipo === 'compleja') {
+                        determinaciones.push({
+                            tipo: 'compleja',
+                            codigo: data.codigo,
+                            nombre: data.nombre,
+                            determinaciones: data.determinaciones,
+                            stock: data.stock !== undefined ? data.stock : true
+                        });
                     } else {
                         determinaciones.push({
                             tipo: 'determinacion',
                             codigo: data.codigo,
-                            nombre: data.nombre
+                            nombre: data.nombre,
+                            stock: data.stock !== undefined ? data.stock : true
                         });
                     }
                 }
@@ -198,7 +207,7 @@ async function cargarDeterminaciones() {
     if (determinacionesCache) return determinacionesCache;
     
     try {
-        const response = await fetch('/turnos/api/listar-determinaciones/');
+        const response = await fetch('/determinaciones/api/listar-determinaciones/');
         determinacionesCache = await response.json();
         return determinacionesCache;
     } catch (error) {
@@ -228,12 +237,24 @@ document.getElementById('inputNombre').addEventListener('input', async function(
     }
     
     lista.innerHTML = coincidencias.map(item => {
-        const tipoBadge = item.tipo === 'perfil' 
-            ? '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>'
-            : '';
+        let tipoBadge = '';
+        let sinStockBadge = '';
+        let estiloGris = '';
+        
+        if (item.tipo === 'perfil') {
+            tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>';
+        } else if (item.tipo === 'compleja') {
+            tipoBadge = '<span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">COMPLEJA</span>';
+        }
+        
+        if (item.stock === false) {
+            sinStockBadge = '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">SIN STOCK</span>';
+            estiloGris = 'opacity: 0.5;';
+        }
+        
         return `
-            <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}">
-                <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}
+            <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="${estiloGris}">
+                <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
             </div>
         `;
     }).join('');
@@ -285,7 +306,6 @@ document.getElementById('id_medico').addEventListener('input', async function() 
         return `
             <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
                 <span style="color: #c89b8f; font-weight: 600;">${medico.nombre_apellido}</span>
-                <span style="color: rgba(100, 100, 100, 0.7); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
             </div>
         `;
     }).join('');
@@ -320,7 +340,7 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
     status.innerHTML = '<span style="color: var(--accent); font-weight: 600;">⏳ Buscando...</span>';
     
     try {
-        const response = await fetch(`/turnos/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
+        const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
         const data = await response.json();
         
         if (data.found) {
@@ -351,7 +371,8 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                 determinaciones.push({
                     tipo: 'determinacion',
                     codigo: data.codigo,
-                    nombre: data.nombre
+                    nombre: data.nombre,
+                    stock: data.stock !== undefined ? data.stock : true
                 });
                 status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Determinación agregada</span>';
             }
@@ -397,17 +418,31 @@ function actualizarListaDeterminaciones() {
                             <div>
                                 <span style="background: #4caf50; color: #fff; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">PERFIL</span>
                                 <strong style="color: #4caf50; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
-                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(200, 155, 143, 0.8); font-weight: 600;">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
+                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(200, 155, 143, 0.8); font-weight: 600;">${(item.determinaciones && typeof item.determinaciones === 'string') ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
                             </div>
                             <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
                         </div>
                     </div>
                 `;
-            } else {
+            } else if (item.tipo === 'compleja') {
+                const sinStockBadge = item.stock === false ? '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 700;">SIN STOCK</span>' : '';
+                const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
                 return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(200, 155, 143, 0.15); border: 2px solid rgba(200, 155, 143, 0.3); border-radius: 8px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(156, 39, 176, 0.15); border: 2px solid rgba(156, 39, 176, 0.3); border-radius: 8px; margin-bottom: 0.5rem; ${estiloGris}">
                         <div>
-                            <strong style="color: var(--accent); font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>
+                            <span style="background: #9c27b0; color: #fff; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">COMPLEJA</span>
+                            <strong style="color: #9c27b0; margin-left: 0.5rem; font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>${sinStockBadge}
+                        </div>
+                        <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
+                    </div>
+                `;
+            } else {
+                const sinStockBadge = item.stock === false ? '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 700;">SIN STOCK</span>' : '';
+                const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(200, 155, 143, 0.15); border: 2px solid rgba(200, 155, 143, 0.3); border-radius: 8px; margin-bottom: 0.5rem; ${estiloGris}">
+                        <div>
+                            <strong style="color: var(--accent); font-size: 1rem;">${item.codigo}</strong> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>${sinStockBadge}
                         </div>
                         <button type="button" onclick="eliminarItem(${index})" style="background: #ff7066; color: #fff; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s ease;">🗑️</button>
                     </div>

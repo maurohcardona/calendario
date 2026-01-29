@@ -3,7 +3,7 @@ Configuración de auditoría para los modelos de turnos.
 Este archivo registra qué modelos deben ser auditados automáticamente.
 """
 from auditlog.registry import auditlog
-from .models import Agenda, Cupo, Turno, CapacidadDia, WeeklyAvailability, TurnoMensual, Coordinados
+from .models import Agenda, Cupo, Turno, Coordinados
 
 # Registrar modelos para auditoría
 # Esto guardará automáticamente:
@@ -15,7 +15,7 @@ from .models import Agenda, Cupo, Turno, CapacidadDia, WeeklyAvailability, Turno
 auditlog.register(Agenda)
 auditlog.register(Cupo)
 auditlog.register(Turno)
-auditlog.register(CapacidadDia)
-auditlog.register(WeeklyAvailability)
-auditlog.register(TurnoMensual)
+# auditlog.register(CapacidadDia)
+# auditlog.register(WeeklyAvailability)
+# auditlog.register(TurnoMensual)
 auditlog.register(Coordinados)

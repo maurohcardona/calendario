@@ -1,4 +1,62 @@
+import psycopg2
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+from medicos.models import Medico
+from datetime import timedelta
+
+
+def get_db_conn():
+    return psycopg2.connect(
+        dbname=settings.DATABASES['default']['NAME'],
+        user=settings.DATABASES['default']['USER'],
+        password=settings.DATABASES['default']['PASSWORD'],
+        host=settings.DATABASES['default']['HOST'],
+        port=settings.DATABASES['default']['PORT'],
+    )
+
+
+def calcular_max_tiempo(determinaciones_texto):
+    """Devuelve el máximo tiempo (en días) entre todas las determinaciones, perfiles y determinaciones complejas."""
+    if not determinaciones_texto:
+        return 0
+
+    codigos = [c.strip() for c in determinaciones_texto.split(',') if c.strip()]
+    det_codes = [c for c in codigos if not c.startswith('/')]
+    complejas_codes = [c for c in codigos if c.startswith('/')]
+
+    tiempos = []
+    if det_codes:
+        tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=det_codes)])
+
+    if complejas_codes:
+        # Procesar determinaciones complejas (código incluye /)
+        complejas = DeterminacionCompleja.objects.filter(codigo__in=complejas_codes)
+        dets_complejas = []
+        for compleja in complejas:
+            dets_complejas.extend(compleja.determinaciones)
+        if dets_complejas:
+            tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=dets_complejas)])
+        
+        # Procesar perfiles (buscar sin /)
+        perfil_codes = [c.lstrip('/') for c in complejas_codes]
+        perfiles = PerfilDeterminacion.objects.filter(codigo__in=perfil_codes)
+        dets_perfiles = []
+        for perfil in perfiles:
+            for det_code in perfil.determinaciones:
+                # Si el código dentro del perfil es una determinación compleja
+                if det_code.startswith('/'):
+                    compleja_en_perfil = DeterminacionCompleja.objects.filter(codigo=det_code).first()
+                    if compleja_en_perfil:
+                        # Expandir la determinación compleja
+                        dets_perfiles.extend(compleja_en_perfil.determinaciones)
+                else:
+                    # Es una determinación simple
+                    dets_perfiles.append(det_code)
+        if dets_perfiles:
+            tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=dets_perfiles)])
+
+    return max(tiempos) if tiempos else 0
 
 @login_required
 def precoordinacion_turno(request, turno_id):
@@ -8,39 +66,21 @@ def precoordinacion_turno(request, turno_id):
     from django.shortcuts import get_object_or_404, redirect, render
     from django.urls import reverse
     from .models import Turno, Agenda
-    turno = get_object_or_404(Turno, id=turno_id)
+    turno = get_object_or_404(Turno.objects.select_related('medico', 'dni', 'agenda'), id=turno_id)
 
-    # Obtener datos del paciente desde PostgreSQL
+    paciente_obj = turno.dni  # Ya es una FK
     paciente_data = None
-    try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones FROM pacientes WHERE dni = %s",
-            (turno.dni,)
-        )
-        result = cursor.fetchone()
-        if result:
-            paciente_data = {
-                'nombre': result[0],
-                'apellido': result[1],
-                'dni': result[2],
-                'fecha_nacimiento': result[3],
-                'sexo': result[4],
-                'telefono': result[5],
-                'email': result[6],
-                'observaciones': result[7] if len(result) > 7 else ''
-            }
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        pass
+    if paciente_obj:
+        paciente_data = {
+            'nombre': paciente_obj.nombre,
+            'apellido': paciente_obj.apellido,
+            'dni': paciente_obj.iden,
+            'fecha_nacimiento': paciente_obj.fecha_nacimiento,
+            'sexo': paciente_obj.sexo,
+            'telefono': paciente_obj.telefono,
+            'email': paciente_obj.email,
+            'observaciones': paciente_obj.observaciones or ''
+        }
 
     if request.method == 'POST':
         accion = request.POST.get('accion')
@@ -58,38 +98,61 @@ def precoordinacion_turno(request, turno_id):
         email = request.POST.get('email', '')
         observaciones_paciente = request.POST.get('observaciones_paciente', '')
 
-        # Actualizar en tabla turnos_turno
-        turno.dni = dni_nuevo
-        turno.apellido = apellido_nuevo
-        turno.nombre = nombre_nuevo
-        turno.save()
+        # Mapear sexo a opciones del modelo Paciente
+        sexo_map = {
+            'Hombre': 'Masculino',
+            'Mujer': 'Femenino',
+            'Generico': 'Sin asignar',
+            '': 'Sin asignar',
+            None: 'Sin asignar'
+        }
+        sexo_model = sexo_map.get(sexo_nuevo, sexo_nuevo or 'Sin asignar')
 
-        # Actualizar en tabla pacientes (por dni original o nuevo)
-        try:
-            conn = psycopg2.connect(
-                dbname=settings.DATABASES['default']['NAME'],
-                user=settings.DATABASES['default']['USER'],
-                password=settings.DATABASES['default']['PASSWORD'],
-                host=settings.DATABASES['default']['HOST'],
-                port=settings.DATABASES['default']['PORT']
-            )
-            cursor = conn.cursor()
-            # Si el dni cambió, actualizar el registro correspondiente
-            cursor.execute("""
-                UPDATE pacientes SET nombre=%s, apellido=%s, dni=%s, fecha_nacimiento=%s, sexo=%s, telefono=%s, email=%s, observaciones=%s
-                WHERE dni = %s
-            """, (nombre_nuevo, apellido_nuevo, dni_nuevo, fecha_nac_nueva, sexo_nuevo, telefono, email, observaciones_paciente, turno.dni))
-            conn.commit()
-            cursor.close()
-            conn.close()
-        except Exception as e:
-            pass
+        # Parsear fecha de nacimiento
+        from datetime import datetime
+        fecha_nac_parsed = None
+        if fecha_nac_nueva:
+            try:
+                fecha_nac_parsed = datetime.strptime(fecha_nac_nueva, '%Y-%m-%d').date()
+            except Exception:
+                fecha_nac_parsed = paciente_obj.fecha_nacimiento if paciente_obj else None
+
+        # Crear o actualizar Paciente
+        paciente_obj, _ = Paciente.objects.update_or_create(
+            iden=dni_nuevo,
+            defaults={
+                'nombre': nombre_nuevo,
+                'apellido': apellido_nuevo,
+                'fecha_nacimiento': fecha_nac_parsed or date.today(),
+                'sexo': sexo_model,
+                'telefono': telefono or None,
+                'email': email or None,
+                'observaciones': observaciones_paciente or ''
+            }
+        )
+        
+        # Asignar paciente al turno
+        turno.dni = paciente_obj
 
         # Actualizar datos del turno (agenda, fecha, determinaciones, medico y nota_interna)
         turno.agenda_id = request.POST.get('agenda')
         turno.fecha = request.POST.get('fecha')
         turno.determinaciones = request.POST.get('determinaciones', '')
-        turno.medico = request.POST.get('medico', '')
+        
+        # Manejar el médico correctamente
+        medico_nombre = request.POST.get('medico', '')
+        if medico_nombre:
+            try:
+                turno.medico = Medico.objects.get(nombre=medico_nombre)
+            except Medico.DoesNotExist:
+                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
+                if medicos.exists():
+                    turno.medico = medicos.first()
+                else:
+                    turno.medico = None
+        else:
+            turno.medico = None
+        
         turno.nota_interna = request.POST.get('nota_interna', '')
         turno.save()
 
@@ -108,97 +171,43 @@ def precoordinacion_turno(request, turno_id):
         'es_precoordinacion': True,
     }
     return render(request, 'turnos/precoordinacion_turno.html', context)
-from django.contrib.auth.decorators import login_required
 @login_required
 def generar_ticket_retiro(request, turno_id):
     """Genera un ticket PDF de retiro para impresora térmica de 8cm de ancho"""
-    import psycopg2
-    from datetime import date, timedelta
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.pagesizes import letter
-    from reportlab.lib.units import cm
+    from datetime import date, datetime
     from io import BytesIO
+    from reportlab.lib.units import cm
+    from reportlab.pdfgen import canvas
+    from django.shortcuts import get_object_or_404
+    from pacientes.models import Paciente
 
-    conn = psycopg2.connect(
-        dbname='Laboratorio',
-        user='postgres',
-        password='estufa10',
-        host='localhost',
-        port='5432'
-    )
-    cursor = conn.cursor()
+    turno = get_object_or_404(Turno.objects.select_related('agenda', 'dni'), id=turno_id)
+    paciente_obj = turno.dni  # Ya es FK
 
-    # Obtener datos del turno
-    cursor.execute("""
-        SELECT 
-            t.id,
-            t.fecha,
-            t.medico,
-            t.nota_interna,
-            t.nombre,
-            t.apellido,
-            t.dni,
-            t.usuario,
-            a.name as agenda_nombre,
-            t.determinaciones
-        FROM turnos_turno t
-        JOIN turnos_agenda a ON t.agenda_id = a.id
-        WHERE t.id = %s
-    """, (turno_id,))
-    row = cursor.fetchone()
-
-    # Obtener datos adicionales del paciente de la tabla pacientes
-    paciente_data = None
-    if row:
-        cursor.execute("""
-            SELECT fecha_nacimiento, sexo, telefono, email
-            FROM pacientes
-            WHERE dni = %s
-            ORDER BY id DESC
-            LIMIT 1
-        """, (row[6],))
-        paciente_data = cursor.fetchone()
-
-    # Calcular edad del paciente
     edad = None
-    if paciente_data and paciente_data[0]:
-        fecha_nacimiento = paciente_data[0]
-        fecha_turno = row[1]
-        edad = fecha_turno.year - fecha_nacimiento.year
-        if (fecha_turno.month, fecha_turno.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
+    if paciente_obj and paciente_obj.fecha_nacimiento:
+        fecha_nac = paciente_obj.fecha_nacimiento
+        fecha_turno = turno.fecha
+        edad = fecha_turno.year - fecha_nac.year
+        if (fecha_turno.month, fecha_turno.day) < (fecha_nac.month, fecha_nac.day):
             edad -= 1
 
-    # Calcular fecha de retiro: hoy + máximo tiempo
-    hoy = date.today()
-    max_tiempo = 0
-    determinaciones_texto = row[9] if row[9] else ""
-    codigos = [d.strip() for d in determinaciones_texto.split(',') if d.strip()]
-    codigos_perfiles = [c for c in codigos if c.startswith('/')]
-    codigos_determinaciones = [c for c in codigos if not c.startswith('/')]
+    max_tiempo = calcular_max_tiempo(turno.determinaciones or '')
+    fecha_retiro = date.today() + timedelta(days=max_tiempo)
 
-    # Buscar tiempo en determinaciones
-    if codigos_determinaciones:
-        placeholders = ','.join(['%s'] * len(codigos_determinaciones))
-        cursor.execute(f"SELECT tiempo FROM determinaciones WHERE codigo IN ({placeholders})", codigos_determinaciones)
-        tiempos = [r[0] for r in cursor.fetchall() if r[0] is not None]
-        if tiempos:
-            max_tiempo = max(max_tiempo, max(tiempos))
-
-    # Buscar tiempo en perfiles
-    if codigos_perfiles:
-        placeholders = ','.join(['%s'] * len(codigos_perfiles))
-        cursor.execute(f"SELECT tiempo FROM perfiles WHERE codigo IN ({placeholders})", codigos_perfiles)
-        tiempos = [r[0] for r in cursor.fetchall() if r[0] is not None]
-        if tiempos:
-            max_tiempo = max(max_tiempo, max(tiempos))
-
-    fecha_retiro = hoy + timedelta(days=max_tiempo)
-
-    cursor.close()
-    conn.close()
-
-    if not row:
-        return HttpResponse("Turno no encontrado", status=404)
+    agenda_nombre = turno.agenda.name if turno.agenda else ""
+    apellido = turno.apellido or ""
+    nombre = turno.nombre or ""
+    dni = turno.paciente_dni or ""
+    telefono = paciente_obj.telefono if paciente_obj else ""
+    email = paciente_obj.email if paciente_obj else ""
+    # Obtener apellido y nombre del usuario
+    if turno.usuario:
+        usuario_asignador = f"{turno.usuario.last_name}, {turno.usuario.first_name}" if turno.usuario.last_name and turno.usuario.first_name else turno.usuario.username
+    else:
+        usuario_asignador = f"{request.user.last_name}, {request.user.first_name}" if request.user.last_name and request.user.first_name else request.user.username
+    medico_nombre = turno.medico.nombre if turno.medico else ""
+    determinaciones_texto = turno.determinaciones or ""
 
     # Crear PDF para impresora térmica (8cm = 226.77 puntos)
     buffer = BytesIO()
@@ -215,7 +224,7 @@ def generar_ticket_retiro(request, turno_id):
     p.drawCentredString(ancho_papel / 2, y, "Hospital Balestrini")
     y -= 0.5 * cm
     p.setFont("Helvetica", 9)
-    p.drawCentredString(ancho_papel / 2, y, row[8] or "")  # Nombre de la agenda
+    p.drawCentredString(ancho_papel / 2, y, agenda_nombre)
     y -= 0.6 * cm
     p.line(margen, y, ancho_papel - margen, y)
     y -= 0.5 * cm
@@ -224,27 +233,27 @@ def generar_ticket_retiro(request, turno_id):
     p.setFont("Helvetica-Bold", 9)
     p.drawString(margen, y, "Paciente:")
     p.setFont("Helvetica", 9)
-    apellido_formateado = row[5].strip().capitalize() if row[5] else ""
-    nombre_formateado = row[4].strip().capitalize() if row[4] else ""
+    apellido_formateado = apellido.strip().capitalize() if apellido else ""
+    nombre_formateado = nombre.strip().capitalize() if nombre else ""
     nombre_completo = f"{apellido_formateado}, {nombre_formateado}"
     p.drawString(margen + 2*cm, y, nombre_completo)
     y -= 0.45 * cm
     p.setFont("Helvetica-Bold", 9)
     p.drawString(margen, y, "DNI:")
     p.setFont("Helvetica", 9)
-    p.drawString(margen + 2*cm, y, str(row[6]))
+    p.drawString(margen + 2*cm, y, str(dni))
     y -= 0.45 * cm
-    if paciente_data and paciente_data[2]:
+    if telefono:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(margen, y, "Teléfono:")
         p.setFont("Helvetica", 9)
-        p.drawString(margen + 2*cm, y, str(paciente_data[2]))
+        p.drawString(margen + 2*cm, y, str(telefono))
         y -= 0.45 * cm
-    if paciente_data and paciente_data[3]:
+    if email:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(margen, y, "Email:")
         p.setFont("Helvetica", 7)
-        email_str = str(paciente_data[3])
+        email_str = str(email)
         if len(email_str) > 30:
             p.drawString(margen + 2*cm, y, email_str[:30])
             y -= 0.35 * cm
@@ -260,11 +269,11 @@ def generar_ticket_retiro(request, turno_id):
         p.setFont("Helvetica", 9)
         p.drawString(margen + 2*cm, y, f"{edad} años")
         y -= 0.45 * cm
-    if row[2]:
+    if medico_nombre:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(margen, y, "Médico:")
         p.setFont("Helvetica", 9)
-        medico_str = str(row[2]).strip().capitalize()
+        medico_str = str(medico_nombre).strip().capitalize()
         if len(medico_str) > 30:
             p.drawString(margen + 2*cm, y, medico_str[:30])
             y -= 0.35 * cm
@@ -279,18 +288,21 @@ def generar_ticket_retiro(request, turno_id):
     fecha_retiro_str = fecha_retiro.strftime('%d/%m/%Y')
     p.drawString(margen, y, f"Fecha de retiro: a partir de {fecha_retiro_str}")
     y -= 0.45 * cm
-    p.setFont("Helvetica", 9)
+    # Aumentar tamaño de las indicaciones
+    p.setFont("Helvetica", 11)
     p.drawString(margen, y, "De lunes a viernes de 10 a 17 hs")
-    y -= 0.45 * cm
+    y -= 0.5 * cm
+
+    
     p.line(margen, y, ancho_papel - margen, y)
     y -= 0.5 * cm
 
     # ====== PIE DE PÁGINA ======
-    p.setFont("Helvetica", 7)
-    p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {row[7]}")
-    y -= 0.3 * cm
-    p.drawCentredString(ancho_papel / 2, y, "laboratoriobalestrini@gmail.com")
-    y -= 0.3 * cm
+    p.setFont("Helvetica", 10)
+    p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {usuario_asignador}")
+    y -= 0.5 * cm
+    p.drawCentredString(ancho_papel / 2, y, "admlabobalestrini@gmail.com")
+    y -= 0.5 * cm
     p.setFont("Helvetica-Bold", 11)
     p.drawCentredString(ancho_papel / 2, y, f"Ticket N° {turno_id}")
     y -= 0.35 * cm
@@ -308,7 +320,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.urls import reverse
-from .models import Cupo, Turno, CapacidadDia, Agenda, Coordinados
+from .models import Cupo, Turno, Agenda, Coordinados, Feriados
+from pacientes.models import Paciente
+from determinaciones.models import Determinacion, PerfilDeterminacion
 from .forms import TurnoForm, CupoForm
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
@@ -334,22 +348,11 @@ def calendario(request):
     eventos = []
     hoy = date.today()
 
-    # 0) Obtener feriados desde PostgreSQL
+    # 0) Obtener feriados usando el modelo ORM
     feriados_dict = {}
     try:
-        conn = psycopg2.connect(
-            dbname='Laboratorio',
-            user='postgres',
-            password='estufa10',
-            host='localhost',
-            port='5432'
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT fecha, descripcion FROM feriados")
-        for fecha_fer, descripcion in cursor.fetchall():
-            feriados_dict[fecha_fer] = descripcion
-        cursor.close()
-        conn.close()
+        for feriado in Feriados.objects.all():
+            feriados_dict[feriado.fecha] = feriado.descripcion
     except Exception as e:
         print(f"Error al cargar feriados: {e}")
 
@@ -505,22 +508,11 @@ def eventos_calendario(request):
     eventos = []
     hoy = date.today()
     
-    # 1. Obtener feriados desde PostgreSQL
+    # 1. Obtener feriados usando el modelo ORM
     feriados_dict = {}
     try:
-        conn = psycopg2.connect(
-            dbname='Laboratorio',
-            user='postgres',
-            password='estufa10',
-            host='localhost',
-            port='5432'
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT fecha, descripcion FROM feriados")
-        for fecha_fer, descripcion in cursor.fetchall():
-            feriados_dict[fecha_fer] = descripcion
-        cursor.close()
-        conn.close()
+        for feriado in Feriados.objects.all():
+            feriados_dict[feriado.fecha] = feriado.descripcion
     except Exception as e:
         print(f"Error al cargar feriados: {e}")
     
@@ -602,7 +594,7 @@ def turnos_historicos_api(request, fecha):
         
         turno_data = {
             'id': turno.id,
-            'dni': turno.dni,
+            'dni': turno.paciente_dni,
             'nombre': turno.nombre,
             'apellido': turno.apellido,
             'determinaciones': turno.determinaciones,
@@ -622,34 +614,100 @@ def turnos_historicos_api(request, fecha):
 
 
 @login_required
+def control_ordenes(request):
+    """Vista de control de órdenes coordinadas del día actual"""
+    from datetime import date
+    from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+    
+    hoy = date.today()
+    
+    # Obtener IDs de turnos coordinados
+    turnos_coordinados_ids = Coordinados.objects.values_list('id_turno', flat=True)
+    
+    # Filtrar turnos del día actual que estén coordinados
+    turnos = Turno.objects.filter(
+        id__in=turnos_coordinados_ids,
+        fecha=hoy
+    ).select_related('dni', 'agenda', 'medico').order_by('agenda__name', 'creado')
+    
+    # Preparar datos de turnos con determinaciones expandidas
+    ordenes = []
+    for turno in turnos:
+        # Obtener códigos de determinaciones
+        codigos = [c.strip() for c in turno.determinaciones.split(',') if c.strip()]
+        
+        # Expandir cada código a sus detalles
+        determinaciones_detalle = []
+        for codigo in codigos:
+            # Buscar en perfiles
+            perfil = PerfilDeterminacion.objects.filter(codigo=codigo).first()
+            if perfil:
+                determinaciones_detalle.append({
+                    'tipo': 'perfil',
+                    'codigo': perfil.codigo,
+                    'nombre': perfil.nombre,
+                    'determinaciones': perfil.determinaciones
+                })
+                continue
+            
+            # Buscar en complejas
+            compleja = DeterminacionCompleja.objects.filter(codigo=codigo).first()
+            if compleja:
+                determinaciones_detalle.append({
+                    'tipo': 'compleja',
+                    'codigo': compleja.codigo,
+                    'nombre': compleja.nombre,
+                    'stock': compleja.stock
+                })
+                continue
+            
+            # Buscar en determinaciones simples
+            det = Determinacion.objects.filter(codigo=codigo).first()
+            if det:
+                determinaciones_detalle.append({
+                    'tipo': 'determinacion',
+                    'codigo': det.codigo,
+                    'nombre': det.nombre,
+                    'stock': det.stock
+                })
+            else:
+                # Si no se encuentra, agregar como código sin detalles
+                determinaciones_detalle.append({
+                    'tipo': 'desconocido',
+                    'codigo': codigo,
+                    'nombre': 'Código no encontrado'
+                })
+        
+        ordenes.append({
+            'turno': turno,
+            'determinaciones': determinaciones_detalle
+        })
+    
+    context = {
+        'fecha': hoy,
+        'ordenes': ordenes,
+        'total_ordenes': len(ordenes)
+    }
+    
+    return render(request, 'turnos/control.html', context)
+
+
+@login_required
 def dia(request, fecha):
-    import psycopg2
     # Convertir fecha a objeto date si viene como string
     from datetime import datetime
     if isinstance(fecha, str):
         fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
     
-    # Verificar si es feriado
+    # Verificar si es feriado usando el modelo ORM
     es_feriado = False
     descripcion_feriado = None
     try:
-        conn = psycopg2.connect(
-            dbname='Laboratorio',
-            user='postgres',
-            password='estufa10',
-            host='localhost',
-            port='5432'
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT descripcion FROM feriados WHERE fecha = %s", (fecha,))
-        resultado = cursor.fetchone()
-        if resultado:
-            es_feriado = True
-            descripcion_feriado = resultado[0]
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        print(f"Error al verificar feriado: {e}")
+        feriado_obj = Feriados.objects.get(fecha=fecha)
+        es_feriado = True
+        descripcion_feriado = feriado_obj.descripcion
+    except Feriados.DoesNotExist:
+        es_feriado = False
     
     # Mostrar turnos para la(s) agendas en la fecha.
     turnos_all = Turno.objects.filter(fecha=fecha).select_related('agenda')
@@ -692,83 +750,80 @@ def dia(request, fecha):
             try:
                 # Usar transacción para evitar sobre-reservas concurrentes
                 with transaction.atomic():
-                    import psycopg2
                     from django.conf import settings
                     
-                    agenda_form = form.cleaned_data.get('agenda')
-                    dni = form.cleaned_data.get('dni')
-                    nombre = form.cleaned_data.get('nombre')
-                    apellido = form.cleaned_data.get('apellido')
-                    fecha_nacimiento = form.cleaned_data.get('fecha_nacimiento')
-                    sexo = form.cleaned_data.get('sexo')
-                    telefono = form.cleaned_data.get('telefono', '')
-                    email = form.cleaned_data.get('email', '')
-                    observaciones_paciente = form.cleaned_data.get('observaciones_paciente', '')
-                    medico = form.cleaned_data.get('medico', '')  # Este va al turno, no al paciente
-                    nota_interna = form.cleaned_data.get('nota_interna', '')  # Este va al turno
-                    
-                    # Guardar o actualizar paciente en PostgreSQL
-                    conn = psycopg2.connect(
-                        dbname=settings.DATABASES['default']['NAME'],
-                        user=settings.DATABASES['default']['USER'],
-                        password=settings.DATABASES['default']['PASSWORD'],
-                        host=settings.DATABASES['default']['HOST'],
-                        port=settings.DATABASES['default']['PORT']
-                    )
-                    cursor = conn.cursor()
-                    
-                    # Verificar si el paciente existe
-                    cursor.execute("SELECT id FROM pacientes WHERE dni = %s", (dni,))
-                    paciente_existe = cursor.fetchone()
-                    
-                    if paciente_existe:
-                        # Actualizar paciente (no actualizamos usuario en updates)
-                        cursor.execute("""
-                            UPDATE pacientes 
-                            SET nombre = %s, apellido = %s, fecha_nacimiento = %s, sexo = %s,
-                                telefono = %s, email = %s, observaciones = %s
-                            WHERE dni = %s
-                        """, (nombre, apellido, fecha_nacimiento, sexo, telefono, email, observaciones_paciente, dni))
+                    # Validar que la fecha no sea feriado
+                    if Feriados.objects.filter(fecha=fecha).exists():
+                        feriado = Feriados.objects.get(fecha=fecha)
+                        form.add_error(None, ValidationError(f"No se pueden asignar turnos en feriados: {feriado.descripcion}"))
                     else:
-                        # Crear nuevo paciente
-                        cursor.execute("""
-                            INSERT INTO pacientes (nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones, usuario)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """, (nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones_paciente, request.user.username))
-                    
-                    conn.commit()
-                    cursor.close()
-                    conn.close()
-                    
-                    # Intentar obtener Cupo explícito (con bloqueo)
-                    cupo_lock = None
-                    try:
-                        cupo_lock = Cupo.objects.select_for_update().get(fecha=fecha, agenda=agenda_form)
-                    except Cupo.DoesNotExist:
-                        pass
-                    
-                    # Validar capacidad (Cupo explícito o WeeklyAvailability)
-                    if cupo_lock:
-                        capacidad = cupo_lock.cantidad_total
-                    else:
-                        capacidad = agenda_form.get_capacity_for_date(fecha)
-                    
-                    usados = Turno.objects.filter(fecha=fecha, agenda=agenda_form).count()
-                    
-                    if capacidad <= 0:
-                        form.add_error(None, ValidationError("No hay disponibilidad para esta fecha y agenda."))
-                    elif usados >= capacidad:
-                        form.add_error(None, ValidationError("La fecha está completa para esta agenda."))
-                    else:
-                        # Crear el turno
-                        nuevo = form.save(commit=False)
-                        nuevo.fecha = fecha
-                        nuevo.medico = medico
-                        nuevo.nota_interna = nota_interna
-                        nuevo.usuario = request.user.username
-                        nuevo.full_clean()
-                        nuevo.save()
+                        agenda_form = form.cleaned_data.get('agenda')
+                        dni = form.cleaned_data.get('dni')
+                        nombre = form.cleaned_data.get('nombre')
+                        apellido = form.cleaned_data.get('apellido')
+                        fecha_nacimiento = form.cleaned_data.get('fecha_nacimiento')
+                        sexo = form.cleaned_data.get('sexo')
+                        telefono = form.cleaned_data.get('telefono', '')
+                        email = form.cleaned_data.get('email', '')
+                        observaciones_paciente = form.cleaned_data.get('observaciones_paciente', '')
+                        medico_nombre = form.cleaned_data.get('medico', '')  # Este va al turno, no al paciente
+                        nota_interna = form.cleaned_data.get('nota_interna', '')  # Este va al turno
                         
+                        # Obtener la instancia de Médico por nombre
+                        medico_obj = None
+                        if medico_nombre:
+                            try:
+                                medico_obj = Medico.objects.get(nombre=medico_nombre)
+                            except Medico.DoesNotExist:
+                                # Si no existe, intenta por coincidencia parcial (para nombres guardados como texto)
+                                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
+                                if medicos.exists():
+                                    medico_obj = medicos.first()
+                        
+                        # Guardar o actualizar paciente usando ORM (tabla pacientes_paciente)
+                        paciente_obj, created = Paciente.objects.update_or_create(
+                            iden=dni,
+                            defaults={
+                                'nombre': nombre,
+                                'apellido': apellido,
+                                'fecha_nacimiento': fecha_nacimiento,
+                                'sexo': sexo,
+                                'telefono': telefono,
+                                'email': email,
+                                'observaciones': observaciones_paciente,
+                            }
+                        )
+                        
+                        # Intentar obtener Cupo explícito (con bloqueo)
+                        cupo_lock = None
+                        try:
+                            cupo_lock = Cupo.objects.select_for_update().get(fecha=fecha, agenda=agenda_form)
+                        except Cupo.DoesNotExist:
+                            pass
+                        
+                        # Validar capacidad (Cupo explícito o WeeklyAvailability)
+                        if cupo_lock:
+                            capacidad = cupo_lock.cantidad_total
+                        else:
+                            capacidad = agenda_form.get_capacity_for_date(fecha)
+                        
+                        usados = Turno.objects.filter(fecha=fecha, agenda=agenda_form).count()
+                        
+                        if capacidad <= 0:
+                            form.add_error(None, ValidationError("No hay disponibilidad para esta fecha y agenda."))
+                        elif usados >= capacidad:
+                            form.add_error(None, ValidationError("La fecha está completa para esta agenda."))
+                        else:
+                            # Crear el turno
+                            nuevo = form.save(commit=False)
+                            nuevo.fecha = fecha
+                            nuevo.dni = paciente_obj  # Asignar la instancia de Paciente
+                            nuevo.medico = medico_obj  # Asignar la instancia de Médico (puede ser None)
+                            nuevo.nota_interna = nota_interna
+                            nuevo.usuario = request.user  # Asignar la instancia de User, no el username
+                            nuevo.full_clean()
+                            nuevo.save()
+                            
                         # Redirigir con parámetro para abrir PDF
                         return redirect(f"{reverse('turnos:dia', args=[fecha])}?agenda={agenda_form.id}&turno_creado={nuevo.id}")
             except ValidationError as e:
@@ -862,9 +917,9 @@ def dia(request, fecha):
 
 @login_required
 def buscar(request):
-    import psycopg2
     from datetime import date
     from .models import Coordinados
+    from determinaciones.models import DeterminacionCompleja
     
     q = request.GET.get('q', '').strip()
     turno_id = request.GET.get('turno_id', '').strip()
@@ -876,62 +931,58 @@ def buscar(request):
     if q or turno_id or apellido:
         # Buscar por DNI, apellido o por ID de turno
         if turno_id:
-            resultados = Turno.objects.filter(id=turno_id)
+            resultados = Turno.objects.filter(id=turno_id).select_related('dni', 'agenda')
         elif apellido:
-            resultados = Turno.objects.filter(apellido__icontains=apellido).order_by('-fecha')
+            resultados = Turno.objects.filter(dni__apellido__icontains=apellido).select_related('dni', 'agenda').order_by('-fecha')
         else:
-            resultados = Turno.objects.filter(dni__icontains=q).order_by('-fecha')
+            resultados = Turno.objects.filter(dni__iden__icontains=q).select_related('dni', 'agenda').order_by('-fecha')
             
         hoy = date.today()
         
         # Obtener IDs de turnos coordinados
         turnos_coordinados_ids = set(Coordinados.objects.values_list('id_turno', flat=True))
         
-        # Conectar a PostgreSQL para obtener nombres de determinaciones/perfiles
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        
-        # Separar turnos en previos y pendientes y agregar nombres de determinaciones
+        # Separar turnos en previos y pendientes y agregar nombres de determinaciones usando ORM
         for turno in resultados:
-            # Verificar si está coordinado
             turno.esta_coordinado = turno.id in turnos_coordinados_ids
-            
-            # Procesar determinaciones para obtener nombres
+
             if turno.determinaciones:
                 codigos = [c.strip() for c in turno.determinaciones.split(',') if c.strip()]
+                det_codes = [c for c in codigos if not c.startswith('/')]
+                codigos_con_slash = [c for c in codigos if c.startswith('/')]
+
+                # Determinaciones simples
+                det_map = {d.codigo: d.nombre for d in Determinacion.objects.filter(codigo__in=det_codes)}
                 nombres = []
-                
-                for codigo in codigos:
-                    if codigo.startswith('/'):
-                        # Es un perfil
-                        cursor.execute("SELECT nombre FROM perfiles WHERE codigo = %s", (codigo,))
-                        result = cursor.fetchone()
-                        if result:
-                            nombres.append(result[0])
-                    else:
-                        # Es una determinación
-                        cursor.execute("SELECT nombre FROM determinaciones WHERE codigo = %s", (int(codigo),))
-                        result = cursor.fetchone()
-                        if result:
-                            nombres.append(result[0])
-                
+
+                # determinaciones individuales
+                for code in det_codes:
+                    nombres.append(det_map.get(code, code))
+
+                # Procesar códigos con / (pueden ser complejas o perfiles)
+                for code in codigos_con_slash:
+                    code_sin_slash = code.lstrip('/')
+                    
+                    # Primero intentar como determinación compleja (con /)
+                    compleja = DeterminacionCompleja.objects.filter(codigo=code).first()
+                    if compleja:
+                        nombres.append(compleja.nombre)
+                        continue
+                    
+                    # Si no es compleja, buscar como perfil (sin /)
+                    perfil = PerfilDeterminacion.objects.filter(codigo=code_sin_slash).first()
+                    if perfil:
+                        cant = len(perfil.determinaciones or [])
+                        nombres.append(f"Perfil {perfil.codigo} ({cant} dets)")
+
                 turno.determinaciones_nombres = ', '.join(nombres) if nombres else turno.determinaciones
             else:
                 turno.determinaciones_nombres = ''
-            
+
             if turno.fecha < hoy:
                 turnos_previos.append(turno)
             else:
                 turnos_pendientes.append(turno)
-        
-        cursor.close()
-        conn.close()
     
     return render(request, 'turnos/buscar.html', {
         'turnos_previos': turnos_previos,
@@ -946,88 +997,66 @@ def buscar(request):
 @login_required
 def ver_coordinacion(request, turno_id):
     """Ver detalles completos de un turno coordinado (solo lectura)."""
-    import psycopg2
     from datetime import date
     from .models import Coordinados
     
-    turno = get_object_or_404(Turno, id=turno_id)
+    turno = get_object_or_404(Turno.objects.select_related('dni', 'medico', 'agenda'), id=turno_id)
     
     # Verificar que el turno esté coordinado
     coordinacion = Coordinados.objects.filter(id_turno=turno_id).first()
     
-    # Conectar a PostgreSQL
-    conn = psycopg2.connect(
-        dbname=settings.DATABASES['default']['NAME'],
-        user=settings.DATABASES['default']['USER'],
-        password=settings.DATABASES['default']['PASSWORD'],
-        host=settings.DATABASES['default']['HOST'],
-        port=settings.DATABASES['default']['PORT']
-    )
-    cursor = conn.cursor()
-    
-    # Obtener datos del paciente
+    # Obtener datos del paciente desde la FK
     paciente_data = None
-    cursor.execute(
-        "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE dni = %s",
-        (turno.dni,)
-    )
-    result = cursor.fetchone()
-    if result:
+    if turno.dni:
         paciente_data = {
-            'nombre': result[0],
-            'apellido': result[1],
-            'dni': result[2],
-            'fecha_nacimiento': result[3],
-            'sexo': result[4],
-            'telefono': result[5] or '',
-            'email': result[6] or ''
+            'nombre': turno.dni.nombre,
+            'apellido': turno.dni.apellido,
+            'dni': turno.dni.iden,
+            'fecha_nacimiento': turno.dni.fecha_nacimiento,
+            'sexo': turno.dni.sexo,
+            'telefono': turno.dni.telefono or '',
+            'email': turno.dni.email or ''
         }
     
-    # Obtener datos del médico
+    # Obtener datos del médico desde la FK
     medico_data = None
     if turno.medico:
-        cursor.execute(
-            "SELECT matricula_provincial, nombre_apellido FROM medicos WHERE nombre_apellido = %s",
-            (turno.medico,)
-        )
-        result = cursor.fetchone()
-        if result:
-            medico_data = {
-                'matricula': result[0],
-                'nombre': result[1]
-            }
+        medico_data = {
+            'matricula': turno.medico.matricula,
+            'nombre': turno.medico.nombre
+        }
     
     # Obtener nombres de determinaciones y perfiles
+    from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+    
     determinaciones_nombres = []
     if turno.determinaciones:
         codigos = [c.strip() for c in turno.determinaciones.split(',') if c.strip()]
         
         for codigo in codigos:
             if codigo.startswith('/'):
-                # Es un perfil
-                cursor.execute(
-                    "SELECT nombre FROM perfiles WHERE codigo = %s",
-                    (codigo,)
-                )
-                result = cursor.fetchone()
-                if result:
-                    determinaciones_nombres.append(f"{codigo} - {result[0]}")
+                # Es un perfil o determinación compleja
+                # Intentar buscar como determinación compleja primero
+                compleja = DeterminacionCompleja.objects.filter(codigo=codigo).first()
+                if compleja:
+                    determinaciones_nombres.append(f"{codigo} - {compleja.nombre}")
+                    continue
+                
+                # Si no, buscar como perfil (sin el /)
+                codigo_sin_slash = codigo.lstrip('/')
+                perfil = PerfilDeterminacion.objects.filter(codigo=codigo_sin_slash).first()
+                if perfil:
+                    determinaciones_nombres.append(f"{codigo} - {perfil.nombre}")
             else:
-                # Es una determinación
+                # Es una determinación simple
                 try:
-                    codigo_int = int(codigo)
-                    cursor.execute(
-                        "SELECT nombre FROM determinaciones WHERE codigo = %s",
-                        (codigo_int,)
-                    )
-                    result = cursor.fetchone()
-                    if result:
-                        determinaciones_nombres.append(f"{codigo} - {result[0]}")
-                except ValueError:
+                    det = Determinacion.objects.filter(codigo=codigo).first()
+                    if det:
+                        determinaciones_nombres.append(f"{codigo} - {det.nombre}")
+                    else:
+                        determinaciones_nombres.append(codigo)
+                except Exception:
                     determinaciones_nombres.append(codigo)
-    
-    cursor.close()
-    conn.close()
     
     context = {
         'turno': turno,
@@ -1044,47 +1073,42 @@ def ver_coordinacion(request, turno_id):
 @login_required
 def editar_turno(request, turno_id):
     """Editar un turno existente."""
-    import psycopg2
     turno = get_object_or_404(Turno, id=turno_id)
     
-    # Obtener datos del paciente desde PostgreSQL
+    # Obtener datos del paciente desde la FK
     paciente_data = None
-    try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email, observaciones FROM pacientes WHERE dni = %s",
-            (turno.dni,)
-        )
-        result = cursor.fetchone()
-        if result:
-            paciente_data = {
-                'nombre': result[0],
-                'apellido': result[1],
-                'dni': result[2],
-                'fecha_nacimiento': result[3],
-                'sexo': result[4],
-                'telefono': result[5],
-                'email': result[6],
-                'observaciones': result[7] if len(result) > 7 else ''
-            }
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        pass
+    if turno.dni:
+        paciente_data = {
+            'nombre': turno.dni.nombre,
+            'apellido': turno.dni.apellido,
+            'dni': turno.dni.iden,
+            'fecha_nacimiento': turno.dni.fecha_nacimiento,
+            'sexo': turno.dni.sexo,
+            'telefono': turno.dni.telefono,
+            'email': turno.dni.email,
+            'observaciones': turno.dni.observaciones or ''
+        }
     
     if request.method == 'POST':
         # Actualizar turno (agenda, fecha, determinaciones, medico y nota_interna)
         turno.agenda_id = request.POST.get('agenda')
         turno.fecha = request.POST.get('fecha')
         turno.determinaciones = request.POST.get('determinaciones', '')
-        turno.medico = request.POST.get('medico', '')
+        
+        # Manejar el médico correctamente
+        medico_nombre = request.POST.get('medico', '')
+        if medico_nombre:
+            try:
+                turno.medico = Medico.objects.get(nombre=medico_nombre)
+            except Medico.DoesNotExist:
+                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
+                if medicos.exists():
+                    turno.medico = medicos.first()
+                else:
+                    turno.medico = None
+        else:
+            turno.medico = None
+        
         turno.nota_interna = request.POST.get('nota_interna', '')
         turno.save()
 
@@ -1093,26 +1117,11 @@ def editar_turno(request, turno_id):
         email = request.POST.get('email', '')
         observaciones_paciente = request.POST.get('observaciones_paciente', '')
 
-        if telefono or email or observaciones_paciente:
-            try:
-                conn = psycopg2.connect(
-                    dbname=settings.DATABASES['default']['NAME'],
-                    user=settings.DATABASES['default']['USER'],
-                    password=settings.DATABASES['default']['PASSWORD'],
-                    host=settings.DATABASES['default']['HOST'],
-                    port=settings.DATABASES['default']['PORT']
-                )
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE pacientes 
-                    SET telefono = %s, email = %s, observaciones = %s
-                    WHERE dni = %s
-                """, (telefono, email, observaciones_paciente, turno.dni))
-                conn.commit()
-                cursor.close()
-                conn.close()
-            except Exception as e:
-                pass
+        if turno.dni and (telefono or email or observaciones_paciente):
+            turno.dni.telefono = telefono or turno.dni.telefono
+            turno.dni.email = email or turno.dni.email
+            turno.dni.observaciones = observaciones_paciente or turno.dni.observaciones
+            turno.dni.save()
 
         return redirect(reverse('turnos:dia', args=[turno.fecha]) + f'?agenda={turno.agenda.id}')
     
@@ -1339,288 +1348,36 @@ def borrar_cupos_masivo(request):
     return redirect('turnos:generar_cupos_masivo')
 
 
-@login_required
-def buscar_paciente_api(request):
-    """API para buscar paciente por DNI en PostgreSQL"""
-    import psycopg2
-    from django.conf import settings
-    
-    dni = request.GET.get('dni', '').strip()
-    if not dni:
-        return JsonResponse({'found': False})
-    
-    try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            "SELECT nombre, apellido, fecha_nacimiento, sexo, telefono, email, observaciones FROM pacientes WHERE dni = %s",
-            (dni,)
-        )
-        result = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
-        
-        # Buscar si tiene turno pendiente (fecha >= hoy)
-        from datetime import date
-        tiene_turno_pendiente = False
-        proximo_turno = None
-        if result:
-            turnos_pendientes = Turno.objects.filter(dni=dni, fecha__gte=date.today()).order_by('fecha')
-            if turnos_pendientes.exists():
-                tiene_turno_pendiente = True
-                proximo_turno = turnos_pendientes.first().fecha.strftime('%d-%m-%y')
-        
-        if result:
-            return JsonResponse({
-                'found': True,
-                'nombre': result[0],
-                'apellido': result[1],
-                'fecha_nacimiento': result[2].isoformat() if result[2] else '',
-                'sexo': result[3],
-                'telefono': result[4] or '',
-                'email': result[5] or '',
-                'observaciones': result[6] or '',
-                'tiene_turno_pendiente': tiene_turno_pendiente,
-                'proximo_turno': proximo_turno
-            })
-        else:
-            return JsonResponse({'found': False})
-            
-    except Exception as e:
-        return JsonResponse({'found': False, 'error': str(e)})
-
-
-@login_required
-def buscar_determinacion_api(request):
-    """API para buscar determinación por código en PostgreSQL"""
-    import psycopg2
-    from django.conf import settings
-    
-    codigo = request.GET.get('codigo', '').strip()
-    if not codigo:
-        return JsonResponse({'found': False})
-    
-    try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            "SELECT codigo, nombre FROM determinaciones WHERE codigo = %s",
-            (int(codigo),)
-        )
-        result = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
-        
-        if result:
-            return JsonResponse({
-                'found': True,
-                'codigo': result[0],
-                'nombre': result[1]
-            })
-        else:
-            return JsonResponse({'found': False})
-            
-    except Exception as e:
-        return JsonResponse({'found': False, 'error': str(e)})
-
-
-@login_required
-def listar_determinaciones_api(request):
-    """API para listar todas las determinaciones y perfiles"""
-    import psycopg2
-    from django.conf import settings
-    
-    try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        
-        # Obtener determinaciones
-        cursor.execute("SELECT codigo, nombre FROM determinaciones ORDER BY nombre")
-        dets = cursor.fetchall()
-        
-        # Obtener perfiles
-        cursor.execute("SELECT codigo, nombre FROM perfiles ORDER BY nombre")
-        perfs = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
-        
-        items = []
-        # Agregar determinaciones
-        for row in dets:
-            items.append({'codigo': str(row[0]), 'nombre': row[1], 'tipo': 'determinacion'})
-        # Agregar perfiles
-        for row in perfs:
-            items.append({'codigo': row[0], 'nombre': row[1], 'tipo': 'perfil'})
-        
-        return JsonResponse(items, safe=False)
-            
-    except Exception as e:
-        return JsonResponse([], safe=False)
-
 
 @login_required
 def listar_medicos_api(request):
     """API para listar todos los médicos"""
-    import psycopg2
-    from django.conf import settings
-    
     try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        
-        # Obtener médicos ordenados por nombre
-        cursor.execute("SELECT matricula_provincial, nombre_apellido FROM medicos ORDER BY nombre_apellido")
-        medicos = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
+        medicos = Medico.objects.all().order_by('nombre').values('id', 'nombre', 'matricula')
         
         items = []
-        for row in medicos:
-            items.append({'matricula_provincial': row[0], 'nombre_apellido': row[1]})
+        for medico in medicos:
+            items.append({
+                'id': medico['id'],
+                'nombre_apellido': medico['nombre'],
+                'matricula_provincial': medico['matricula']
+            })
         
         return JsonResponse(items, safe=False)
             
     except Exception as e:
         return JsonResponse([], safe=False)
 
-
-@login_required
-def buscar_codigo_api(request):
-    """API para buscar por código (determinación o perfil)"""
-    import psycopg2
-    from django.conf import settings
-    
-    codigo = request.GET.get('codigo', '').strip()
-    if not codigo:
-        return JsonResponse({'found': False})
-    
-    try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        
-        # Primero buscar en perfiles (empiezan con /)
-        if codigo.startswith('/'):
-            cursor.execute("SELECT codigo, nombre, determinaciones FROM perfiles WHERE codigo = %s", (codigo,))
-            result = cursor.fetchone()
-            if result:
-                cursor.close()
-                conn.close()
-                return JsonResponse({
-                    'found': True,
-                    'tipo': 'perfil',
-                    'codigo': result[0],
-                    'nombre': result[1],
-                    'determinaciones': result[2]
-                })
-        
-        # Buscar en determinaciones
-        try:
-            codigo_int = int(codigo)
-            cursor.execute("SELECT codigo, nombre FROM determinaciones WHERE codigo = %s", (codigo_int,))
-            result = cursor.fetchone()
-            if result:
-                cursor.close()
-                conn.close()
-                return JsonResponse({
-                    'found': True,
-                    'tipo': 'determinacion',
-                    'codigo': result[0],
-                    'nombre': result[1]
-                })
-        except ValueError:
-            pass
-        
-        cursor.close()
-        conn.close()
-        return JsonResponse({'found': False})
-            
-    except Exception as e:
-        return JsonResponse({'found': False, 'error': str(e)})
-
-
-@login_required
-def buscar_perfil_api(request):
-    """API para obtener detalles de un perfil"""
-    import psycopg2
-    from django.conf import settings
-    
-    codigo = request.GET.get('codigo', '').strip()
-    if not codigo:
-        return JsonResponse({'found': False})
-    
-    try:
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT codigo, nombre, determinaciones FROM perfiles WHERE codigo = %s", (codigo,))
-        result = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
-        
-        if result:
-            return JsonResponse({
-                'found': True,
-                'codigo': result[0],
-                'nombre': result[1],
-                'determinaciones': result[2]
-            })
-        else:
-            return JsonResponse({'found': False})
-            
-    except Exception as e:
-        return JsonResponse({'found': False, 'error': str(e)})
 
 
 @login_required
 def coordinar_turno(request, turno_id):
     """Genera archivo ASTM para coordinar turno y registra en Coordinados"""
-    import psycopg2
     from datetime import datetime
     import os
     from .models import Coordinados
+    from pacientes.models import Paciente
+    from determinaciones.models import Determinacion, PerfilDeterminacion
     
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido'})
@@ -1630,35 +1387,23 @@ def coordinar_turno(request, turno_id):
         if Coordinados.objects.filter(id_turno=turno_id).exists():
             return JsonResponse({'success': False, 'error': 'Este turno ya fue coordinado anteriormente'})
         
-        # Obtener el turno
-        turno = get_object_or_404(Turno, id=turno_id)
+        # Obtener el turno con FK
+        turno = get_object_or_404(Turno.objects.select_related('dni'), id=turno_id)
         
-        # Conectar a PostgreSQL para obtener datos del paciente
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
-        
-        # Buscar paciente por DNI
-        cursor.execute(
-            "SELECT nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE dni = %s",
-            (turno.dni,)
-        )
-        paciente = cursor.fetchone()
-        
-        if not paciente:
-            cursor.close()
-            conn.close()
+        paciente_obj = turno.dni
+        if not paciente_obj:
             return JsonResponse({'success': False, 'error': 'Paciente no encontrado'})
-        
-        nombre, apellido, dni, fecha_nacimiento, sexo, telefono, email = paciente
+
+        nombre = paciente_obj.nombre
+        apellido = paciente_obj.apellido
+        dni = paciente_obj.iden
+        fecha_nacimiento = paciente_obj.fecha_nacimiento
+        sexo = paciente_obj.sexo
+        telefono = paciente_obj.telefono
+        email = paciente_obj.email
         
         # Convertir sexo al formato ASTM (M/F/U)
-        sexo_astm = 'M' if sexo == 'Hombre' else ('F' if sexo == 'Mujer' else 'U')
+        sexo_astm = 'M' if sexo == 'Masculino' else ('F' if sexo == 'Femenino' else 'U')
         
         # Preparar telefono y email (sin comillas)
         telefono_astm = telefono if telefono else ''
@@ -1669,62 +1414,47 @@ def coordinar_turno(request, turno_id):
         timestamp = ahora.strftime('%Y%m%d%H%M%S')  # AAAAMMDDHHMMSS
         fecha_nac = fecha_nacimiento.strftime('%Y%m%d')  # AAAAMMDD
         
-        # Procesar determinaciones/perfiles
+        # Procesar determinaciones/perfiles/complejas
         determinaciones_str = turno.determinaciones if turno.determinaciones else ''
         codigos = [c.strip() for c in determinaciones_str.split(',') if c.strip()]
-        
-        # Construir línea O con determinaciones/perfiles
+        det_codes = [c for c in codigos if not c.startswith('/')]
+        complejas_codes = [c for c in codigos if c.startswith('/')]
+
         determinaciones_astm = []
-        for codigo in codigos:
-            if codigo.startswith('/'):
-                # Es un perfil - expandir sus determinaciones individuales
-                cursor.execute("SELECT determinaciones FROM perfiles WHERE codigo = %s", (codigo,))
-                perfil_result = cursor.fetchone()
-                if perfil_result and perfil_result[0]:
-                    # Obtener determinaciones del perfil y agregarlas individualmente
-                    dets_perfil = [d.strip() for d in perfil_result[0].split(',') if d.strip()]
-                    for det in dets_perfil:
-                        determinaciones_astm.append(f'^^^{det}\\')
-            else:
-                # Es una determinación individual
-                determinaciones_astm.append(f'^^^{codigo}\\')
+        if det_codes:
+            determinaciones_astm.extend([f'^^^{c}\\' for c in det_codes])
+
+        if complejas_codes:
+            # Procesar determinaciones complejas (código incluye /)
+            complejas = DeterminacionCompleja.objects.filter(codigo__in=complejas_codes)
+            for compleja in complejas:
+                for det_code in compleja.determinaciones:
+                    determinaciones_astm.append(f'^^^{det_code}\\')
+            
+            # Procesar perfiles (buscar sin /)
+            perfil_codes = [c.lstrip('/') for c in complejas_codes]
+            perfiles = PerfilDeterminacion.objects.filter(codigo__in=perfil_codes)
+            for perfil in perfiles:
+                for det_code in perfil.determinaciones:
+                    # Si el código dentro del perfil es una determinación compleja
+                    if det_code.startswith('/'):
+                        compleja_en_perfil = DeterminacionCompleja.objects.filter(codigo=det_code).first()
+                        if compleja_en_perfil:
+                            # Expandir la determinación compleja
+                            for sub_det_code in compleja_en_perfil.determinaciones:
+                                determinaciones_astm.append(f'^^^{sub_det_code}\\')
+                    else:
+                        # Es una determinación simple
+                        determinaciones_astm.append(f'^^^{det_code}\\')
         
         # Preparar nota_interna (sin comillas)
         nota_interna_astm = turno.nota_interna if turno.nota_interna else ''
         # Observaciones de paciente (sin comillas)
         # Buscar en la tabla pacientes
-        observaciones_paciente = ''
-        try:
-            conn_obs = psycopg2.connect(
-                dbname=settings.DATABASES['default']['NAME'],
-                user=settings.DATABASES['default']['USER'],
-                password=settings.DATABASES['default']['PASSWORD'],
-                host=settings.DATABASES['default']['HOST'],
-                port=settings.DATABASES['default']['PORT']
-            )
-            cursor_obs = conn_obs.cursor()
-            cursor_obs.execute(
-                "SELECT observaciones FROM pacientes WHERE dni = %s ORDER BY id DESC LIMIT 1",
-                (turno.dni,)
-            )
-            obs_result = cursor_obs.fetchone()
-            if obs_result and obs_result[0]:
-                observaciones_paciente = obs_result[0]
-            cursor_obs.close()
-            conn_obs.close()
-        except Exception:
-            observaciones_paciente = ''
-        # Nombre del médico (sin comillas)
-        nombre_medico = turno.medico or ''
-        # Obtener matrícula del médico si existe
-        matricula_medico = ''
-        if turno.medico:
-            cursor_temp = conn.cursor()
-            cursor_temp.execute("SELECT matricula_provincial FROM medicos WHERE nombre_apellido = %s", (turno.medico,))
-            medico_result = cursor_temp.fetchone()
-            if medico_result:
-                matricula_medico = str(medico_result[0])
-            cursor_temp.close()
+        observaciones_paciente = paciente_obj.observaciones or ''
+        # Nombre y matrícula del médico (sin comillas)
+        nombre_medico = turno.medico.nombre if turno.medico else ''
+        matricula_medico = turno.medico.matricula if turno.medico else ''
         # Impresora desde JSON (body) o POST clásico
         if request.content_type == 'application/json':
             try:
@@ -1737,8 +1467,6 @@ def coordinar_turno(request, turno_id):
         if not nombre_impresora:
             nombre_impresora = ''
         nombre_impresora = nombre_impresora.strip()
-        cursor.close()
-        conn.close()
         # Construir el contenido del archivo ASTM
         lineas = []
         lineas.append(f'H|\\^&|||Balestrini|||||||P||{timestamp}')
@@ -1769,11 +1497,9 @@ def coordinar_turno(request, turno_id):
         # Crear registro en Coordinados
         Coordinados.objects.create(
             id_turno=turno_id,
-            nombre=nombre,
-            apellido=apellido,
-            dni=dni,
+            dni=paciente_obj,  # Usar la instancia de Paciente, no el string del DNI
             determinaciones=turno.determinaciones,
-            usuario=request.user.username
+            usuario=request.user if request.user.is_authenticated else None
         )
         
         # Construir URL del ticket de retiro
@@ -1792,130 +1518,85 @@ def coordinar_turno(request, turno_id):
 @login_required
 def generar_ticket_turno(request, turno_id):
     """Genera un ticket PDF para impresora térmica de 8cm de ancho"""
-    import psycopg2
-    from datetime import date
-    
-    conn = psycopg2.connect(
-        dbname='Laboratorio',
-        user='postgres',
-        password='estufa10',
-        host='localhost',
-        port='5432'
-    )
-    cursor = conn.cursor()
-    
-    # Obtener datos del turno
-    cursor.execute("""
-        SELECT 
-            t.id,
-            t.fecha,
-            t.medico,
-            t.nota_interna,
-            t.nombre,
-            t.apellido,
-            t.dni,
-            t.usuario,
-            a.name as agenda_nombre,
-            t.determinaciones
-        FROM turnos_turno t
-        JOIN turnos_agenda a ON t.agenda_id = a.id
-        WHERE t.id = %s
-    """, (turno_id,))
-    
-    row = cursor.fetchone()
-    
-    # Obtener datos adicionales del paciente de la tabla pacientes
-    paciente_data = None
-    if row:
-        cursor.execute("""
-            SELECT fecha_nacimiento, sexo, telefono, email
-            FROM pacientes
-            WHERE dni = %s
-            ORDER BY id DESC
-            LIMIT 1
-        """, (row[6],))
-        paciente_data = cursor.fetchone()
-    
-    cursor.close()
-    conn.close()
-    
-    if not row:
-        return HttpResponse("Turno no encontrado", status=404)
-    
-    # Calcular edad del paciente
+    from datetime import date, datetime
+    from io import BytesIO
+    from reportlab.lib.units import cm
+    from reportlab.pdfgen import canvas
+    from django.shortcuts import get_object_or_404
+    from pacientes.models import Paciente
+    from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+
+    turno = get_object_or_404(Turno.objects.select_related('agenda', 'dni', 'medico'), id=turno_id)
+
+    # Paciente desde FK
+    paciente_obj = turno.dni
+
     edad = None
-    if paciente_data and paciente_data[0]:
-        fecha_nacimiento = paciente_data[0]
-        fecha_turno = row[1]
-        edad = fecha_turno.year - fecha_nacimiento.year
-        if (fecha_turno.month, fecha_turno.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
+    if paciente_obj and paciente_obj.fecha_nacimiento:
+        fecha_nac = paciente_obj.fecha_nacimiento
+        fecha_turno = turno.fecha
+        edad = fecha_turno.year - fecha_nac.year
+        if (fecha_turno.month, fecha_turno.day) < (fecha_nac.month, fecha_nac.day):
             edad -= 1
-    
-    # Obtener determinaciones del campo de texto (son códigos separados por comas)
-    determinaciones_texto = row[9] if row[9] else ""
-    determinaciones_list = []
+
+    # Determinaciones, perfiles y complejas
+    determinaciones_texto = turno.determinaciones or ""
+    codigos = [c.strip() for c in determinaciones_texto.split(',') if c.strip()]
+    codigos_con_slash = [c for c in codigos if c.startswith('/')]
+    det_codigos = [c for c in codigos if not c.startswith('/')]
+
+    # Determinaciones simples
+    det_objs = Determinacion.objects.filter(codigo__in=det_codigos)
+    det_map = {d.codigo: d.nombre for d in det_objs}
+    determinaciones_list = [(code, det_map.get(code, code)) for code in det_codigos]
+
+    # Procesar códigos con / (pueden ser perfiles o complejas)
     perfiles_list = []
+    complejas_list = []
     
-    if determinaciones_texto:
-        # Dividir por comas y limpiar
-        codigos = [d.strip() for d in determinaciones_texto.split(',') if d.strip()]
+    for code in codigos_con_slash:
+        code_sin_slash = code.lstrip('/')
         
-        # Separar códigos de perfiles (empiezan con /) y determinaciones (números)
-        codigos_perfiles = []
-        codigos_determinaciones = []
+        # Intentar primero como determinación compleja (con /)
+        compleja_obj = DeterminacionCompleja.objects.filter(codigo=code).first()
+        if compleja_obj:
+            complejas_list.append((code, compleja_obj.nombre))
+            continue
         
-        for codigo in codigos:
-            if codigo.startswith('/'):
-                # Es un perfil, mantener el /
-                codigos_perfiles.append(codigo)
-            else:
-                # Es una determinación
-                try:
-                    codigos_determinaciones.append(int(codigo))
-                except:
-                    pass
-        
-        # Buscar nombres de perfiles
-        if codigos_perfiles:
-            conn2 = psycopg2.connect(
-                dbname='Laboratorio',
-                user='postgres',
-                password='estufa10',
-                host='localhost',
-                port='5432'
-            )
-            cursor2 = conn2.cursor()
-            placeholders = ','.join(['%s'] * len(codigos_perfiles))
-            cursor2.execute(f"""
-                SELECT codigo, nombre 
-                FROM perfiles 
-                WHERE codigo IN ({placeholders})
-                ORDER BY nombre
-            """, codigos_perfiles)
-            perfiles_list = cursor2.fetchall()
-            cursor2.close()
-            conn2.close()
-        
-        # Buscar nombres de determinaciones
-        if codigos_determinaciones:
-            conn3 = psycopg2.connect(
-                dbname='Laboratorio',
-                user='postgres',
-                password='estufa10',
-                host='localhost',
-                port='5432'
-            )
-            cursor3 = conn3.cursor()
-            placeholders = ','.join(['%s'] * len(codigos_determinaciones))
-            cursor3.execute(f"""
-                SELECT codigo, nombre 
-                FROM determinaciones 
-                WHERE codigo IN ({placeholders})
-                ORDER BY nombre
-            """, codigos_determinaciones)
-            determinaciones_list = cursor3.fetchall()
-            cursor3.close()
-            conn3.close()
+        # Si no es compleja, buscar como perfil (sin /)
+        perfil_obj = PerfilDeterminacion.objects.filter(codigo=code_sin_slash).first()
+        if perfil_obj:
+            dets_codes = perfil_obj.determinaciones
+            # Expandir subdeterminaciones del perfil
+            sub_dets = []
+            for sub_code in dets_codes:
+                if sub_code.startswith('/'):
+                    # Es una compleja dentro del perfil
+                    sub_compleja = DeterminacionCompleja.objects.filter(codigo=sub_code).first()
+                    if sub_compleja:
+                        sub_dets.append(sub_compleja.nombre)
+                else:
+                    # Es una determinación simple
+                    det_obj = Determinacion.objects.filter(codigo=sub_code).first()
+                    if det_obj:
+                        sub_dets.append(det_obj.nombre)
+            
+            display = f"{code_sin_slash}: " + ', '.join(sub_dets) if sub_dets else code_sin_slash
+            perfiles_list.append((code_sin_slash, display))
+
+    agenda_nombre = turno.agenda.name if turno.agenda else ""
+    apellido = turno.apellido or ""
+    nombre = turno.nombre or ""
+    dni = turno.paciente_dni or ""
+    telefono = paciente_obj.telefono if paciente_obj else ""
+    email = paciente_obj.email if paciente_obj else ""
+    # Obtener apellido y nombre del usuario
+    if turno.usuario:
+        usuario_asignador = f"{turno.usuario.last_name}, {turno.usuario.first_name}" if turno.usuario.last_name and turno.usuario.first_name else turno.usuario.username
+    else:
+        usuario_asignador = f"{request.user.last_name}, {request.user.first_name}" if request.user.last_name and request.user.first_name else request.user.username
+    medico_nombre = turno.medico.nombre if turno.medico else ""
+    fecha_turno = turno.fecha
     
     # Crear PDF para impresora térmica (8cm = 226.77 puntos)
     buffer = BytesIO()
@@ -1935,7 +1616,7 @@ def generar_ticket_turno(request, turno_id):
     y -= 0.5 * cm
     
     p.setFont("Helvetica", 9)
-    p.drawCentredString(ancho_papel / 2, y, row[8] or "")  # Nombre de la agenda
+    p.drawCentredString(ancho_papel / 2, y, agenda_nombre)
     y -= 0.6 * cm
     
     # Línea separadora
@@ -1947,8 +1628,8 @@ def generar_ticket_turno(request, turno_id):
     p.drawString(margen, y, "Paciente:")
     p.setFont("Helvetica", 9)
     # Formatear: Apellido, Nombre (primera letra mayúscula, resto minúscula)
-    apellido_formateado = row[5].strip().capitalize() if row[5] else ""
-    nombre_formateado = row[4].strip().capitalize() if row[4] else ""
+    apellido_formateado = apellido.strip().capitalize() if apellido else ""
+    nombre_formateado = nombre.strip().capitalize() if nombre else ""
     nombre_completo = f"{apellido_formateado}, {nombre_formateado}"
     p.drawString(margen + 2*cm, y, nombre_completo)
     y -= 0.45 * cm
@@ -1957,24 +1638,24 @@ def generar_ticket_turno(request, turno_id):
     p.setFont("Helvetica-Bold", 9)
     p.drawString(margen, y, "DNI:")
     p.setFont("Helvetica", 9)
-    p.drawString(margen + 2*cm, y, str(row[6]))
+    p.drawString(margen + 2*cm, y, str(dni))
     y -= 0.45 * cm
     
     # Teléfono (si existe)
-    if paciente_data and paciente_data[2]:
+    if telefono:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(margen, y, "Teléfono:")
         p.setFont("Helvetica", 9)
-        p.drawString(margen + 2*cm, y, str(paciente_data[2]))
+        p.drawString(margen + 2*cm, y, str(telefono))
         y -= 0.45 * cm
     
     # Email (si existe)
-    if paciente_data and paciente_data[3]:
+    if email:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(margen, y, "Email:")
         p.setFont("Helvetica", 7)
         # Dividir email si es muy largo
-        email_str = str(paciente_data[3])
+        email_str = str(email)
         if len(email_str) > 30:
             p.drawString(margen + 2*cm, y, email_str[:30])
             y -= 0.35 * cm
@@ -1993,12 +1674,12 @@ def generar_ticket_turno(request, turno_id):
         y -= 0.45 * cm
     
     # Médico solicitante (si existe)
-    if row[2]:
+    if medico_nombre:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(margen, y, "Médico:")
         p.setFont("Helvetica", 9)
         # Formatear: Primera letra mayúscula, resto minúscula
-        medico_str = str(row[2]).strip().capitalize()
+        medico_str = str(medico_nombre).strip().capitalize()
         # Dividir si el nombre es muy largo
         if len(medico_str) > 30:
             p.drawString(margen + 2*cm, y, medico_str[:30])
@@ -2011,7 +1692,7 @@ def generar_ticket_turno(request, turno_id):
     
     # ====== FECHA DEL TURNO (EN NEGRITA) ======
     p.setFont("Helvetica-Bold", 10)
-    fecha_str = row[1].strftime('%d/%m/%Y')
+    fecha_str = fecha_turno.strftime('%d/%m/%Y')
     p.drawString(margen, y, f"Fecha de turno: {fecha_str}")
     y -= 0.6 * cm
     
@@ -2039,6 +1720,21 @@ def generar_ticket_turno(request, turno_id):
                 p.drawString(margen + 0.2*cm, y, texto_perfil)
                 y -= 0.4 * cm
     
+    # Mostrar determinaciones complejas
+    if complejas_list:
+        p.setFont("Helvetica", 8)
+        for compleja in complejas_list:
+            texto_compleja = f"• {compleja[1].upper()}"
+            # Dividir si es muy largo
+            if len(texto_compleja) > 40:
+                p.drawString(margen + 0.2*cm, y, texto_compleja[:40])
+                y -= 0.35 * cm
+                p.drawString(margen + 0.4*cm, y, texto_compleja[40:])
+                y -= 0.4 * cm
+            else:
+                p.drawString(margen + 0.2*cm, y, texto_compleja)
+                y -= 0.4 * cm
+    
     # Mostrar determinaciones individuales
     if determinaciones_list:
         p.setFont("Helvetica", 8)
@@ -2054,8 +1750,8 @@ def generar_ticket_turno(request, turno_id):
                 p.drawString(margen + 0.2*cm, y, texto_det)
                 y -= 0.4 * cm
     
-    # Si no hay ni perfiles ni determinaciones
-    if not perfiles_list and not determinaciones_list:
+    # Si no hay ni perfiles ni determinaciones ni complejas
+    if not perfiles_list and not determinaciones_list and not complejas_list:
         p.setFont("Helvetica", 8)
         p.drawString(margen + 0.2*cm, y, "(Sin estudios especificados)")
         y -= 0.4 * cm
@@ -2067,11 +1763,11 @@ def generar_ticket_turno(request, turno_id):
     y -= 0.5 * cm
     
     # ====== INDICACIONES FIJAS ======
-    p.setFont("Helvetica-Bold", 8)
+    p.setFont("Helvetica-Bold", 9)
     p.drawCentredString(ancho_papel / 2, y, "INDICACIONES")
     y -= 0.45 * cm
     
-    p.setFont("Helvetica", 7)
+    p.setFont("Helvetica", 10)
     indicaciones = [
         "Concurrir al laboratorio de 7:00 a 9:00 hs",
         "con su DNI, receta médica (autorizada por",
@@ -2095,12 +1791,12 @@ def generar_ticket_turno(request, turno_id):
     y -= 0.4 * cm
     
     # ====== PIE DE PÁGINA ======
-    p.setFont("Helvetica", 7)
-    p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {row[7]}")
-    y -= 0.3 * cm
+    p.setFont("Helvetica", 10)
+    p.drawCentredString(ancho_papel / 2, y, f"Ticket asignado por: {usuario_asignador}")
+    y -= 0.5 * cm
     # Agregar el email debajo del nombre de usuario
-    p.drawCentredString(ancho_papel / 2, y, "laboratoriobalestrini@gmail.com")
-    y -= 0.3 * cm
+    p.drawCentredString(ancho_papel / 2, y, "admlabobalestrini@gmail.com")
+    y -= 0.5 * cm
     p.setFont("Helvetica-Bold", 11)
     p.drawCentredString(ancho_papel / 2, y, f"Ticket N° {turno_id}")
     y -= 0.35 * cm
@@ -2120,552 +1816,39 @@ def generar_ticket_turno(request, turno_id):
 
 @user_passes_test(lambda u: u.is_superuser)
 def administrar_tablas(request):
-    """Vista para administrar las tablas principales del sistema"""
-    import psycopg2
-    
-    conn = psycopg2.connect(
-        dbname='Laboratorio',
-        user='postgres',
-        password='estufa10',
-        host='localhost',
-        port='5432'
-    )
-    cursor = conn.cursor()
-    
-    # Obtener todas las tablas con sus conteos
-    tablas_info = []
-    
-    # Determinaciones
-    cursor.execute("SELECT COUNT(*) FROM determinaciones")
-    count_det = cursor.fetchone()[0]
-    tablas_info.append({
-        'nombre': 'Determinaciones',
-        'tabla': 'determinaciones',
-        'cantidad': count_det,
-        'descripcion': 'Estudios de laboratorio individuales'
-    })
-    
-    # Perfiles
-    cursor.execute("SELECT COUNT(*) FROM perfiles")
-    count_perf = cursor.fetchone()[0]
-    tablas_info.append({
-        'nombre': 'Perfiles',
-        'tabla': 'perfiles',
-        'cantidad': count_perf,
-        'descripcion': 'Grupos de determinaciones'
-    })
-    
-    # Pacientes
-    cursor.execute("SELECT COUNT(*) FROM pacientes")
-    count_pac = cursor.fetchone()[0]
-    tablas_info.append({
-        'nombre': 'Pacientes',
-        'tabla': 'pacientes',
-        'cantidad': count_pac,
-        'descripcion': 'Información de pacientes'
-    })
-    
-    # Médicos
-    cursor.execute("SELECT COUNT(*) FROM medicos")
-    count_med = cursor.fetchone()[0]
-    tablas_info.append({
-        'nombre': 'Médicos',
-        'tabla': 'medicos',
-        'cantidad': count_med,
-        'descripcion': 'Médicos registrados en el sistema'
-    })
-    
-    # Usuarios
-    cursor.execute("SELECT COUNT(*) FROM auth_user")
-    count_user = cursor.fetchone()[0]
-    tablas_info.append({
-        'nombre': 'Usuarios',
-        'tabla': 'usuarios',
-        'cantidad': count_user,
-        'descripcion': 'Usuarios del sistema'
-    })
-    
-    # Cupos
-    cursor.execute("SELECT COUNT(*) FROM turnos_cupo")
-    count_cupo = cursor.fetchone()[0]
-    tablas_info.append({
-        'nombre': 'Cupos',
-        'tabla': 'cupos',
-        'cantidad': count_cupo,
-        'descripcion': 'Cupos configurados por fecha'
-    })
-    
-    # Turnos
-    cursor.execute("SELECT COUNT(*) FROM turnos_turno")
-    count_turno = cursor.fetchone()[0]
-    tablas_info.append({
-        'nombre': 'Turnos',
-        'tabla': 'turnos',
-        'cantidad': count_turno,
-        'descripcion': 'Turnos registrados en el sistema'
-    })
-    
-    # Feriados
-    cursor.execute("SELECT COUNT(*) FROM feriados")
-    count_feriados = cursor.fetchone()[0]
-    tablas_info.append({
-        'nombre': 'Feriados',
-        'tabla': 'feriados',
-        'cantidad': count_feriados,
-        'descripcion': 'Días feriados y no laborables'
-    })
-    
-    cursor.close()
-    conn.close()
-    
-    return render(request, 'turnos/administrar_tablas.html', {
-        'tablas': tablas_info
-    })
+    # Vista legacy basada en tablas antiguas; redirigimos al admin de Django que refleja los modelos actuales
+    from django.urls import reverse
+    return redirect(reverse('admin:index'))
 
 
 @user_passes_test(lambda u: u.is_superuser)
 def administrar_tabla_detalle(request, tabla):
-    """Vista detallada para administrar una tabla específica"""
-    import psycopg2
-    
-    conn = psycopg2.connect(
-        dbname='Laboratorio',
-        user='postgres',
-        password='estufa10',
-        host='localhost',
-        port='5432'
-    )
-    cursor = conn.cursor()
-    
-    # Configuración según la tabla
-    config = {
-        'determinaciones': {
-            'nombre': 'Determinaciones',
-            'columnas': ['id', 'codigo', 'nombre', 'descripcion'],
-            'columnas_display': ['ID', 'Código', 'Nombre', 'Descripción'],
-            'query': 'SELECT id, codigo, nombre, descripcion FROM determinaciones ORDER BY codigo'
-        },
-        'perfiles': {
-            'nombre': 'Perfiles',
-            'columnas': ['id', 'codigo', 'nombre', 'descripcion'],
-            'columnas_display': ['ID', 'Código', 'Nombre', 'Descripción'],
-            'query': 'SELECT id, codigo, nombre, descripcion FROM perfiles ORDER BY codigo'
-        },
-        'pacientes': {
-            'nombre': 'Pacientes',
-            'columnas': ['id', 'dni', 'apellido', 'nombre', 'fecha_nacimiento', 'sexo', 'telefono', 'email'],
-            'columnas_display': ['ID', 'DNI', 'Apellido', 'Nombre', 'Fecha Nac.', 'Sexo', 'Teléfono', 'Email'],
-            'query': 'SELECT id, dni, apellido, nombre, fecha_nacimiento, sexo, telefono, email FROM pacientes ORDER BY apellido, nombre'
-        },
-        'medicos': {
-            'nombre': 'Médicos',
-            'columnas': ['id', 'matricula_provincial', 'nombre_apellido'],
-            'columnas_display': ['ID', 'Matrícula Provincial', 'Nombre y Apellido'],
-            'query': 'SELECT id, matricula_provincial, nombre_apellido FROM medicos ORDER BY nombre_apellido'
-        },
-        'usuarios': {
-            'nombre': 'Usuarios',
-            'columnas': ['id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'is_superuser', 'is_active'],
-            'columnas_display': ['ID', 'Usuario', 'Nombre', 'Apellido', 'Email', 'Staff', 'Superuser', 'Activo'],
-            'query': 'SELECT id, username, first_name, last_name, email, is_staff, is_superuser, is_active FROM auth_user ORDER BY username'
-        },
-        'cupos': {
-            'nombre': 'Cupos',
-            'columnas': ['id', 'fecha', 'cantidad_total', 'agenda_id', 'usuario'],
-            'columnas_display': ['ID', 'Fecha', 'Cantidad Total', 'Agenda ID', 'Usuario'],
-            'query': 'SELECT id, fecha, cantidad_total, agenda_id, usuario FROM turnos_cupo ORDER BY fecha DESC',
-            'readonly': True
-        },
-        'turnos': {
-            'nombre': 'Turnos',
-            'columnas': ['id', 'fecha', 'dni', 'apellido', 'nombre', 'medico', 'agenda_id'],
-            'columnas_display': ['ID', 'Fecha', 'DNI', 'Apellido', 'Nombre', 'Médico', 'Agenda'],
-            'query': 'SELECT id, fecha, dni, apellido, nombre, medico, agenda_id FROM turnos_turno ORDER BY fecha DESC, id DESC',
-            'readonly': True
-        },
-        'feriados': {
-            'nombre': 'Feriados',
-            'columnas': ['id', 'fecha', 'descripcion'],
-            'columnas_display': ['ID', 'Fecha', 'Descripción'],
-            'query': 'SELECT id, fecha, descripcion FROM feriados ORDER BY fecha DESC'
-        }
-    }
-    
-    if tabla not in config:
-        messages.error(request, 'Tabla no válida')
-        return redirect('turnos:administrar_tablas')
-    
-    tabla_config = config[tabla]
-    
-    # Obtener datos
-    cursor.execute(tabla_config['query'])
-    registros = cursor.fetchall()
-    
-    # Convertir a lista de diccionarios
-    datos = []
-    for reg in registros:
-        dato = {}
-        for i, col in enumerate(tabla_config['columnas']):
-            dato[col] = reg[i]
-        datos.append(dato)
-    
-    cursor.close()
-    conn.close()
-    
-    return render(request, 'turnos/administrar_tabla_detalle.html', {
-        'tabla': tabla,
-        'tabla_nombre': tabla_config['nombre'],
-        'columnas': tabla_config['columnas'],
-        'columnas_display': tabla_config['columnas_display'],
-        'datos': datos,
-        'readonly': tabla_config.get('readonly', False)
-    })
+    from django.urls import reverse
+    return redirect(reverse('admin:index'))
 
 
 @user_passes_test(lambda u: u.is_superuser)
 def crear_registro(request, tabla):
-    """Crear un nuevo registro en la tabla"""
-    import psycopg2
-    
-    if request.method == 'POST':
-        conn = psycopg2.connect(
-            dbname='Laboratorio',
-            user='postgres',
-            password='estufa10',
-            host='localhost',
-            port='5432'
-        )
-        cursor = conn.cursor()
-        
-        try:
-            if tabla == 'determinaciones':
-                cursor.execute("""
-                    INSERT INTO determinaciones (codigo, nombre, descripcion, usuario)
-                    VALUES (%s, %s, %s, %s)
-                """, (
-                    request.POST.get('codigo'),
-                    request.POST.get('nombre'),
-                    request.POST.get('descripcion'),
-                    request.user.username
-                ))
-            elif tabla == 'perfiles':
-                cursor.execute("""
-                    INSERT INTO perfiles (codigo, nombre, descripcion, usuario)
-                    VALUES (%s, %s, %s, %s)
-                """, (
-                    request.POST.get('codigo'),
-                    request.POST.get('nombre'),
-                    request.POST.get('descripcion'),
-                    request.user.username
-                ))
-            elif tabla == 'pacientes':
-                cursor.execute("""
-                    INSERT INTO pacientes (dni, apellido, nombre, fecha_nacimiento, sexo, telefono, email)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    request.POST.get('dni'),
-                    request.POST.get('apellido'),
-                    request.POST.get('nombre'),
-                    request.POST.get('fecha_nacimiento') or None,
-                    request.POST.get('sexo') or None,
-                    request.POST.get('telefono') or None,
-                    request.POST.get('email') or None
-                ))
-            elif tabla == 'medicos':
-                cursor.execute("""
-                    INSERT INTO medicos (matricula_provincial, nombre_apellido, usuario)
-                    VALUES (%s, %s, %s)
-                """, (
-                    request.POST.get('matricula_provincial'),
-                    request.POST.get('nombre_apellido'),
-                    request.user.username
-                ))
-            elif tabla == 'feriados':
-                cursor.execute("""
-                    INSERT INTO feriados (fecha, descripcion, usuario)
-                    VALUES (%s, %s, %s)
-                """, (
-                    request.POST.get('fecha'),
-                    request.POST.get('descripcion'),
-                    request.user.username
-                ))
-            elif tabla == 'usuarios':
-                from django.contrib.auth.models import User
-                
-                username = request.POST.get('username')
-                password = request.POST.get('password')
-                email = request.POST.get('email', '')
-                first_name = request.POST.get('first_name', '')
-                last_name = request.POST.get('last_name', '')
-                is_staff = request.POST.get('is_staff') == 'on'
-                is_superuser = request.POST.get('is_superuser') == 'on'
-                is_active = request.POST.get('is_active', 'on') == 'on'
-                
-                # Cerrar conexión PostgreSQL antes de usar Django ORM
-                cursor.close()
-                conn.close()
-                
-                # Crear usuario usando Django ORM para manejar la contraseña correctamente
-                user = User.objects.create_user(
-                    username=username,
-                    password=password,
-                    email=email,
-                    first_name=first_name,
-                    last_name=last_name
-                )
-                user.is_staff = is_staff
-                user.is_superuser = is_superuser
-                user.is_active = is_active
-                user.save()
-                
-                messages.success(request, 'Usuario creado exitosamente')
-                return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
-            
-            conn.commit()
-            messages.success(request, 'Registro creado exitosamente')
-        except Exception as e:
-            if conn and not conn.closed:
-                conn.rollback()
-            messages.error(request, f'Error al crear registro: {str(e)}')
-        finally:
-            cursor.close()
-            conn.close()
-        
-        return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
-    
-    return render(request, 'turnos/crear_registro.html', {'tabla': tabla})
+    from django.urls import reverse
+    return redirect(reverse('admin:index'))
 
 
 @user_passes_test(lambda u: u.is_superuser)
 def editar_registro(request, tabla, id):
-    """Editar un registro existente"""
-    import psycopg2
-    
-    conn = psycopg2.connect(
-        dbname='Laboratorio',
-        user='postgres',
-        password='estufa10',
-        host='localhost',
-        port='5432'
-    )
-    cursor = conn.cursor()
-    
-    if request.method == 'POST':
-        try:
-            if tabla == 'determinaciones':
-                cursor.execute("""
-                    UPDATE determinaciones 
-                    SET codigo = %s, nombre = %s, descripcion = %s
-                    WHERE id = %s
-                """, (
-                    request.POST.get('codigo'),
-                    request.POST.get('nombre'),
-                    request.POST.get('descripcion'),
-                    id
-                ))
-            elif tabla == 'perfiles':
-                cursor.execute("""
-                    UPDATE perfiles 
-                    SET codigo = %s, nombre = %s, descripcion = %s
-                    WHERE id = %s
-                """, (
-                    request.POST.get('codigo'),
-                    request.POST.get('nombre'),
-                    request.POST.get('descripcion'),
-                    id
-                ))
-            elif tabla == 'pacientes':
-                cursor.execute("""
-                    UPDATE pacientes 
-                    SET dni = %s, apellido = %s, nombre = %s, fecha_nacimiento = %s, 
-                        sexo = %s, telefono = %s, email = %s
-                    WHERE id = %s
-                """, (
-                    request.POST.get('dni'),
-                    request.POST.get('apellido'),
-                    request.POST.get('nombre'),
-                    request.POST.get('fecha_nacimiento') or None,
-                    request.POST.get('sexo') or None,
-                    request.POST.get('telefono') or None,
-                    request.POST.get('email') or None,
-                    id
-                ))
-            elif tabla == 'medicos':
-                cursor.execute("""
-                    UPDATE medicos 
-                    SET matricula_provincial = %s, nombre_apellido = %s
-                    WHERE id = %s
-                """, (
-                    request.POST.get('matricula_provincial'),
-                    request.POST.get('nombre_apellido'),
-                    id
-                ))
-            elif tabla == 'feriados':
-                cursor.execute("""
-                    UPDATE feriados 
-                    SET fecha = %s, descripcion = %s
-                    WHERE id = %s
-                """, (
-                    request.POST.get('fecha'),
-                    request.POST.get('descripcion'),
-                    id
-                ))
-            elif tabla == 'usuarios':
-                from django.contrib.auth.models import User
-                
-                cursor.close()
-                conn.close()
-                
-                user = User.objects.get(id=id)
-                user.username = request.POST.get('username')
-                user.email = request.POST.get('email', '')
-                user.first_name = request.POST.get('first_name', '')
-                user.last_name = request.POST.get('last_name', '')
-                user.is_staff = request.POST.get('is_staff') == 'on'
-                user.is_superuser = request.POST.get('is_superuser') == 'on'
-                user.is_active = request.POST.get('is_active') == 'on'
-                
-                # Solo cambiar contraseña si se proporciona una nueva
-                new_password = request.POST.get('password', '').strip()
-                if new_password:
-                    user.set_password(new_password)
-                
-                user.save()
-                messages.success(request, 'Usuario actualizado exitosamente')
-                return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
-            
-            conn.commit()
-            messages.success(request, 'Registro actualizado exitosamente')
-        except Exception as e:
-            if conn and not conn.closed:
-                conn.rollback()
-            messages.error(request, f'Error al actualizar registro: {str(e)}')
-        finally:
-            if cursor and not cursor.closed:
-                cursor.close()
-            if conn and not conn.closed:
-                conn.close()
-        
-        return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
-    
-    # Obtener datos actuales
-    if tabla == 'determinaciones':
-        cursor.execute("SELECT id, codigo, nombre, descripcion FROM determinaciones WHERE id = %s", (id,))
-    elif tabla == 'perfiles':
-        cursor.execute("SELECT id, codigo, nombre, descripcion FROM perfiles WHERE id = %s", (id,))
-    elif tabla == 'pacientes':
-        cursor.execute("SELECT id, dni, apellido, nombre, fecha_nacimiento, sexo, telefono, email FROM pacientes WHERE id = %s", (id,))
-    elif tabla == 'medicos':
-        cursor.execute("SELECT id, matricula_provincial, nombre_apellido FROM medicos WHERE id = %s", (id,))
-    elif tabla == 'feriados':
-        cursor.execute("SELECT id, fecha, descripcion FROM feriados WHERE id = %s", (id,))
-    elif tabla == 'usuarios':
-        cursor.execute("SELECT id, username, first_name, last_name, email, is_staff, is_superuser, is_active FROM auth_user WHERE id = %s", (id,))
-    
-    registro = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    
-    if not registro:
-        messages.error(request, 'Registro no encontrado')
-        return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
-    
-    return render(request, 'turnos/editar_registro.html', {
-        'tabla': tabla,
-        'registro': registro,
-        'id': id
-    })
+    from django.urls import reverse
+    return redirect(reverse('admin:index'))
 
 
 @user_passes_test(lambda u: u.is_superuser)
 def eliminar_registro(request, tabla, id):
-    """Eliminar un registro"""
-    import psycopg2
-    
-    if request.method == 'POST':
-        conn = psycopg2.connect(
-            dbname='Laboratorio',
-            user='postgres',
-            password='estufa10',
-            host='localhost',
-            port='5432'
-        )
-        cursor = conn.cursor()
-        
-        try:
-            if tabla == 'determinaciones':
-                cursor.execute("DELETE FROM determinaciones WHERE id = %s", (id,))
-            elif tabla == 'perfiles':
-                cursor.execute("DELETE FROM perfiles WHERE id = %s", (id,))
-            elif tabla == 'pacientes':
-                cursor.execute("DELETE FROM pacientes WHERE id = %s", (id,))
-            
-            conn.commit()
-            messages.success(request, 'Registro eliminado exitosamente')
-        except Exception as e:
-            conn.rollback()
-            messages.error(request, f'Error al eliminar registro: {str(e)}')
-        finally:
-            cursor.close()
-            conn.close()
-    
-    return redirect('turnos:administrar_tabla_detalle', tabla=tabla)
+    from django.urls import reverse
+    return redirect(reverse('admin:index'))
 
 
 @user_passes_test(lambda u: u.is_superuser)
 def aplicar_feriados(request):
-    """Anular cupos en fechas feriadas"""
-    import psycopg2
-    
-    conn = psycopg2.connect(
-        dbname='Laboratorio',
-        user='postgres',
-        password='estufa10',
-        host='localhost',
-        port='5432'
-    )
-    cursor = conn.cursor()
-    
-    try:
-        # Obtener todas las fechas de feriados
-        cursor.execute("SELECT fecha, descripcion FROM feriados ORDER BY fecha")
-        feriados = cursor.fetchall()
-        
-        if not feriados:
-            messages.warning(request, 'No hay feriados registrados')
-            return redirect('turnos:administrar_tabla_detalle', tabla='feriados')
-        
-        cupos_anulados = 0
-        fechas_procesadas = []
-        
-        # Anular cupos para cada fecha feriada
-        for fecha, descripcion in feriados:
-            cursor.execute("""
-                UPDATE turnos_cupo 
-                SET cantidad_total = 0 
-                WHERE fecha = %s AND cantidad_total > 0
-            """, (fecha,))
-            
-            if cursor.rowcount > 0:
-                cupos_anulados += cursor.rowcount
-                fechas_procesadas.append(f"{fecha.strftime('%d/%m/%Y')} ({descripcion})")
-        
-        conn.commit()
-        
-        if cupos_anulados > 0:
-            fechas_str = ', '.join(fechas_procesadas)
-            messages.success(request, f'Se anularon {cupos_anulados} cupos en {len(fechas_procesadas)} fechas: {fechas_str}')
-        else:
-            messages.info(request, 'No había cupos activos en las fechas feriadas')
-            
-    except Exception as e:
-        conn.rollback()
-        messages.error(request, f'Error al aplicar feriados: {str(e)}')
-    finally:
-        cursor.close()
-        conn.close()
-    
-    return redirect('turnos:administrar_tabla_detalle', tabla='feriados')
+    from django.urls import reverse
+    return redirect(reverse('admin:index'))
 
 
 @login_required
@@ -2728,13 +1911,7 @@ def crear_medico_api(request):
         matricula_provincial = data.get('matricula_provincial', '').strip()
         if not nombre_apellido or not matricula_provincial:
             return JsonResponse({'success': False, 'error': 'Faltan datos requeridos'}, status=400)
-        conn = psycopg2.connect(
-            dbname='Laboratorio',
-            user='postgres',
-            password='estufa10',
-            host='localhost',
-            port='5432'
-        )
+        conn = get_db_conn()
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO medicos (matricula_provincial, nombre_apellido, usuario)
@@ -2746,6 +1923,32 @@ def crear_medico_api(request):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import login_required
+
+
+def crear_medico_api(request):
+    """API para crear un nuevo médico"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=400)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        nombre = data.get('nombre_apellido', '').strip()
+        matricula = data.get('matricula_provincial', '').strip()
+        
+        if not nombre or not matricula:
+            return JsonResponse({'success': False, 'error': 'Nombre y matrícula son requeridos'})
+        
+        # Crear el médico
+        medico, created = Medico.objects.get_or_create(
+            matricula=matricula,
+            defaults={'nombre': nombre}
+        )
+        
+        if created:
+            return JsonResponse({'success': True, 'message': 'Médico creado correctamente'})
+        else:
+            return JsonResponse({'success': False, 'error': 'La matrícula ya existe'})
+    
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

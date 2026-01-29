@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Cupo, Turno, CapacidadDia, Agenda, TurnoMensual, Coordinados
+from .models import Cupo, Turno, Agenda, Coordinados, Feriados
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as DefaultUserAdmin
 
 
 @admin.register(Agenda)
@@ -10,11 +12,26 @@ class AgendaAdmin(admin.ModelAdmin):
 
 @admin.register(Coordinados)
 class CoordinadosAdmin(admin.ModelAdmin):
-	list_display = ('id_turno', 'apellido', 'nombre', 'dni', 'fecha_coordinacion')
+	list_display = ('id_turno', 'get_dni', 'get_apellido', 'get_nombre', 'fecha_coordinacion')
 	list_filter = ('fecha_coordinacion',)
-	search_fields = ('dni', 'nombre', 'apellido')
+	search_fields = ('dni__iden', 'dni__apellido', 'dni__nombre')
 	readonly_fields = ('fecha_coordinacion',)
-	ordering = ('-fecha_coordinacion',)
+	ordering = ('-fecha_coordinacion', 'id_turno')
+	
+	def get_dni(self, obj):
+		return obj.dni.iden if obj.dni else '-'
+	get_dni.short_description = 'DNI'
+	get_dni.admin_order_field = 'dni__iden'
+	
+	def get_apellido(self, obj):
+		return obj.dni.apellido if obj.dni else '-'
+	get_apellido.short_description = 'Apellido'
+	get_apellido.admin_order_field = 'dni__apellido'
+	
+	def get_nombre(self, obj):
+		return obj.dni.nombre if obj.dni else '-'
+	get_nombre.short_description = 'Nombre'
+	get_nombre.admin_order_field = 'dni__nombre'
 
 
 
@@ -79,137 +96,60 @@ class CupoAdmin(admin.ModelAdmin):
 
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'fecha', 'nombre', 'dni', 'creado')
-	list_filter = ('agenda', 'fecha')
-
-
-@admin.register(CapacidadDia)
-class CapacidadDiaAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'fecha', 'capacidad')
-	list_filter = ('agenda',)
-
-# Registered models so admins can manage daily capacities and agendas
-
-from .models import WeeklyAvailability
-
-
-@admin.register(WeeklyAvailability)
-class WeeklyAvailabilityAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'weekday', 'capacidad', 'active', 'rango_display')
-	list_filter = ('agenda', 'weekday', 'active')
+	list_display = ('agenda', 'fecha', 'get_dni', 'usuario', 'creado')
+	list_filter = ('agenda', 'fecha', 'medico')
+	search_fields = ('dni__iden', 'dni__apellido', 'dni__nombre', 'medico__nombre')
+	readonly_fields = ('creado',)
 	fieldsets = (
-		('Información básica', {
-			'fields': ('agenda', 'weekday', 'capacidad', 'active')
+		('Información del Paciente', {
+			'fields': ('dni',)
 		}),
-		('Rango de fechas (opcional)', {
-			'fields': ('desde_fecha', 'hasta_fecha'),
-			'description': 'Deja en blanco para aplicar indefinidamente. Si especificas un rango, esta disponibilidad solo se aplicará dentro de esas fechas.'
+		('Turno', {
+			'fields': ('agenda', 'fecha', 'medico')
 		}),
-	)
-	actions = ['create_cupos_for_range']
-
-	def rango_display(self, obj):
-		if obj.desde_fecha or obj.hasta_fecha:
-			desde = obj.desde_fecha or 'inicio'
-			hasta = obj.hasta_fecha or 'fin'
-			return f"{desde} → {hasta}"
-		return "Sin rango"
-	rango_display.short_description = 'Rango'
-
-	def create_cupos_for_range(self, request, queryset):
-		"""Admin action: prompt for start/end dates and then create Cupo records
-		for each WeeklyAvailability selected, filling all dates in the range where the weekday matches."""
-		from django.shortcuts import render, redirect
-		from django import forms
-		from django.urls import path
-		from datetime import datetime, timedelta
-		from django.contrib import messages
-
-		class _RangeForm(forms.Form):
-			_selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
-			start = forms.DateField(required=True, widget=forms.DateInput(attrs={'type':'date'}))
-			end = forms.DateField(required=True, widget=forms.DateInput(attrs={'type':'date'}))
-
-		if 'apply' in request.POST:
-			form = _RangeForm(request.POST)
-			if form.is_valid():
-				start = form.cleaned_data['start']
-				end = form.cleaned_data['end']
-				total_created = 0
-				total_skipped = 0
-				for wa in queryset:
-					agenda = wa.agenda
-					# iterate dates strictly within the range
-					cur = start
-					while cur <= end:
-						if cur.weekday() == wa.weekday and wa.active:
-							# create Cupo for this agenda+date only if it does not exist
-							Cupo = self.model._meta.apps.get_model('turnos', 'Cupo')
-							obj, created = Cupo.objects.get_or_create(agenda=agenda, fecha=cur, defaults={'cantidad_total': wa.capacidad})
-							if created:
-								total_created += 1
-							else:
-								total_skipped += 1
-						cur += timedelta(days=1)
-
-				messages.success(request, f"Cupos creados: {total_created} nuevos. Existentes omitidos: {total_skipped}. Rango: {start} a {end}.")
-				return None
-		else:
-			form = _RangeForm(initial={'_selected_action': queryset.values_list('pk', flat=True)})
-
-		return render(request, 'admin/turnos/weeklyavailability_create_range.html', {'queryset': queryset, 'form': form, 'title': 'Crear Cupos desde rango de fechas'})
-
-	create_cupos_for_range.short_description = "Crear/Actualizar Cupos desde rango de fechas (para las entries seleccionadas)"
-
-
-@admin.register(TurnoMensual)
-class TurnoMensualAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'desde_fecha', 'hasta_fecha', 'cantidad', 'estado_display', 'creado')
-	list_filter = ('agenda', 'aplicado', 'creado')
-	readonly_fields = ('aplicado', 'creado')
-	fieldsets = (
-		('Información', {
-			'fields': ('agenda', 'desde_fecha', 'hasta_fecha', 'cantidad')
+		('Información Adicional', {
+			'fields': ('determinaciones', 'nota_interna')
 		}),
-		('Estado', {
-			'fields': ('aplicado', 'creado'),
+		('Auditoría', {
+			'fields': ('usuario', 'creado'),
 			'classes': ('collapse',)
 		}),
 	)
-	actions = ['aplicar_turnos_mensuales']
+	
+	def get_search_results(self, request, queryset, search_term):
+		"""Personalizar búsqueda para incluir búsqueda de médicos."""
+		queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+		return queryset, use_distinct
 
-	def estado_display(self, obj):
-		if obj.aplicado:
-			return "✅ Aplicado"
-		return "⏳ Pendiente"
-	estado_display.short_description = "Estado"
+	def get_dni(self, obj):
+		return obj.dni.iden if obj.dni else '-'
+	get_dni.short_description = 'DNI'
+	get_dni.admin_order_field = 'dni__iden'
 
-	def aplicar_turnos_mensuales(self, request, queryset):
-		"""Aplicar los turnos mensuales seleccionados (crear cupos)."""
-		from django.contrib import messages
-		from django.db import transaction
-		
-		total_aplicados = 0
-		total_cupos = 0
-		ya_aplicados = 0
-		
-		for turno_mens in queryset:
-			if not turno_mens.aplicado:
-				try:
-					with transaction.atomic():
-						cupos_count = turno_mens.aplicar()
-						total_cupos += cupos_count
-						total_aplicados += 1
-				except Exception as e:
-					messages.error(request, f"Error al aplicar {turno_mens.agenda.name}: {str(e)}")
-			else:
-				ya_aplicados += 1
-		
-		if total_aplicados > 0:
-			msg = f"✓ {total_aplicados} configuración(es) aplicada(s). {total_cupos} cupos creados (lunes-viernes)."
-			messages.success(request, msg)
-		
-		if ya_aplicados > 0:
-			messages.warning(request, f"⚠ {ya_aplicados} registro(s) ya estaban aplicados.")
 
-	aplicar_turnos_mensuales.short_description = "Aplicar turnos mensuales seleccionados"
+@admin.register(Feriados)
+class FeriadosAdmin(admin.ModelAdmin):
+	list_display = ('fecha', 'descripcion')
+	list_filter = ('fecha',)
+	search_fields = ('descripcion',)
+	ordering = ('-fecha',)
+
+
+# Mostrar nombre y apellido en el admin de usuarios
+class UserAdmin(DefaultUserAdmin):
+	list_display = ('username', 'first_name', 'last_name', 'email', 'is_staff')
+	add_fieldsets = (
+		(None, {
+			'classes': ('wide',),
+			'fields': ('username', 'first_name', 'last_name', 'email', 'password1', 'password2'),
+		}),
+	)
+
+try:
+	admin.site.unregister(User)
+except Exception:
+	pass
+admin.site.register(User, UserAdmin)
+
+
+

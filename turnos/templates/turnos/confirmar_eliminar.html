@@ -13,8 +13,8 @@
         </p>
 
         <div style="background: rgba(0, 212, 255, 0.08); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid rgba(0, 212, 255, 0.2); text-align: left;">
-            <p><strong>Nombre:</strong> {{ turno.nombre }}</p>
-            <p><strong>DNI:</strong> {{ turno.dni }}</p>
+            <p><strong>Nombre:</strong> {{ turno.apellido }}, {{ turno.nombre }}</p>
+            <p><strong>DNI:</strong> {{ turno.paciente_dni }}</p>
             <p><strong>Determinaciones:</strong> {{ turno.determinaciones }}</p>
             <p><strong>Fecha:</strong> {{ turno.fecha }}</p>
             <p><strong>Agenda:</strong> {{ turno.agenda.name }}</p>

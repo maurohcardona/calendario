@@ -49,7 +49,7 @@ function limpiarOtrosCampos(campoActivo) {
                     {{ turno.apellido }} {{ turno.nombre }}
                   </div>
                   <div style="color: #000000; font-size: 0.95rem; margin-bottom: 0.25rem;">
-                    <strong>DNI:</strong> {{ turno.dni }}
+                    <strong>DNI:</strong> {{ turno.paciente_dni }}
                   </div>
                   <div style="color: #000000; font-size: 0.95rem; margin-bottom: 0.25rem;">
                     <strong>Fecha:</strong> <span style="color: #4caf50; font-weight: 600;">{{ turno.fecha }}</span>
@@ -119,7 +119,7 @@ function limpiarOtrosCampos(campoActivo) {
                     {{ turno.apellido }} {{ turno.nombre }}
                   </div>
                   <div style="color: #000000; font-size: 0.9rem;">
-                    <strong>DNI:</strong> {{ turno.dni }} | <strong>Fecha:</strong> <span style="color: #4caf50; font-weight: 600;">{{ turno.fecha }}</span> | <strong>Agenda:</strong> {{ turno.agenda.name }}
+                    <strong>DNI:</strong> {{ turno.paciente_dni }} | <strong>Fecha:</strong> <span style="color: #4caf50; font-weight: 600;">{{ turno.fecha }}</span> | <strong>Agenda:</strong> {{ turno.agenda.name }}
                   </div>
                   <div style="color: #000000; font-size: 0.9rem;">
                     <strong>Determinaciones:</strong> {{ turno.determinaciones_nombres|default:turno.determinaciones }}
@@ -129,6 +129,10 @@ function limpiarOtrosCampos(campoActivo) {
                   {% if turno.esta_coordinado %}
                     <a href="{% url 'turnos:ver_coordinacion' turno.id %}" style="padding: 0.5rem 1rem; background: #2196F3; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem;" onmouseover="this.style.background='#1976D2';" onmouseout="this.style.background='#2196F3';">
                       👁️ Ver
+                    </a>
+                  {% else %}
+                    <a href="{% url 'turnos:editar_turno' turno.id %}" style="padding: 0.5rem 1rem; background: #00d4ff; color: #000; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem;" onmouseover="this.style.background='#00a8cc';" onmouseout="this.style.background='#00d4ff';">
+                      ✏️ Editar
                     </a>
                   {% endif %}
                   <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" style="padding: 0.5rem 1rem; background: #9C27B0; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem;" onmouseover="this.style.background='#7B1FA2';" onmouseout="this.style.background='#9C27B0';">
