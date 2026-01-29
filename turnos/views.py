@@ -614,6 +614,85 @@ def turnos_historicos_api(request, fecha):
 
 
 @login_required
+def control_ordenes(request):
+    """Vista de control de órdenes coordinadas del día actual"""
+    from datetime import date
+    from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+    
+    hoy = date.today()
+    
+    # Obtener IDs de turnos coordinados
+    turnos_coordinados_ids = Coordinados.objects.values_list('id_turno', flat=True)
+    
+    # Filtrar turnos del día actual que estén coordinados
+    turnos = Turno.objects.filter(
+        id__in=turnos_coordinados_ids,
+        fecha=hoy
+    ).select_related('dni', 'agenda', 'medico').order_by('agenda__name', 'creado')
+    
+    # Preparar datos de turnos con determinaciones expandidas
+    ordenes = []
+    for turno in turnos:
+        # Obtener códigos de determinaciones
+        codigos = [c.strip() for c in turno.determinaciones.split(',') if c.strip()]
+        
+        # Expandir cada código a sus detalles
+        determinaciones_detalle = []
+        for codigo in codigos:
+            # Buscar en perfiles
+            perfil = PerfilDeterminacion.objects.filter(codigo=codigo).first()
+            if perfil:
+                determinaciones_detalle.append({
+                    'tipo': 'perfil',
+                    'codigo': perfil.codigo,
+                    'nombre': perfil.nombre,
+                    'determinaciones': perfil.determinaciones
+                })
+                continue
+            
+            # Buscar en complejas
+            compleja = DeterminacionCompleja.objects.filter(codigo=codigo).first()
+            if compleja:
+                determinaciones_detalle.append({
+                    'tipo': 'compleja',
+                    'codigo': compleja.codigo,
+                    'nombre': compleja.nombre,
+                    'stock': compleja.stock
+                })
+                continue
+            
+            # Buscar en determinaciones simples
+            det = Determinacion.objects.filter(codigo=codigo).first()
+            if det:
+                determinaciones_detalle.append({
+                    'tipo': 'determinacion',
+                    'codigo': det.codigo,
+                    'nombre': det.nombre,
+                    'stock': det.stock
+                })
+            else:
+                # Si no se encuentra, agregar como código sin detalles
+                determinaciones_detalle.append({
+                    'tipo': 'desconocido',
+                    'codigo': codigo,
+                    'nombre': 'Código no encontrado'
+                })
+        
+        ordenes.append({
+            'turno': turno,
+            'determinaciones': determinaciones_detalle
+        })
+    
+    context = {
+        'fecha': hoy,
+        'ordenes': ordenes,
+        'total_ordenes': len(ordenes)
+    }
+    
+    return render(request, 'turnos/control.html', context)
+
+
+@login_required
 def dia(request, fecha):
     # Convertir fecha a objeto date si viene como string
     from datetime import datetime
