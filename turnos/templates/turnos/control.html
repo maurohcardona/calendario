@@ -203,11 +203,69 @@
         font-weight: 700;
         font-size: 1rem;
     }
+    
+    .fecha-selector {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .fecha-selector label {
+        font-weight: 600;
+        color: var(--text-light);
+        font-size: 1rem;
+    }
+    
+    .fecha-selector input[type="date"] {
+        padding: 0.75rem;
+        border: 2px solid var(--control-primary);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 500;
+        background: #ffffff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .fecha-selector input[type="date"]:hover {
+        border-color: #00a8cc;
+    }
+    
+    .fecha-selector input[type="date"]:focus {
+        outline: none;
+        border-color: #00a8cc;
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+    }
+    
+    .btn-buscar {
+        padding: 0.75rem 1.5rem;
+        background: var(--control-primary);
+        color: #000;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-buscar:hover {
+        background: #00a8cc;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+    }
 </style>
 
 <div class="control-header">
     <h2 style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #000000;">✅ Control de Órdenes</h2>
     <p style="margin: 0.5rem 0 0 0; color: var(--text-medium); font-size: 1.1rem; font-weight: 500;">Fecha: {{ fecha|date:"d/m/Y" }} | Total de órdenes: <strong>{{ total_ordenes }}</strong></p>
+    
+    <form method="get" class="fecha-selector">
+        <label for="fecha">📅 Seleccionar fecha:</label>
+        <input type="date" id="fecha" name="fecha" value="{{ fecha|date:'Y-m-d' }}" required>
+        <button type="submit" class="btn-buscar">🔍 Buscar</button>
+    </form>
 </div>
 
 {% if ordenes %}

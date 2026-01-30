@@ -99,15 +99,42 @@ def buscador_determinaciones(request):
 @login_required
 def estadisticas_determinacion_api(request):
     """API para obtener estadísticas de una determinación"""
+    from datetime import datetime
+    from calendar import monthrange
+    
     codigo = request.GET.get('codigo', '').strip()
     if not codigo:
         return JsonResponse({'error': 'Código no proporcionado'}, status=400)
     
     try:
-        # Buscar turnos que contengan este código en determinaciones (desde hoy en adelante)
+        # Obtener fechas desde y hasta (por defecto: hoy hasta último día del año)
         hoy = date.today()
+        ultimo_dia_anio = date(hoy.year, 12, 31)
+        
+        fecha_desde_str = request.GET.get('fecha_desde')
+        fecha_hasta_str = request.GET.get('fecha_hasta')
+        
+        if fecha_desde_str:
+            try:
+                fecha_desde = datetime.strptime(fecha_desde_str, '%Y-%m-%d').date()
+            except ValueError:
+                fecha_desde = hoy
+        else:
+            fecha_desde = hoy
+            
+        if fecha_hasta_str:
+            try:
+                fecha_hasta = datetime.strptime(fecha_hasta_str, '%Y-%m-%d').date()
+            except ValueError:
+                fecha_hasta = ultimo_dia_anio
+        else:
+            fecha_hasta = ultimo_dia_anio
+        
+        # Buscar turnos que contengan este código en determinaciones en el rango de fechas
         turnos = Turno.objects.filter(
-            Q(determinaciones__icontains=codigo) & Q(fecha__gte=hoy)
+            Q(determinaciones__icontains=codigo) & 
+            Q(fecha__gte=fecha_desde) & 
+            Q(fecha__lte=fecha_hasta)
         ).values('fecha').annotate(cantidad=Count('id')).order_by('fecha')
         
         # Calcular total de turnos
@@ -122,7 +149,9 @@ def estadisticas_determinacion_api(request):
         return JsonResponse({
             'success': True,
             'total_turnos': total_turnos,
-            'por_dia': por_dia
+            'por_dia': por_dia,
+            'fecha_desde': fecha_desde.strftime('%d-%m-%Y'),
+            'fecha_hasta': fecha_hasta.strftime('%d-%m-%Y')
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
