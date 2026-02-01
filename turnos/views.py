@@ -27,7 +27,7 @@ def calcular_max_tiempo(determinaciones_texto):
 
     tiempos = []
     if det_codes:
-        tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=det_codes)])
+        tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=det_codes) if d.tiempo is not None])
 
     if complejas_codes:
         # Procesar determinaciones complejas (código incluye /)
@@ -36,7 +36,7 @@ def calcular_max_tiempo(determinaciones_texto):
         for compleja in complejas:
             dets_complejas.extend(compleja.determinaciones)
         if dets_complejas:
-            tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=dets_complejas)])
+            tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=dets_complejas) if d.tiempo is not None])
         
         # Procesar perfiles (buscar sin /)
         perfil_codes = [c.lstrip('/') for c in complejas_codes]
@@ -54,7 +54,7 @@ def calcular_max_tiempo(determinaciones_texto):
                     # Es una determinación simple
                     dets_perfiles.append(det_code)
         if dets_perfiles:
-            tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=dets_perfiles)])
+            tiempos.extend([d.tiempo for d in Determinacion.objects.filter(codigo__in=dets_perfiles) if d.tiempo is not None])
 
     return max(tiempos) if tiempos else 0
 
@@ -615,19 +615,27 @@ def turnos_historicos_api(request, fecha):
 
 @login_required
 def control_ordenes(request):
-    """Vista de control de órdenes coordinadas del día actual"""
-    from datetime import date
+    """Vista de control de órdenes coordinadas del día actual o fecha seleccionada"""
+    from datetime import date, datetime
     from determinaciones.models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
     
-    hoy = date.today()
+    # Obtener fecha del parámetro GET o usar hoy por defecto
+    fecha_str = request.GET.get('fecha')
+    if fecha_str:
+        try:
+            fecha_control = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except ValueError:
+            fecha_control = date.today()
+    else:
+        fecha_control = date.today()
     
     # Obtener IDs de turnos coordinados
     turnos_coordinados_ids = Coordinados.objects.values_list('id_turno', flat=True)
     
-    # Filtrar turnos del día actual que estén coordinados
+    # Filtrar turnos de la fecha seleccionada que estén coordinados
     turnos = Turno.objects.filter(
         id__in=turnos_coordinados_ids,
-        fecha=hoy
+        fecha=fecha_control
     ).select_related('dni', 'agenda', 'medico').order_by('agenda__name', 'creado')
     
     # Preparar datos de turnos con determinaciones expandidas
@@ -684,7 +692,7 @@ def control_ordenes(request):
         })
     
     context = {
-        'fecha': hoy,
+        'fecha': fecha_control,
         'ordenes': ordenes,
         'total_ordenes': len(ordenes)
     }

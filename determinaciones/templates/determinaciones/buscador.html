@@ -49,12 +49,49 @@
                 📈 Estadísticas de Uso
             </h3>
             
+            <!-- Selector de rango de fechas -->
+            <div style="background: rgba(200, 155, 143, 0.08); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(200, 155, 143, 0.2);">
+                <div style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="fechaDesde" style="display: block; color: var(--text-light); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                            📅 Fecha Desde
+                        </label>
+                        <input 
+                            type="date" 
+                            id="fechaDesde" 
+                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 6px; font-size: 1rem; font-weight: 500; background: #ffffff; color: var(--text-light);"
+                        />
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="fechaHasta" style="display: block; color: var(--text-light); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                            📅 Fecha Hasta
+                        </label>
+                        <input 
+                            type="date" 
+                            id="fechaHasta" 
+                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 6px; font-size: 1rem; font-weight: 500; background: #ffffff; color: var(--text-light);"
+                        />
+                    </div>
+                    <button 
+                        id="btnActualizarEstadisticas"
+                        onclick="actualizarEstadisticas()"
+                        style="padding: 0.75rem 1.5rem; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 1rem; transition: all 0.3s ease; white-space: nowrap;"
+                        onmouseover="this.style.background='rgba(200, 155, 143, 0.8)'"
+                        onmouseout="this.style.background='var(--accent)'"
+                    >
+                        🔍 Actualizar
+                    </button>
+                </div>
+            </div>
+            
             <div style="background: linear-gradient(135deg, rgba(200, 155, 143, 0.1), rgba(200, 155, 143, 0.05)); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
                 <div style="font-size: 0.9rem; color: rgba(200, 155, 143, 0.8); font-weight: 600; margin-bottom: 0.5rem;">
                     TOTAL DE TURNOS
                 </div>
                 <div id="totalTurnos" style="font-size: 3rem; color: var(--accent); font-weight: 700;">
                     0
+                </div>
+                <div id="rangoFechas" style="font-size: 0.85rem; color: rgba(200, 155, 143, 0.7); margin-top: 0.5rem; font-weight: 500;">
                 </div>
             </div>
 
@@ -187,17 +224,38 @@ async function seleccionarDeterminacion(det) {
     document.getElementById('detNombre').textContent = det.nombre;
     document.getElementById('detTipo').textContent = det.tipo;
     
+    // Inicializar fechas por defecto (hoy hasta último día del año)
+    const hoy = new Date();
+    const ultimoDiaAnio = new Date(hoy.getFullYear(), 11, 31); // 11 = diciembre, 31 = último día
+    
+    document.getElementById('fechaDesde').value = hoy.toISOString().split('T')[0];
+    document.getElementById('fechaHasta').value = ultimoDiaAnio.toISOString().split('T')[0];
+    
     // Mostrar sección de resultados
     document.getElementById('seccionResultados').style.display = 'block';
+    
+    // Cargar estadísticas
+    await cargarEstadisticas();
+}
+
+// Función para cargar estadísticas
+async function cargarEstadisticas() {
+    if (!determinacionSeleccionada) return;
+    
+    const fechaDesde = document.getElementById('fechaDesde').value;
+    const fechaHasta = document.getElementById('fechaHasta').value;
     
     // Mostrar loading
     document.getElementById('loadingEstadisticas').style.display = 'block';
     document.getElementById('contenedorPorDia').style.display = 'none';
     document.getElementById('sinResultados').style.display = 'none';
     
-    // Cargar estadísticas
     try {
-        const response = await fetch(`/determinaciones/api/estadisticas-determinacion/?codigo=${encodeURIComponent(det.codigo)}`);
+        let url = `/determinaciones/api/estadisticas-determinacion/?codigo=${encodeURIComponent(determinacionSeleccionada.codigo)}`;
+        if (fechaDesde) url += `&fecha_desde=${fechaDesde}`;
+        if (fechaHasta) url += `&fecha_hasta=${fechaHasta}`;
+        
+        const response = await fetch(url);
         const data = await response.json();
         
         document.getElementById('loadingEstadisticas').style.display = 'none';
@@ -205,6 +263,11 @@ async function seleccionarDeterminacion(det) {
         if (data.success) {
             // Mostrar total
             document.getElementById('totalTurnos').textContent = data.total_turnos;
+            
+            // Mostrar rango de fechas
+            if (data.fecha_desde && data.fecha_hasta) {
+                document.getElementById('rangoFechas').textContent = `Período: ${data.fecha_desde} al ${data.fecha_hasta}`;
+            }
             
             if (data.total_turnos > 0) {
                 // Mostrar lista por día
@@ -227,6 +290,11 @@ async function seleccionarDeterminacion(det) {
         document.getElementById('loadingEstadisticas').style.display = 'none';
         alert('Error al cargar estadísticas: ' + error.message);
     }
+}
+
+// Función para actualizar estadísticas al cambiar fechas
+async function actualizarEstadisticas() {
+    await cargarEstadisticas();
 }
 
 // Precargar determinaciones al cargar la página
