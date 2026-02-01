@@ -266,16 +266,22 @@
     document.getElementById('inputNombre').addEventListener('input', async function() {
         const texto = this.value.trim().toLowerCase();
         const lista = document.getElementById('autocompleteLista');
+        
         if (texto.length < 2) {
             lista.style.display = 'none';
             return;
         }
+        
         const items = await cargarDeterminaciones();
-        const coincidencias = items.filter(d => d.nombre.toLowerCase().includes(texto)).slice(0, 20);
+        const coincidencias = items.filter(d => 
+            d.nombre.toLowerCase().includes(texto)
+        ).slice(0, 20);
+        
         if (coincidencias.length === 0) {
             lista.style.display = 'none';
             return;
         }
+        
         lista.innerHTML = coincidencias.map(item => {
             let tipoBadge = '';
             let sinStockBadge = '';
@@ -293,13 +299,21 @@
             }
             
             return `
-                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="${estiloGris}">
+                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s; ${estiloGris}">
                     <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
                 </div>
             `;
         }).join('');
+        
         lista.style.display = 'block';
+        
         lista.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(200, 155, 143, 0.2)';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.background = 'transparent';
+            });
             item.addEventListener('click', function() {
                 const codigo = this.dataset.codigo;
                 const nombre = this.dataset.nombre;
@@ -319,36 +333,97 @@
     document.getElementById('btnAgregarDet').addEventListener('click', async function() {
         const codigo = document.getElementById('inputCodigo').value.trim();
         const status = document.getElementById('detStatus');
+        
         if (!codigo) {
             status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ingrese un código</span>';
             return;
         }
+        
         status.innerHTML = '<span style="color: var(--accent); font-weight: 600;">⏳ Buscando...</span>';
+        
         try {
             const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
             const data = await response.json();
+            
             if (data.found) {
-                if (data.tipo === 'perfil' || data.tipo === 'compleja') {
-                    const yaExiste = determinaciones.find(d => (d.tipo === 'perfil' || d.tipo === 'compleja') && d.codigo === data.codigo);
+                if (data.tipo === 'compleja') {
+                    // Para complejas: agregar solo el código de la compleja
+                    const yaExiste = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === data.codigo);
                     if (yaExiste) {
-                        status.innerHTML = `<span style="color: #ff7066; font-weight: 600;">⚠️ ${data.tipo === 'compleja' ? 'Determinación compleja' : 'Perfil'} ya agregado</span>`;
+                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ya agregada</span>';
                         return;
                     }
+                    
                     determinaciones.unshift({
-                        tipo: data.tipo,
+                        tipo: 'compleja',
                         codigo: data.codigo,
                         nombre: data.nombre,
                         determinaciones: data.determinaciones,
                         stock: data.stock !== undefined ? data.stock : true
                     });
-                    const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
-                    status.innerHTML = `<span style="color: #4caf50; font-weight: 600;">✅ ${data.tipo === 'compleja' ? 'Determinación compleja' : 'Perfil'} agregado (${cantidadDets} determinaciones)</span>`;
+                    status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Determinación compleja agregada</span>';
+                } else if (data.tipo === 'perfil') {
+                    // Para perfiles: expandir subdeterminaciones (simples o complejas)
+                    const detCodesRaw = Array.isArray(data.determinaciones)
+                        ? data.determinaciones
+                        : (data.determinaciones || '').split(',').map(d => d.trim()).filter(Boolean);
+
+                    if (detCodesRaw.length === 0) {
+                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ El perfil no tiene determinaciones</span>';
+                        return;
+                    }
+
+                    const catalogo = await cargarDeterminaciones();
+                    let agregadas = 0;
+
+                    for (const code of detCodesRaw) {
+                        // Si comienza con /, es una determinación compleja
+                        if (code.startsWith('/')) {
+                            const yaExisteCompleja = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === code);
+                            if (yaExisteCompleja) continue;
+                            
+                            // Buscar la determinación compleja en el catálogo
+                            const itemCompleja = catalogo.find(d => d.codigo === code && d.tipo === 'compleja');
+                            if (itemCompleja) {
+                                determinaciones.unshift({
+                                    tipo: 'compleja',
+                                    codigo: itemCompleja.codigo,
+                                    nombre: itemCompleja.nombre,
+                                    determinaciones: itemCompleja.determinaciones,
+                                    stock: itemCompleja.stock !== undefined ? itemCompleja.stock : true
+                                });
+                                agregadas += 1;
+                            }
+                        } else {
+                            // Es una determinación simple
+                            const yaExisteDet = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === code);
+                            if (yaExisteDet) continue;
+                            
+                            const itemCat = catalogo.find(d => d.codigo === code && d.tipo === 'determinacion');
+                            const nombreDet = itemCat ? itemCat.nombre : code;
+                            determinaciones.unshift({
+                                tipo: 'determinacion',
+                                codigo: code,
+                                nombre: nombreDet,
+                                stock: itemCat && itemCat.stock !== undefined ? itemCat.stock : true
+                            });
+                            agregadas += 1;
+                        }
+                    }
+
+                    if (agregadas === 0) {
+                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Todas las determinaciones del perfil ya estaban agregadas</span>';
+                    } else {
+                        status.innerHTML = `<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (${agregadas} determinaciones)</span>`;
+                    }
                 } else {
+                    // Agregar determinación individual
                     const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
                     if (yaExiste) {
                         status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ya agregada</span>';
                         return;
                     }
+                    
                     determinaciones.unshift({
                         tipo: 'determinacion',
                         codigo: data.codigo,
@@ -357,6 +432,7 @@
                     });
                     status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Determinación agregada</span>';
                 }
+                
                 actualizarListaDeterminaciones();
                 document.getElementById('inputCodigo').value = '';
                 document.getElementById('inputNombre').value = '';
@@ -365,7 +441,8 @@
                 status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Código no encontrado</span>';
             }
         } catch (error) {
-            status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Error al buscar</span>';
+            console.error('Error al buscar determinación:', error);
+            status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Error al buscar: ' + error.message + '</span>';
         }
     });
 
