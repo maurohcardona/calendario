@@ -142,14 +142,12 @@ def precoordinacion_turno(request, turno_id):
         # Manejar el médico correctamente
         medico_nombre = request.POST.get('medico', '')
         if medico_nombre:
-            try:
-                turno.medico = Medico.objects.get(nombre=medico_nombre)
-            except Medico.DoesNotExist:
-                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
-                if medicos.exists():
-                    turno.medico = medicos.first()
-                else:
-                    turno.medico = None
+            # Usar filter().first() en lugar de get() para evitar MultipleObjectsReturned
+            medico = Medico.objects.filter(nombre=medico_nombre).first()
+            if not medico:
+                # Si no hay coincidencia exacta, buscar por coincidencia parcial
+                medico = Medico.objects.filter(nombre__icontains=medico_nombre).first()
+            turno.medico = medico
         else:
             turno.medico = None
         
@@ -780,13 +778,11 @@ def dia(request, fecha):
                         # Obtener la instancia de Médico por nombre
                         medico_obj = None
                         if medico_nombre:
-                            try:
-                                medico_obj = Medico.objects.get(nombre=medico_nombre)
-                            except Medico.DoesNotExist:
-                                # Si no existe, intenta por coincidencia parcial (para nombres guardados como texto)
-                                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
-                                if medicos.exists():
-                                    medico_obj = medicos.first()
+                            # Usar filter().first() en lugar de get() para evitar MultipleObjectsReturned
+                            medico_obj = Medico.objects.filter(nombre=medico_nombre).first()
+                            if not medico_obj:
+                                # Si no hay coincidencia exacta, buscar por coincidencia parcial
+                                medico_obj = Medico.objects.filter(nombre__icontains=medico_nombre).first()
                         
                         # Guardar o actualizar paciente usando ORM (tabla pacientes_paciente)
                         paciente_obj, created = Paciente.objects.update_or_create(
@@ -1106,14 +1102,12 @@ def editar_turno(request, turno_id):
         # Manejar el médico correctamente
         medico_nombre = request.POST.get('medico', '')
         if medico_nombre:
-            try:
-                turno.medico = Medico.objects.get(nombre=medico_nombre)
-            except Medico.DoesNotExist:
-                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
-                if medicos.exists():
-                    turno.medico = medicos.first()
-                else:
-                    turno.medico = None
+            # Usar filter().first() en lugar de get() para evitar MultipleObjectsReturned
+            medico = Medico.objects.filter(nombre=medico_nombre).first()
+            if not medico:
+                # Si no hay coincidencia exacta, buscar por coincidencia parcial
+                medico = Medico.objects.filter(nombre__icontains=medico_nombre).first()
+            turno.medico = medico
         else:
             turno.medico = None
         
