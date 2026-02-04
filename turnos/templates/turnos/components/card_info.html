@@ -1,0 +1,9 @@
+<!-- Componente reutilizable: Tarjeta de información -->
+<div style="background: linear-gradient(135deg, rgba(143, 184, 143, 0.15), rgba(200, 155, 143, 0.15)); border: 2px solid {{ color }}; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+    <span style="color: var(--text-light); font-size: 0.95rem; font-weight: 600;">
+        {% if icono %}{{ icono }} {% endif %}{{ titulo }}
+    </span>
+    <div style="font-size: 1.5rem; color: {{ color }}; font-weight: bold; margin-top: 0.5rem;">
+        {{ valor }}
+    </div>
+</div>

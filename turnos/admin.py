@@ -96,8 +96,8 @@ class CupoAdmin(admin.ModelAdmin):
 
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'fecha', 'get_dni', 'usuario', 'creado')
-	list_filter = ('agenda', 'fecha', 'medico')
+	list_display = ('id', 'agenda', 'fecha', 'get_dni', 'usuario', 'creado')
+	list_filter = ('agenda', 'fecha',)
 	search_fields = ('dni__iden', 'dni__apellido', 'dni__nombre', 'medico__nombre')
 	readonly_fields = ('creado',)
 	fieldsets = (
