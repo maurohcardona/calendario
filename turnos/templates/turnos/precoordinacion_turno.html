@@ -295,24 +295,30 @@
             let estiloGris = '';
             
             if (item.tipo === 'perfil') {
-                tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>';
+                tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL</span>';
             } else if (item.tipo === 'compleja') {
-                tipoBadge = '<span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">COMPLEJA</span>';
+                tipoBadge = '<span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">COMPLEJA</span>';
             }
             
             if (item.stock === false) {
-                sinStockBadge = '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">SIN STOCK</span>';
+                sinStockBadge = '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">SIN STOCK</span>';
                 estiloGris = 'opacity: 0.5;';
             }
             
             return `
-                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="${estiloGris}">
-                    <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
+                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.1); transition: background 0.2s; ${estiloGris}">
+                    <span style="color: var(--accent); font-weight: bold;">${item.codigo}</span> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
                 </div>
             `;
         }).join('');
         lista.style.display = 'block';
         lista.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(200, 155, 143, 0.2)';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.background = 'transparent';
+            });
             item.addEventListener('click', function() {
                 const codigo = this.dataset.codigo;
                 const nombre = this.dataset.nombre;
@@ -341,22 +347,78 @@
             const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
             const data = await response.json();
             if (data.found) {
-                if (data.tipo === 'perfil' || data.tipo === 'compleja') {
-                    const yaExiste = determinaciones.find(d => (d.tipo === 'perfil' || d.tipo === 'compleja') && d.codigo === data.codigo);
+                if (data.tipo === 'compleja') {
+                    // Para complejas: agregar solo el código de la compleja
+                    const yaExiste = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === data.codigo);
                     if (yaExiste) {
-                        status.innerHTML = `<span style="color: #ff7066; font-weight: 600;">⚠️ ${data.tipo === 'compleja' ? 'Determinación compleja' : 'Perfil'} ya agregado</span>`;
+                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ya agregada</span>';
                         return;
                     }
+                    
                     determinaciones.unshift({
-                        tipo: data.tipo,
+                        tipo: 'compleja',
                         codigo: data.codigo,
                         nombre: data.nombre,
                         determinaciones: data.determinaciones,
                         stock: data.stock !== undefined ? data.stock : true
                     });
-                    const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
-                    status.innerHTML = `<span style="color: #4caf50; font-weight: 600;">✅ ${data.tipo === 'compleja' ? 'Determinación compleja' : 'Perfil'} agregado (${cantidadDets} determinaciones)</span>`;
+                    status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Determinación compleja agregada</span>';
+                } else if (data.tipo === 'perfil') {
+                    // Para perfiles: expandir subdeterminaciones (simples o complejas)
+                    const detCodesRaw = Array.isArray(data.determinaciones)
+                        ? data.determinaciones
+                        : (data.determinaciones || '').split(',').map(d => d.trim()).filter(Boolean);
+
+                    if (detCodesRaw.length === 0) {
+                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ El perfil no tiene determinaciones</span>';
+                        return;
+                    }
+
+                    const catalogo = await cargarDeterminaciones();
+                    let agregadas = 0;
+
+                    for (const code of detCodesRaw) {
+                        // Si comienza con /, es una determinación compleja
+                        if (code.startsWith('/')) {
+                            const yaExisteCompleja = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === code);
+                            if (yaExisteCompleja) continue;
+                            
+                            // Buscar la determinación compleja en el catálogo
+                            const itemCompleja = catalogo.find(d => d.codigo === code && d.tipo === 'compleja');
+                            if (itemCompleja) {
+                                determinaciones.unshift({
+                                    tipo: 'compleja',
+                                    codigo: itemCompleja.codigo,
+                                    nombre: itemCompleja.nombre,
+                                    determinaciones: itemCompleja.determinaciones,
+                                    stock: itemCompleja.stock !== undefined ? itemCompleja.stock : true
+                                });
+                                agregadas += 1;
+                            }
+                        } else {
+                            // Es una determinación simple
+                            const yaExisteDet = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === code);
+                            if (yaExisteDet) continue;
+                            
+                            const itemCat = catalogo.find(d => d.codigo === code && d.tipo === 'determinacion');
+                            const nombreDet = itemCat ? itemCat.nombre : code;
+                            determinaciones.unshift({
+                                tipo: 'determinacion',
+                                codigo: code,
+                                nombre: nombreDet,
+                                stock: itemCat && itemCat.stock !== undefined ? itemCat.stock : true
+                            });
+                            agregadas += 1;
+                        }
+                    }
+
+                    if (agregadas === 0) {
+                        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Todas las determinaciones del perfil ya estaban agregadas</span>';
+                    } else {
+                        status.innerHTML = `<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (${agregadas} determinaciones)</span>`;
+                    }
                 } else {
+                    // Determinación simple
                     const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
                     if (yaExiste) {
                         status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ya agregada</span>';
@@ -495,6 +557,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const cerrarModalMedico = document.getElementById('cerrarModalMedico');
     const formNuevoMedico = document.getElementById('formNuevoMedico');
     const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
+
+    // Verificar que todos los elementos existen
+    if (!btnNuevoMedico || !modalNuevoMedico || !cerrarModalMedico || !formNuevoMedico || !estadoNuevoMedico) {
+        console.error('Modal elements not found:', {
+            btnNuevoMedico: !!btnNuevoMedico,
+            modalNuevoMedico: !!modalNuevoMedico,
+            cerrarModalMedico: !!cerrarModalMedico,
+            formNuevoMedico: !!formNuevoMedico,
+            estadoNuevoMedico: !!estadoNuevoMedico
+        });
+        return;
+    }
 
     btnNuevoMedico.addEventListener('click', function() {
         modalNuevoMedico.style.display = 'flex';
