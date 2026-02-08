@@ -121,7 +121,7 @@ function limpiarOtrosCampos(campoActivo) {
                   <div style="color: #000000; font-size: 0.9rem;">
                     <strong>DNI:</strong> {{ turno.paciente_dni }} | <strong>Fecha:</strong> <span style="color: #4caf50; font-weight: 600;">{{ turno.fecha }}</span> | <strong>Agenda:</strong> {{ turno.agenda.name }}
                   </div>
-                  <div style="color: #000000; font-size: 0.9rem;">
+                  <div style="color: #000000; font-size: 0.95rem;">
                     <strong>Determinaciones:</strong> {{ turno.determinaciones_nombres|default:turno.determinaciones }}
                   </div>
                 </div>
@@ -204,7 +204,7 @@ document.getElementById('btnConfirmarCoordinar').addEventListener('click', funct
         'X-CSRFToken': getCookie('csrftoken'),
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ nombre_impresora: nombreImpresora })
+      body: JSON.stringify({ impresora: nombreImpresora })
     })
     .then(response => response.json())
     .then(data => {

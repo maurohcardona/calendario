@@ -20,3 +20,14 @@ stop_production.bat
 
 # Generated data
 mensajes/*.pet
+
+# Tests
+turnos/tests/
+
+# Documentation
+*.md
+<<<<<<< HEAD
+!README.md
+=======
+!README.md
+>>>>>>> refactorizacion

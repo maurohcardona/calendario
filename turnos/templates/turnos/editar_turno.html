@@ -344,22 +344,76 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
         const data = await response.json();
         
         if (data.found) {
-            if (data.tipo === 'perfil') {
-                // Agregar perfil completo
-                const yaExiste = determinaciones.find(d => d.tipo === 'perfil' && d.codigo === data.codigo);
+            if (data.tipo === 'compleja') {
+                // Para complejas: agregar solo el código de la compleja
+                const yaExiste = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === data.codigo);
                 if (yaExiste) {
-                    status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Perfil ya agregado</span>';
+                    status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Ya agregada</span>';
                     return;
                 }
                 
                 determinaciones.push({
-                    tipo: 'perfil',
+                    tipo: 'compleja',
                     codigo: data.codigo,
                     nombre: data.nombre,
-                    determinaciones: data.determinaciones
+                    determinaciones: data.determinaciones,
+                    stock: data.stock !== undefined ? data.stock : true
                 });
-                const cantidadDets = data.determinaciones ? data.determinaciones.split(',').filter(d => d.trim()).length : 0;
-                status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (' + cantidadDets + ' determinaciones)</span>';
+                status.innerHTML = '<span style="color: #4caf50; font-weight: 600;">✅ Determinación compleja agregada</span>';
+            } else if (data.tipo === 'perfil') {
+                // Para perfiles: expandir subdeterminaciones (simples o complejas)
+                const detCodesRaw = Array.isArray(data.determinaciones)
+                    ? data.determinaciones
+                    : (data.determinaciones || '').split(',').map(d => d.trim()).filter(Boolean);
+
+                if (detCodesRaw.length === 0) {
+                    status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ El perfil no tiene determinaciones</span>';
+                    return;
+                }
+
+                const catalogo = await cargarDeterminaciones();
+                let agregadas = 0;
+
+                for (const code of detCodesRaw) {
+                    // Si comienza con /, es una determinación compleja
+                    if (code.startsWith('/')) {
+                        const yaExisteCompleja = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === code);
+                        if (yaExisteCompleja) continue;
+                        
+                        // Buscar la determinación compleja en el catálogo
+                        const itemCompleja = catalogo.find(d => d.codigo === code && d.tipo === 'compleja');
+                        if (itemCompleja) {
+                            determinaciones.push({
+                                tipo: 'compleja',
+                                codigo: itemCompleja.codigo,
+                                nombre: itemCompleja.nombre,
+                                determinaciones: itemCompleja.determinaciones,
+                                stock: itemCompleja.stock !== undefined ? itemCompleja.stock : true
+                            });
+                            agregadas += 1;
+                        }
+                    } else {
+                        // Es una determinación simple
+                        const yaExisteDet = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === code);
+                        if (yaExisteDet) continue;
+                        
+                        const itemCat = catalogo.find(d => d.codigo === code && d.tipo === 'determinacion');
+                        const nombreDet = itemCat ? itemCat.nombre : code;
+                        determinaciones.push({
+                            tipo: 'determinacion',
+                            codigo: code,
+                            nombre: nombreDet,
+                            stock: itemCat && itemCat.stock !== undefined ? itemCat.stock : true
+                        });
+                        agregadas += 1;
+                    }
+                }
+
+                if (agregadas === 0) {
+                    status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">⚠️ Todas las determinaciones del perfil ya estaban agregadas</span>';
+                } else {
+                    status.innerHTML = `<span style="color: #4caf50; font-weight: 600;">✅ Perfil agregado (${agregadas} determinaciones)</span>`;
+                }
             } else {
                 // Agregar determinación individual
                 const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
@@ -385,7 +439,8 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
             status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Código no encontrado</span>';
         }
     } catch (error) {
-        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Error al buscar</span>';
+        console.error('Error al buscar determinación:', error);
+        status.innerHTML = '<span style="color: #ff7066; font-weight: 600;">❌ Error al buscar: ' + error.message + '</span>';
     }
 });
 
