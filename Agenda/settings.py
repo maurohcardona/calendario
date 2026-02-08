@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'pacientes',
     'determinaciones',
     'medicos',
+    # "debug_toolbar",  # Desactivado
    
     # Apps de terceros
     'auditlog',
@@ -47,6 +48,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'auditlog.middleware.AuditlogMiddleware',  # Registra el usuario en cada cambio
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",  # Desactivado
 ]
 
 ROOT_URLCONF = 'Agenda.urls'
@@ -63,12 +65,28 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # Context processors personalizados
+                'turnos.context_processors.agendas_disponibles',
+                'turnos.context_processors.fecha_actual',
+                'turnos.context_processors.configuracion_sistema',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'Agenda.wsgi.application'
+
+# INTERNAL_IPS = [
+#     "127.0.0.1",
+# ]
+
+# Configuración de Django Debug Toolbar (Desactivado)
+# DEBUG_TOOLBAR_CONFIG = {
+#     'DISABLE_PANELS': {
+#         'debug_toolbar.panels.profiling.ProfilingPanel',
+#     },
+#     'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
+# }
 
 # Base de datos
 DATABASES = {

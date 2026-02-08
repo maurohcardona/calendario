@@ -26,4 +26,8 @@ turnos/tests/
 
 # Documentation
 *.md
+<<<<<<< HEAD
 !README.md
+=======
+!README.md
+>>>>>>> refactorizacion
