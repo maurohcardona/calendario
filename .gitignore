@@ -12,6 +12,8 @@ media/
 .env
 .venv/
 venv/
+static/vendor/
+
 
 # Production scripts (locales)
 deploy.bat
@@ -26,8 +28,4 @@ turnos/tests/
 
 # Documentation
 *.md
-<<<<<<< HEAD
 !README.md
-=======
-!README.md
->>>>>>> refactorizacion
