@@ -255,6 +255,69 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
     }
+    
+    .dni-search-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px solid rgba(0, 212, 255, 0.2);
+    }
+    
+    .dni-search-container label {
+        font-weight: 600;
+        color: var(--text-light);
+        font-size: 1rem;
+    }
+    
+    .dni-search-container input[type="text"] {
+        padding: 0.75rem;
+        border: 2px solid var(--control-primary);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 500;
+        background: #ffffff;
+        width: 200px;
+        transition: all 0.3s ease;
+    }
+    
+    .dni-search-container input[type="text"]:hover {
+        border-color: #00a8cc;
+    }
+    
+    .dni-search-container input[type="text"]:focus {
+        outline: none;
+        border-color: #00a8cc;
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+    }
+    
+    .btn-limpiar {
+        padding: 0.75rem 1.5rem;
+        background: var(--text-medium);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-limpiar:hover {
+        background: var(--text-light);
+        transform: translateY(-2px);
+    }
+    
+    .filtro-activo {
+        background: rgba(255, 193, 7, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        color: #f57c00;
+        margin-top: 0.5rem;
+        display: inline-block;
+    }
 </style>
 
 <div class="control-header">
@@ -266,6 +329,15 @@
         <input type="date" id="fecha" name="fecha" value="{{ fecha|date:'Y-m-d' }}" required>
         <button type="submit" class="btn-buscar">🔍 Buscar</button>
     </form>
+    
+    {% if ordenes %}
+    <div class="dni-search-container">
+        <label for="dni-search">🔍 Buscar por DNI:</label>
+        <input type="text" id="dni-search" placeholder="Ingrese DNI..." onkeyup="filtrarPorDNI()">
+        <button type="button" class="btn-limpiar" onclick="limpiarFiltroDNI()">✖️ Limpiar</button>
+        <span id="filtro-info" class="filtro-activo" style="display: none;"></span>
+    </div>
+    {% endif %}
 </div>
 
 {% if ordenes %}
@@ -363,6 +435,8 @@ const resultados = {
     faltantes: []
 };
 let determinacionesCache = null;
+let ordenesFiltradas = [];
+let dniActualFiltro = '';
 
 // Cargar todas las determinaciones
 async function cargarDeterminaciones() {
@@ -503,23 +577,34 @@ function siguienteOrden() {
     // Ocultar orden actual
     ordenes[ordenActual].style.display = 'none';
     
-    // Incrementar contador
-    ordenActual++;
-    
-    if (ordenActual < totalOrdenes) {
-        // Mostrar siguiente orden
-        ordenes[ordenActual].style.display = 'block';
+    // Si hay filtro activo, avanzar solo entre las órdenes filtradas
+    if (ordenesFiltradas.length > 0) {
+        const posicionActual = ordenesFiltradas.indexOf(ordenActual);
+        const siguientePosicion = posicionActual + 1;
         
-        // Actualizar contador
-        document.querySelectorAll('.orden-actual').forEach(el => {
-            el.textContent = ordenActual + 1;
-        });
-        
-        // Scroll al inicio
-        window.scrollTo(0, 0);
+        if (siguientePosicion < ordenesFiltradas.length) {
+            // Mostrar siguiente orden filtrada
+            ordenActual = ordenesFiltradas[siguientePosicion];
+            ordenes[ordenActual].style.display = 'block';
+            actualizarContador();
+            window.scrollTo(0, 0);
+        } else {
+            // Mostrar resumen final
+            mostrarResumen();
+        }
     } else {
-        // Mostrar resumen final
-        mostrarResumen();
+        // Sin filtro, avanzar normalmente
+        ordenActual++;
+        
+        if (ordenActual < totalOrdenes) {
+            // Mostrar siguiente orden
+            ordenes[ordenActual].style.display = 'block';
+            actualizarContador();
+            window.scrollTo(0, 0);
+        } else {
+            // Mostrar resumen final
+            mostrarResumen();
+        }
     }
 }
 
@@ -577,6 +662,71 @@ function mostrarResumen() {
     
     // Scroll al inicio
     window.scrollTo(0, 0);
+}
+
+// Filtrar órdenes por DNI
+function filtrarPorDNI() {
+    const searchInput = document.getElementById('dni-search');
+    const filtroInfo = document.getElementById('filtro-info');
+    const dni = searchInput.value.trim();
+    const ordenes = document.querySelectorAll('.orden-card');
+    
+    if (dni === '') {
+        // Mostrar todas las órdenes
+        ordenesFiltradas = [];
+        dniActualFiltro = '';
+        ordenes.forEach((orden, index) => {
+            orden.style.display = index === ordenActual ? 'block' : 'none';
+        });
+        filtroInfo.style.display = 'none';
+        actualizarContador();
+        return;
+    }
+    
+    // Filtrar órdenes que coincidan con el DNI
+    ordenesFiltradas = [];
+    ordenes.forEach((orden, index) => {
+        const pacienteDni = orden.dataset.pacienteDni;
+        if (pacienteDni && pacienteDni.includes(dni)) {
+            ordenesFiltradas.push(index);
+        }
+    });
+    
+    if (ordenesFiltradas.length > 0) {
+        dniActualFiltro = dni;
+        // Ocultar todas y mostrar solo la primera filtrada
+        ordenes.forEach(orden => orden.style.display = 'none');
+        ordenActual = ordenesFiltradas[0];
+        ordenes[ordenActual].style.display = 'block';
+        
+        filtroInfo.textContent = `📌 Mostrando ${ordenesFiltradas.length} orden(es) con DNI que contiene "${dni}"`;
+        filtroInfo.style.display = 'inline-block';
+        actualizarContador();
+    } else {
+        // No hay coincidencias
+        ordenes.forEach(orden => orden.style.display = 'none');
+        filtroInfo.textContent = `⚠️ No se encontraron órdenes con DNI que contenga "${dni}"`;
+        filtroInfo.style.display = 'inline-block';
+    }
+}
+
+function limpiarFiltroDNI() {
+    document.getElementById('dni-search').value = '';
+    filtrarPorDNI();
+}
+
+function actualizarContador() {
+    const ordenes = document.querySelectorAll('.orden-card');
+    const totalMostrado = ordenesFiltradas.length > 0 ? ordenesFiltradas.length : totalOrdenes;
+    const posicionActual = ordenesFiltradas.length > 0 ? ordenesFiltradas.indexOf(ordenActual) + 1 : ordenActual + 1;
+    
+    document.querySelectorAll('.orden-actual').forEach(el => {
+        el.textContent = posicionActual;
+    });
+    
+    document.querySelectorAll('.orden-contador').forEach(el => {
+        el.innerHTML = `Orden <span class="orden-actual">${posicionActual}</span> de ${totalMostrado}`;
+    });
 }
 
 // Configurar autocompletado para cada orden
