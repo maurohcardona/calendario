@@ -174,6 +174,33 @@ class PDFService:
         p.line(PDFService.MARGEN, y, PDFService.ANCHO_PAPEL - PDFService.MARGEN, y)
         y -= 0.5 * cm
         
+        # Indicaciones
+        p.setFont("Helvetica-Bold", 9)
+        PDFService._escribir_texto_centrado(p, y, "INDICACIONES", "Helvetica-Bold", 9, PDFService.ANCHO_PAPEL)
+        y -= 0.45 * cm
+        
+        p.setFont("Helvetica", 9)
+        indicaciones = [
+            "Concurrir al laboratorio de 7:00 a 9:00 hs",
+            "con su DNI, receta médica ",
+            "y este ticket de turno con 8 o 12 hs",
+            "de ayuno según corresponda.",
+            "",
+            "No tomar medicación antes de la extracción.",
+            "",
+            "Traer la primera orina de la mañana si",
+            "corresponde."
+        ]
+        
+        for linea in indicaciones:
+            PDFService._escribir_texto_centrado(p, y, linea, "Helvetica", 10, PDFService.ANCHO_PAPEL)
+            y -= 0.35 * cm
+        
+        y -= 0.3 * cm
+        
+        p.line(PDFService.MARGEN, y, PDFService.ANCHO_PAPEL - PDFService.MARGEN, y)
+        y -= 0.5 * cm
+        
         # Pie de página
         p.setFont("Helvetica", 10)
         PDFService._escribir_texto_centrado(p, y, f"Ticket asignado por: {usuario_asignador}", "Helvetica", 10, PDFService.ANCHO_PAPEL)
