@@ -11,6 +11,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # App URLs (namespaced)
     path("turnos/", include(("turnos.urls", "turnos"), namespace="turnos")),
+    path("informes/", include(("informes.urls", "informes"), namespace="informes")),
     path("pacientes/", include(("pacientes.urls", "pacientes"), namespace="pacientes")),
     path("determinaciones/", include(("determinaciones.urls", "determinaciones"), namespace="determinaciones")),
     path("medicos/", include(("medicos.urls", "medicos"), namespace="medicos")),

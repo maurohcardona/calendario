@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'pacientes',
     'determinaciones',
     'medicos',
+    'informes',
     # "debug_toolbar",  # Desactivado
    
     # Apps de terceros
@@ -141,3 +142,12 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Cierra sesión al cerrar el navegador
 
 # Configuración de Auditlog
 AUDITLOG_LOGENTRY_MODEL = 'auditlog.LogEntry'
+
+# Configuración de Email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('SENDER_EMAIL')
+EMAIL_HOST_PASSWORD = os.getenv('SENDER_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('SENDER_EMAIL')
