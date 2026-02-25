@@ -19,10 +19,12 @@ class InformesService:
         self.base_dir = Path(settings.BASE_DIR) / 'informes'
         self.pendientes_dir = self.base_dir / 'pendientes'
         self.enviados_dir = self.base_dir / 'enviados'
+        self.sin_email_dir = self.base_dir / 'sin_email'
         
         # Crear directorios si no existen
         self.pendientes_dir.mkdir(parents=True, exist_ok=True)
         self.enviados_dir.mkdir(parents=True, exist_ok=True)
+        self.sin_email_dir.mkdir(parents=True, exist_ok=True)
     
     def procesar_archivos_pendientes(self, horas_espera=24):
         """
@@ -39,6 +41,7 @@ class InformesService:
             'enviados': 0,
             'errores': 0,
             'omitidos': 0,
+            'sin_email': 0,
             'detalles': []
         }
         
@@ -55,6 +58,8 @@ class InformesService:
                 resultado = self.procesar_archivo(archivo_path)
                 if resultado['exito']:
                     stats['enviados'] += 1
+                elif resultado.get('sin_email'):
+                    stats['sin_email'] += 1
                 else:
                     stats['errores'] += 1
                 stats['detalles'].append(resultado)
@@ -95,6 +100,8 @@ class InformesService:
             # Validar que el paciente tenga email
             if not paciente.email:
                 resultado['error'] = f"Paciente {datos['iden']} no tiene email registrado"
+                resultado['sin_email'] = True
+                self.mover_archivo_sin_email(archivo_path)
                 return resultado
             
             # Buscar o crear el registro del informe
@@ -273,6 +280,22 @@ Saludos cordiales.
             informe.save()
             return False
     
+    def mover_archivo_sin_email(self, archivo_path):
+        """Mueve el archivo de pendientes a sin_email"""
+        try:
+            destino = self.sin_email_dir / archivo_path.name
+            
+            # Si ya existe, agregar timestamp
+            if destino.exists():
+                timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+                nombre_base = archivo_path.stem
+                destino = self.sin_email_dir / f"{nombre_base}_{timestamp}.pdf"
+            
+            shutil.move(str(archivo_path), str(destino))
+            
+        except Exception as e:
+            print(f"Error al mover archivo sin email {archivo_path.name}: {e}")
+
     def mover_archivo_enviado(self, archivo_path):
         """Mueve el archivo de pendientes a enviados"""
         try:
