@@ -100,7 +100,7 @@ class PDFService:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(PDFService.MARGEN, y, "Paciente:")
         p.setFont("Helvetica", 9)
-        nombre_completo = f"{apellido.strip().capitalize()}, {nombre.strip().capitalize()}"
+        nombre_completo = f"{apellido.strip().upper()}, {nombre.strip().upper()}"
         p.drawString(PDFService.MARGEN + 2*cm, y, nombre_completo)
         y -= 0.45 * cm
         
@@ -129,7 +129,7 @@ class PDFService:
             p.setFont("Helvetica-Bold", 9)
             p.drawString(PDFService.MARGEN, y, "Médico:")
             p.setFont("Helvetica", 9)
-            medico_str = medico_nombre.strip().capitalize()
+            medico_str = medico_nombre.strip().upper()
             if len(medico_str) > 30:
                 p.drawString(PDFService.MARGEN + 2*cm, y, medico_str[:30])
                 y -= 0.35 * cm
@@ -243,7 +243,7 @@ class PDFService:
         p.setFont("Helvetica-Bold", 9)
         p.drawString(PDFService.MARGEN, y, "Paciente:")
         p.setFont("Helvetica", 9)
-        nombre_completo = f"{apellido.strip().capitalize()}, {nombre.strip().capitalize()}"
+        nombre_completo = f"{apellido.strip().upper()}, {nombre.strip().upper()}"
         p.drawString(PDFService.MARGEN + 2*cm, y, nombre_completo)
         y -= 0.45 * cm
         
@@ -272,7 +272,7 @@ class PDFService:
             p.setFont("Helvetica-Bold", 9)
             p.drawString(PDFService.MARGEN, y, "Médico:")
             p.setFont("Helvetica", 9)
-            medico_str = medico_nombre.strip().capitalize()
+            medico_str = medico_nombre.strip().upper()
             if len(medico_str) > 30:
                 p.drawString(PDFService.MARGEN + 2*cm, y, medico_str[:30])
                 y -= 0.35 * cm
