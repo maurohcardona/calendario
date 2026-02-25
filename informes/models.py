@@ -17,7 +17,8 @@ class Informes(models.Model):
     id_turno = models.ForeignKey(Turno, on_delete=models.PROTECT, verbose_name='Turno', null=True, blank=True)
     paciente = models.ForeignKey(Paciente, on_delete=models.PROTECT, verbose_name='Paciente')
     
-    # Datos del archivo (formato: DNI-ORDEN-PROTOCOLO.pdf)
+    # Datos del archivo (formato: [Origen]_[DNI]_[N Peticion]_[Turno].pdf)
+    # numero_orden → N Peticion, numero_protocolo → Turno
     numero_orden = models.IntegerField(verbose_name='Número de Orden')
     numero_protocolo = models.CharField(max_length=50, verbose_name='Número de Protocolo')
     nombre_archivo = models.CharField(max_length=255, verbose_name='Nombre del Archivo', blank=True)

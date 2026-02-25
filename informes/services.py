@@ -20,11 +20,13 @@ class InformesService:
         self.pendientes_dir = self.base_dir / 'pendientes'
         self.enviados_dir = self.base_dir / 'enviados'
         self.sin_email_dir = self.base_dir / 'sin_email'
+        self.otros_origenes_dir = self.base_dir / 'otros_origenes'
         
         # Crear directorios si no existen
         self.pendientes_dir.mkdir(parents=True, exist_ok=True)
         self.enviados_dir.mkdir(parents=True, exist_ok=True)
         self.sin_email_dir.mkdir(parents=True, exist_ok=True)
+        self.otros_origenes_dir.mkdir(parents=True, exist_ok=True)
     
     def procesar_archivos_pendientes(self, horas_espera=24):
         """
@@ -42,6 +44,7 @@ class InformesService:
             'errores': 0,
             'omitidos': 0,
             'sin_email': 0,
+            'otros_origenes': 0,
             'detalles': []
         }
         
@@ -60,6 +63,8 @@ class InformesService:
                     stats['enviados'] += 1
                 elif resultado.get('sin_email'):
                     stats['sin_email'] += 1
+                elif resultado.get('otro_origen'):
+                    stats['otros_origenes'] += 1
                 else:
                     stats['errores'] += 1
                 stats['detalles'].append(resultado)
@@ -85,10 +90,17 @@ class InformesService:
         }
         
         try:
-            # Parsear el nombre del archivo: IDEN-ORDEN-PROTOCOLO.pdf
+            # Parsear el nombre del archivo: [Origen]_[DNI]_[N Peticion]_[Turno].pdf
             datos = self.parsear_nombre_archivo(archivo_path.name)
             if not datos:
                 resultado['error'] = 'Formato de nombre de archivo inválido'
+                return resultado
+            
+            # Solo los archivos de origen Ambulatorio se envían por mail
+            if datos['origen'] != 'Ambulatorio':
+                resultado['error'] = f"Origen '{datos['origen']}' no corresponde a envío por email"
+                resultado['otro_origen'] = True
+                self.mover_archivo_otro_origen(archivo_path)
                 return resultado
             
             # Buscar o crear el paciente
@@ -151,23 +163,37 @@ class InformesService:
     
     def parsear_nombre_archivo(self, nombre_archivo):
         """
-        Parsea el nombre del archivo en formato: IDEN-ORDEN-PROTOCOLO.pdf
+        Parsea el nombre del archivo en formato: [Origen]_[DNI]_[N Peticion]-[Turno].pdf
+        Orígenes válidos: Internacion, Guardia, Ambulatorio
         Retorna un dict con los datos o None si el formato es inválido
         """
         try:
             # Remover la extensión .pdf
-            nombre_sin_ext = nombre_archivo.replace('.pdf', '')
-            
-            # Separar por guiones
-            partes = nombre_sin_ext.split('-')
-            
+            nombre_sin_ext = Path(nombre_archivo).stem
+
+            # Separar por guiones bajos → 3 partes: Origen, DNI, NPeticion-Turno
+            partes = nombre_sin_ext.split('_')
+
             if len(partes) != 3:
                 return None
-            
+
+            origen = partes[0].strip()
+            origenes_validos = ('Internacion', 'Guardia', 'Ambulatorio')
+            if origen not in origenes_validos:
+                return None
+
+            iden = partes[1].strip()
+
+            # Tercera parte: NPeticion-Turno
+            sub = partes[2].split('-')
+            if len(sub) != 2:
+                return None
+
             return {
-                'iden': partes[0].strip(),
-                'orden': int(partes[1].strip()),
-                'protocolo': partes[2].strip()
+                'origen': origen,
+                'iden': iden,
+                'orden': int(sub[0].strip()),
+                'protocolo': sub[1].strip(),
             }
         except (ValueError, IndexError):
             return None
@@ -235,15 +261,15 @@ class InformesService:
         """
         try:
             # Preparar el email
-            asunto = f'Informe Médico - Orden {informe.numero_orden} - Protocolo {informe.numero_protocolo}'
+            asunto = f'Informe Médico - Petición {informe.numero_orden} - Turno {informe.numero_protocolo}'
             
             cuerpo = f"""
 Estimado/a {informe.paciente.nombre} {informe.paciente.apellido},
 
 Adjuntamos su informe médico correspondiente a:
 
-- Orden: {informe.numero_orden}
-- Protocolo: {informe.numero_protocolo}
+- N° de Petición: {informe.numero_orden}
+- N° de Turno: {informe.numero_protocolo}
 - Fecha: {timezone.now().strftime('%d/%m/%Y')}
 
 Por favor, conserve este documento para su historia clínica.
@@ -280,6 +306,21 @@ Saludos cordiales.
             informe.save()
             return False
     
+    def mover_archivo_otro_origen(self, archivo_path):
+        """Mueve archivos de Internacion o Guardia a otros_origenes"""
+        try:
+            destino = self.otros_origenes_dir / archivo_path.name
+            
+            if destino.exists():
+                timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+                nombre_base = archivo_path.stem
+                destino = self.otros_origenes_dir / f"{nombre_base}_{timestamp}.pdf"
+            
+            shutil.move(str(archivo_path), str(destino))
+            
+        except Exception as e:
+            print(f"Error al mover archivo de otro origen {archivo_path.name}: {e}")
+
     def mover_archivo_sin_email(self, archivo_path):
         """Mueve el archivo de pendientes a sin_email"""
         try:

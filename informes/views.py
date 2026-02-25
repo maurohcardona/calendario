@@ -26,7 +26,7 @@ def _obtener_pdfs(carpeta: Path):
 
 
 def _obtener_pdf_por_estado(estado: str, nombre_archivo: str) -> Path:
-	if estado not in {"enviados", "pendientes"}:
+	if estado not in {"enviados", "pendientes", "sin_email", "otros_origenes"}:
 		raise Http404("Estado inválido")
 
 	base_informes = Path(settings.BASE_DIR) / "informes"
@@ -48,12 +48,16 @@ def _query_desde_request(request):
 	q = request.POST.get("q", "").strip()
 	page_enviados = request.POST.get("page_enviados", "1")
 	page_pendientes = request.POST.get("page_pendientes", "1")
+	page_sin_email = request.POST.get("page_sin_email", "1")
+	page_otros = request.POST.get("page_otros", "1")
 
 	query = urlencode(
 		{
 			"q": q,
 			"page_enviados": page_enviados,
 			"page_pendientes": page_pendientes,
+			"page_sin_email": page_sin_email,
+			"page_otros": page_otros,
 		}
 	)
 	return f"?{query}"
@@ -68,33 +72,51 @@ def listado_informes(request):
 	base_informes = Path(settings.BASE_DIR) / "informes"
 	carpeta_enviados = base_informes / "enviados"
 	carpeta_pendientes = base_informes / "pendientes"
+	carpeta_sin_email = base_informes / "sin_email"
+	carpeta_otros = base_informes / "otros_origenes"
 	termino_busqueda = request.GET.get("q", "").strip()
 	page_enviados = request.GET.get("page_enviados", "1")
 	page_pendientes = request.GET.get("page_pendientes", "1")
+	page_sin_email = request.GET.get("page_sin_email", "1")
+	page_otros = request.GET.get("page_otros", "1")
 	pdfs_por_pagina = 20
 
 	pdfs_enviados = _obtener_pdfs(carpeta_enviados)
 	pdfs_pendientes = _obtener_pdfs(carpeta_pendientes)
+	pdfs_sin_email = _obtener_pdfs(carpeta_sin_email)
+	pdfs_otros = _obtener_pdfs(carpeta_otros)
 
 	if termino_busqueda:
 		termino_normalizado = termino_busqueda.lower()
 		pdfs_enviados = [archivo for archivo in pdfs_enviados if termino_normalizado in archivo.lower()]
 		pdfs_pendientes = [archivo for archivo in pdfs_pendientes if termino_normalizado in archivo.lower()]
+		pdfs_sin_email = [archivo for archivo in pdfs_sin_email if termino_normalizado in archivo.lower()]
+		pdfs_otros = [archivo for archivo in pdfs_otros if termino_normalizado in archivo.lower()]
 
 	total_enviados = len(pdfs_enviados)
 	total_pendientes = len(pdfs_pendientes)
+	total_sin_email = len(pdfs_sin_email)
+	total_otros = len(pdfs_otros)
 
 	pdfs_enviados_page = Paginator(pdfs_enviados, pdfs_por_pagina).get_page(page_enviados)
 	pdfs_pendientes_page = Paginator(pdfs_pendientes, pdfs_por_pagina).get_page(page_pendientes)
+	pdfs_sin_email_page = Paginator(pdfs_sin_email, pdfs_por_pagina).get_page(page_sin_email)
+	pdfs_otros_page = Paginator(pdfs_otros, pdfs_por_pagina).get_page(page_otros)
 
 	context = {
 		"pdfs_enviados": pdfs_enviados_page,
 		"pdfs_pendientes": pdfs_pendientes_page,
+		"pdfs_sin_email": pdfs_sin_email_page,
+		"pdfs_otros": pdfs_otros_page,
 		"total_enviados": total_enviados,
 		"total_pendientes": total_pendientes,
+		"total_sin_email": total_sin_email,
+		"total_otros": total_otros,
 		"termino_busqueda": termino_busqueda,
 		"page_enviados_actual": pdfs_enviados_page.number,
 		"page_pendientes_actual": pdfs_pendientes_page.number,
+		"page_sin_email_actual": pdfs_sin_email_page.number,
+		"page_otros_actual": pdfs_otros_page.number,
 	}
 	return render(request, "informes/listado_pdfs.html", context)
 
@@ -154,6 +176,8 @@ def enviar_informe(request, estado, nombre_archivo):
 		informe.fecha_envio = timezone.now()
 		informe.mensaje_error = ""
 		informe.save()
+		if estado in ("sin_email", "otros_origenes"):
+			service.mover_archivo_enviado(archivo)
 		messages.success(request, f"Informe reenviado: {nombre_archivo}")
 	else:
 		informe.estado = "ERROR"
