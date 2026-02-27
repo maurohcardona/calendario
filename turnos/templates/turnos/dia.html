@@ -122,7 +122,7 @@
                 </div>
                 <div>
                     <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Email</label>
-                    <input type="email" id="id_email" name="email" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                    <input type="email" id="id_email" name="email" oninput="this.value=this.value.toLowerCase()" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; text-transform: lowercase;" />
                 </div>
                 <div style="position: relative; display: flex; align-items: flex-end; gap: 0.5rem;">
                     <div style="flex: 1;">

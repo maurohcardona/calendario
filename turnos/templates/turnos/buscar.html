@@ -15,13 +15,21 @@
       </div>
       <div>
         <label style="display: block; margin-bottom: 0.5rem; color: #000000; font-weight: 600;">Buscar por ID de Turno</label>
-        <input type="text" id="inputTurnoId" name="turno_id" placeholder="Ingrese ID del turno" value="{{ turno_id }}" onfocus="limpiarOtrosCampos('turno_id')" style="width: 100%; background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(0, 212, 255, 0.3); color: #000000; padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;">
+        <input type="number" id="inputTurnoId" name="turno_id" placeholder="Ingrese ID del turno" value="{{ turno_id }}" min="1" step="1" onfocus="limpiarOtrosCampos('turno_id')" style="width: 100%; background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(0, 212, 255, 0.3); color: #000000; padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;">
       </div>
     </div>
     <button type="submit" style="padding: 0.75rem 2rem; background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; width: 100%;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none;'">🔍 Buscar</button>
   </form>
 
 <script>
+// Sanitizar turno_id antes de enviar el formulario
+document.querySelector('form').addEventListener('submit', function() {
+    const campo = document.getElementById('inputTurnoId');
+    if (campo && campo.value) {
+        campo.value = campo.value.replace(/[^0-9]/g, '');
+    }
+});
+
 function limpiarOtrosCampos(campoActivo) {
     if (campoActivo !== 'q') {
         document.getElementById('inputDni').value = '';

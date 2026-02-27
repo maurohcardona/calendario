@@ -78,7 +78,7 @@ class PDFService:
         nombre = turno.nombre or ""
         dni = turno.paciente_dni or ""
         telefono = paciente_obj.telefono if paciente_obj else ""
-        email = paciente_obj.email if paciente_obj else ""
+        email = paciente_obj.email.lower() if paciente_obj and paciente_obj.email else ""
         medico_nombre = turno.medico.nombre if turno.medico else ""
         
         # Crear PDF
@@ -222,7 +222,7 @@ class PDFService:
         nombre = turno.nombre or ""
         dni = turno.paciente_dni or ""
         telefono = paciente_obj.telefono if paciente_obj else ""
-        email = paciente_obj.email if paciente_obj else ""
+        email = paciente_obj.email.lower() if paciente_obj and paciente_obj.email else ""
         medico_nombre = turno.medico.nombre if turno.medico else ""
         
         # Crear PDF
