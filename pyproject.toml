@@ -13,4 +13,5 @@ dependencies = [
     "whitenoise>=6.0",
     "python-dotenv>=1.2.1",
     "django-debug-toolbar>=6.2.0",
+    "twilio>=9.10.2",
 ]

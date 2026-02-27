@@ -17,7 +17,7 @@ class InformesService:
     
     def __init__(self):
         self.base_dir = Path(settings.BASE_DIR) / 'informes'
-        self.pendientes_dir = self.base_dir / 'pendientes'
+        self.pendientes_dir = Path(settings.INFORMES_PENDIENTES_DIR)
         self.enviados_dir = self.base_dir / 'enviados'
         self.sin_email_dir = self.base_dir / 'sin_email'
         self.otros_origenes_dir = self.base_dir / 'otros_origenes'
@@ -149,6 +149,14 @@ class InformesService:
                     
                     resultado['exito'] = True
                     resultado['mensaje'] = f'Informe enviado a {paciente.email}'
+
+                    # Envío por WhatsApp desactivado temporalmente
+                    # if paciente.telefono:
+                    #     exito_wa = self.enviar_whatsapp(informe, paciente)
+                    #     if exito_wa:
+                    #         resultado['whatsapp'] = f'WhatsApp enviado a {paciente.telefono}'
+                    #     else:
+                    #         resultado['whatsapp_error'] = informe.whatsapp_error
                 else:
                     # Marcar como error
                     informe.estado = 'ERROR'
@@ -274,7 +282,10 @@ Adjuntamos su informe médico correspondiente a:
 
 Por favor, conserve este documento para su historia clínica.
 
-Ante cualquier consulta, no dude en comunicarse con nosotros.
+Por favor, no responda a este correo electrónico.
+Para cualquier consulta puede contactarnos:
+  📧 admlabobalestini@gmail.com
+  💬 WhatsApp +54 9 11 2705-3761 (solo mensajes)
 
 Saludos cordiales.
             """.strip()
@@ -306,6 +317,67 @@ Saludos cordiales.
             informe.save()
             return False
     
+    def _formatear_telefono_whatsapp(self, telefono):
+        """
+        Convierte el teléfono local almacenado en formato Twilio WhatsApp.
+        Ej: '1145678901'  -> 'whatsapp:+5491145678901'
+        Si el número ya incluye '+' se usa directamente con el prefijo 'whatsapp:'.
+        El código de país se lee de WHATSAPP_CODIGO_PAIS (default '+549' Argentina móvil).
+        """
+        numero = str(telefono).strip()
+        if numero.startswith('+'):
+            return f'whatsapp:{numero}'
+        codigo_pais = getattr(settings, 'WHATSAPP_CODIGO_PAIS', '+549')
+        return f'whatsapp:{codigo_pais}{numero}'
+
+    def enviar_whatsapp(self, informe, paciente):
+        """
+        Envía una notificación por WhatsApp al paciente informando que su
+        informe médico fue procesado y enviado a su correo electrónico.
+        Requiere que TWILIO_ACCOUNT_SID y TWILIO_AUTH_TOKEN estén configurados en .env
+        Retorna True si el envío fue exitoso, False en caso contrario.
+        """
+        try:
+            account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
+            auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+
+            if not account_sid or not auth_token:
+                informe.whatsapp_error = 'Twilio no configurado (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN ausentes)'
+                informe.save()
+                return False
+
+            from twilio.rest import Client
+
+            destino = self._formatear_telefono_whatsapp(paciente.telefono)
+            remitente = getattr(settings, 'TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')
+
+            mensaje = (
+                f"Estimado/a {paciente.nombre} {paciente.apellido},\n\n"
+                f"Su informe médico ya fue procesado:\n"
+                f"- N\u00ba Petición: {informe.numero_orden}\n"
+                f"- N\u00ba Turno: {informe.numero_protocolo}\n\n"
+                f"El mismo fue enviado a su correo electrónico registrado.\n"
+                f"Ante cualquier consulta, no dude en contactarnos."
+            )
+
+            client = Client(account_sid, auth_token)
+            message = client.messages.create(
+                body=mensaje,
+                from_=remitente,
+                to=destino,
+            )
+
+            informe.whatsapp_enviado = True
+            informe.whatsapp_telefono = destino
+            informe.whatsapp_error = ''
+            informe.save()
+            return True
+
+        except Exception as e:
+            informe.whatsapp_error = f'Error al enviar WhatsApp: {str(e)}'
+            informe.save()
+            return False
+
     def mover_archivo_otro_origen(self, archivo_path):
         """Mueve archivos de Internacion o Guardia a otros_origenes"""
         try:

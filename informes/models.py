@@ -36,6 +36,11 @@ class Informes(models.Model):
     intentos_envio = models.IntegerField(default=0, verbose_name='Intentos de Envío')
     mensaje_error = models.TextField(blank=True, verbose_name='Mensaje de Error')
 
+    # Control de envío WhatsApp
+    whatsapp_enviado = models.BooleanField(default=False, verbose_name='WhatsApp Enviado')
+    whatsapp_telefono = models.CharField(max_length=30, blank=True, default='', verbose_name='Teléfono WhatsApp Destino')
+    whatsapp_error = models.TextField(blank=True, verbose_name='Error WhatsApp')
+
     class Meta:
         verbose_name = 'Informe'
         verbose_name_plural = 'Informes'
