@@ -71,7 +71,7 @@ def _redirect_listado(request):
 def listado_informes(request):
 	base_informes = Path(settings.BASE_DIR) / "informes"
 	carpeta_enviados = base_informes / "enviados"
-	carpeta_pendientes = base_informes / "pendientes"
+	carpeta_pendientes = Path(settings.INFORMES_PENDIENTES_DIR)
 	carpeta_sin_email = base_informes / "sin_email"
 	carpeta_otros = base_informes / "otros_origenes"
 	termino_busqueda = request.GET.get("q", "").strip()

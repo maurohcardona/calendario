@@ -97,11 +97,30 @@ class InformesService:
                 return resultado
             
             # Solo los archivos de origen Ambulatorio se envían por mail
+            if datos['origen'] == 'Internacion':
+                resultado['error'] = "Informe de Internación, movido a carpeta Internación (no se envía por mail)"
+                resultado['otro_origen'] = True
+                self.mover_archivo_internacion(archivo_path)
+                return resultado
+            if datos['origen'] == 'Guardia':
+                resultado['error'] = "Informe de Guardia, movido a carpeta Guardia (no se envía por mail)"
+                resultado['otro_origen'] = True
+                self.mover_archivo_guardia(archivo_path)
+                return resultado
             if datos['origen'] != 'Ambulatorio':
                 resultado['error'] = f"Origen '{datos['origen']}' no corresponde a envío por email"
                 resultado['otro_origen'] = True
                 self.mover_archivo_otro_origen(archivo_path)
                 return resultado
+                def mover_archivo_internacion(self, archivo_path):
+                    destino = self.base_dir / 'Internación'
+                    destino.mkdir(parents=True, exist_ok=True)
+                    archivo_path.rename(destino / archivo_path.name)
+
+                def mover_archivo_guardia(self, archivo_path):
+                    destino = self.base_dir / 'Guardia'
+                    destino.mkdir(parents=True, exist_ok=True)
+                    archivo_path.rename(destino / archivo_path.name)
             
             # Buscar o crear el paciente
             paciente = self.buscar_paciente(datos['iden'])
@@ -171,37 +190,52 @@ class InformesService:
     
     def parsear_nombre_archivo(self, nombre_archivo):
         """
-        Parsea el nombre del archivo en formato: [Origen]_[DNI]_[N Peticion]-[Turno].pdf
+        Parsea el nombre del archivo en formato:
+        [Origen]_[DNI]_[NPeticion]-[Turno].pdf
+        o
+        [Origen]_[DNI]_[NPeticion]_[Turno].pdf
+        El campo Turno puede ser opcional.
         Orígenes válidos: Internacion, Guardia, Ambulatorio
         Retorna un dict con los datos o None si el formato es inválido
         """
         try:
-            # Remover la extensión .pdf
             nombre_sin_ext = Path(nombre_archivo).stem
-
-            # Separar por guiones bajos → 3 partes: Origen, DNI, NPeticion-Turno
             partes = nombre_sin_ext.split('_')
-
-            if len(partes) != 3:
-                return None
-
-            origen = partes[0].strip()
             origenes_validos = ('Internacion', 'Guardia', 'Ambulatorio')
+            if len(partes) < 3:
+                return None
+            origen = partes[0].strip()
             if origen not in origenes_validos:
                 return None
-
             iden = partes[1].strip()
-
-            # Tercera parte: NPeticion-Turno
-            sub = partes[2].split('-')
-            if len(sub) != 2:
+            # Caso 1: [Origen]_[DNI]_[NPeticion]-[Turno]
+            if len(partes) == 3:
+                sub = partes[2].split('-')
+                if len(sub) == 2:
+                    orden = sub[0].strip()
+                    protocolo = sub[1].strip()
+                elif len(sub) == 1:
+                    orden = sub[0].strip()
+                    protocolo = ''
+                else:
+                    return None
+            # Caso 2: [Origen]_[DNI]_[NPeticion]_[Turno] o [Origen]_[DNI]_[NPeticion]
+            elif len(partes) == 4:
+                orden = partes[2].strip()
+                protocolo = partes[3].strip()
+            elif len(partes) == 3:
+                orden = partes[2].strip()
+                protocolo = ''
+            else:
                 return None
-
+            # Permitir que Internacion también acepte estos formatos
+            if origen == 'Internacion' and not orden:
+                return None
             return {
                 'origen': origen,
                 'iden': iden,
-                'orden': int(sub[0].strip()),
-                'protocolo': sub[1].strip(),
+                'orden': int(orden) if orden.isdigit() else orden,
+                'protocolo': protocolo,
             }
         except (ValueError, IndexError):
             return None
