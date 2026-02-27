@@ -4,4 +4,5 @@ django-auditlog>=2.3.0
 reportlab>=4.0.0
 waitress>=2.1.0
 whitenoise>=6.0
+twilio>=8.0.0
 

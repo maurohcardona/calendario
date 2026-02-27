@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load informes_extras %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+  <h2 style="margin:0; font-size:2rem; font-weight:700; color:#000;">📄 Informes PDF</h2>
+</div>
+
+<form method="get" style="display:flex; gap:0.75rem; margin-bottom:1.5rem; align-items:center;">
+  <input
+    type="text"
+    name="q"
+    value="{{ termino_busqueda }}"
+    placeholder="Buscar por nombre de PDF..."
+    style="flex:1; max-width:420px; padding:0.6rem 0.8rem; border:1px solid #ccc; border-radius:8px;"
+  >
+  <button type="submit" style="background:#c89b8f; color:#fff; border:none; padding:0.6rem 1rem; border-radius:8px; font-weight:600;">Buscar</button>
+  {% if termino_busqueda %}
+    <a href="{% url 'informes:listado' %}" style="text-decoration:none; color:#555; font-weight:600;">Limpiar</a>
+  {% endif %}
+</form>
+
+<div id="mail-processing-banner" style="display:none; margin-bottom:1rem; padding:0.75rem 1rem; border-radius:8px; background:rgba(200,155,143,0.2); border:1px solid rgba(200,155,143,0.5); color:#6a3f32; font-weight:600;">
+  ⏳ Procesando envío de correo, por favor espere...
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:1.5rem; align-items:start;">
+
+  <!-- ENVIADOS -->
+  <section style="background:#fff; border:2px solid rgba(143, 184, 143, 0.4); border-radius:10px; padding:1rem;">
+    <h3 style="margin-bottom:1rem; color:#2f6b2f;">✅ Enviados ({{ total_enviados }})</h3>
+    {% if pdfs_enviados %}
+      <ul style="padding-left:1rem; margin:0; display:grid; gap:0.5rem;">
+        {% for archivo in pdfs_enviados %}
+          <li style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+            <a href="{% url 'informes:ver_pdf' 'enviados' archivo %}" target="_blank" style="text-decoration:none; color:#0d6efd; font-size:0.85rem;">
+              {{ archivo|pdf_label }}
+            </a>
+            <form method="post" action="{% url 'informes:enviar_informe' 'enviados' archivo %}" style="margin:0;" data-mail-submit="true" data-confirm-message="¿Confirmas volver a enviar este informe?">
+              {% csrf_token %}
+              <input type="hidden" name="q" value="{{ termino_busqueda }}">
+              <input type="hidden" name="page_enviados" value="{{ page_enviados_actual }}">
+              <input type="hidden" name="page_pendientes" value="{{ page_pendientes_actual }}">
+              <input type="hidden" name="page_sin_email" value="{{ page_sin_email_actual }}">
+              <input type="hidden" name="page_otros" value="{{ page_otros_actual }}">
+              <button type="submit" data-loading-text="Reenviando..." style="background:#2f6b2f; color:#fff; border:none; border-radius:6px; padding:0.35rem 0.65rem; font-size:0.8rem; font-weight:600; cursor:pointer; white-space:nowrap;">Reenviar</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+      {% if pdfs_enviados.paginator.num_pages > 1 %}
+        <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
+          {% if pdfs_enviados.has_previous %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ pdfs_enviados.previous_page_number }}&page_pendientes={{ page_pendientes_actual }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">← Ant</a>
+          {% endif %}
+          <span style="color:#666; font-size:0.8rem;">{{ pdfs_enviados.number }}/{{ pdfs_enviados.paginator.num_pages }}</span>
+          {% if pdfs_enviados.has_next %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ pdfs_enviados.next_page_number }}&page_pendientes={{ page_pendientes_actual }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">Sig →</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p style="margin:0; color:#666; font-size:0.85rem;">{% if termino_busqueda %}Sin resultados para "{{ termino_busqueda }}".{% else %}No hay PDFs enviados.{% endif %}</p>
+    {% endif %}
+  </section>
+
+  <!-- PENDIENTES -->
+  <section style="background:#fff; border:2px solid rgba(232, 184, 143, 0.5); border-radius:10px; padding:1rem;">
+    <h3 style="margin-bottom:1rem; color:#a25f24;">⏳ Pendientes ({{ total_pendientes }})</h3>
+    {% if pdfs_pendientes %}
+      <ul style="padding-left:1rem; margin:0; display:grid; gap:0.5rem;">
+        {% for archivo in pdfs_pendientes %}
+          <li style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+            <a href="{% url 'informes:ver_pdf' 'pendientes' archivo %}" target="_blank" style="text-decoration:none; color:#0d6efd; font-size:0.85rem;">
+              {{ archivo|pdf_label }}
+            </a>
+            <form method="post" action="{% url 'informes:enviar_informe' 'pendientes' archivo %}" style="margin:0;" data-mail-submit="true" data-confirm-message="¿Confirmas enviar este informe?">
+              {% csrf_token %}
+              <input type="hidden" name="q" value="{{ termino_busqueda }}">
+              <input type="hidden" name="page_enviados" value="{{ page_enviados_actual }}">
+              <input type="hidden" name="page_pendientes" value="{{ page_pendientes_actual }}">
+              <input type="hidden" name="page_sin_email" value="{{ page_sin_email_actual }}">
+              <input type="hidden" name="page_otros" value="{{ page_otros_actual }}">
+              <button type="submit" data-loading-text="Enviando..." style="background:#a25f24; color:#fff; border:none; border-radius:6px; padding:0.35rem 0.65rem; font-size:0.8rem; font-weight:600; cursor:pointer;">Enviar</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+      {% if pdfs_pendientes.paginator.num_pages > 1 %}
+        <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
+          {% if pdfs_pendientes.has_previous %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ pdfs_pendientes.previous_page_number }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">← Ant</a>
+          {% endif %}
+          <span style="color:#666; font-size:0.8rem;">{{ pdfs_pendientes.number }}/{{ pdfs_pendientes.paginator.num_pages }}</span>
+          {% if pdfs_pendientes.has_next %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ pdfs_pendientes.next_page_number }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">Sig →</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p style="margin:0; color:#666; font-size:0.85rem;">{% if termino_busqueda %}Sin resultados para "{{ termino_busqueda }}".{% else %}No hay PDFs pendientes.{% endif %}</p>
+    {% endif %}
+  </section>
+
+  <!-- SIN EMAIL -->
+  <section style="background:#fff; border:2px solid rgba(180, 143, 184, 0.5); border-radius:10px; padding:1rem;">
+    <h3 style="margin-bottom:1rem; color:#6b2f6b;">📭 Sin email ({{ total_sin_email }})</h3>
+    {% if pdfs_sin_email %}
+      <ul style="padding-left:1rem; margin:0; display:grid; gap:0.5rem;">
+        {% for archivo in pdfs_sin_email %}
+          <li style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+            <a href="{% url 'informes:ver_pdf' 'sin_email' archivo %}" target="_blank" style="text-decoration:none; color:#0d6efd; font-size:0.85rem;">
+              {{ archivo|pdf_label }}
+            </a>
+            <form method="post" action="{% url 'informes:enviar_informe' 'sin_email' archivo %}" style="margin:0;" data-mail-submit="true" data-confirm-message="¿El paciente ya tiene email registrado? ¿Confirmas enviar este informe?">
+              {% csrf_token %}
+              <input type="hidden" name="q" value="{{ termino_busqueda }}">
+              <input type="hidden" name="page_enviados" value="{{ page_enviados_actual }}">
+              <input type="hidden" name="page_pendientes" value="{{ page_pendientes_actual }}">
+              <input type="hidden" name="page_sin_email" value="{{ page_sin_email_actual }}">
+              <input type="hidden" name="page_otros" value="{{ page_otros_actual }}">
+              <button type="submit" data-loading-text="Enviando..." style="background:#6b2f6b; color:#fff; border:none; border-radius:6px; padding:0.35rem 0.65rem; font-size:0.8rem; font-weight:600; cursor:pointer;">Enviar</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+      {% if pdfs_sin_email.paginator.num_pages > 1 %}
+        <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
+          {% if pdfs_sin_email.has_previous %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ page_pendientes_actual }}&page_sin_email={{ pdfs_sin_email.previous_page_number }}&page_otros={{ page_otros_actual }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">← Ant</a>
+          {% endif %}
+          <span style="color:#666; font-size:0.8rem;">{{ pdfs_sin_email.number }}/{{ pdfs_sin_email.paginator.num_pages }}</span>
+          {% if pdfs_sin_email.has_next %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ page_pendientes_actual }}&page_sin_email={{ pdfs_sin_email.next_page_number }}&page_otros={{ page_otros_actual }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">Sig →</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p style="margin:0; color:#666; font-size:0.85rem;">{% if termino_busqueda %}Sin resultados para "{{ termino_busqueda }}".{% else %}No hay PDFs sin email.{% endif %}</p>
+    {% endif %}
+  </section>
+
+  <!-- INTERNACION / GUARDIA -->
+  <section style="background:#fff; border:2px solid rgba(143, 163, 184, 0.5); border-radius:10px; padding:1rem;">
+    <h3 style="margin-bottom:0.5rem; color:#2f4a6b;">🏥 Internación / Guardia ({{ total_otros }})</h3>
+    <p style="margin:0 0 0.75rem; font-size:0.8rem; color:#666;">No se envían automáticamente por email.</p>
+    {% if pdfs_otros %}
+      <ul style="padding-left:1rem; margin:0; display:grid; gap:0.5rem;">
+        {% for archivo in pdfs_otros %}
+          <li>
+            <a href="{% url 'informes:ver_pdf' 'otros_origenes' archivo %}" target="_blank" style="text-decoration:none; color:#0d6efd; font-size:0.85rem;">
+              {{ archivo|pdf_label }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+      {% if pdfs_otros.paginator.num_pages > 1 %}
+        <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
+          {% if pdfs_otros.has_previous %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ page_pendientes_actual }}&page_sin_email={{ page_sin_email_actual }}&page_otros={{ pdfs_otros.previous_page_number }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">← Ant</a>
+          {% endif %}
+          <span style="color:#666; font-size:0.8rem;">{{ pdfs_otros.number }}/{{ pdfs_otros.paginator.num_pages }}</span>
+          {% if pdfs_otros.has_next %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ page_pendientes_actual }}&page_sin_email={{ page_sin_email_actual }}&page_otros={{ pdfs_otros.next_page_number }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">Sig →</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p style="margin:0; color:#666; font-size:0.85rem;">{% if termino_busqueda %}Sin resultados para "{{ termino_busqueda }}".{% else %}No hay PDFs de Internación o Guardia.{% endif %}</p>
+    {% endif %}
+  </section>
+
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const formularios = document.querySelectorAll('form[data-mail-submit="true"]');
+
+    formularios.forEach(function (formulario) {
+      formulario.addEventListener('submit', function (event) {
+        const mensaje = formulario.getAttribute('data-confirm-message');
+        if (mensaje && !window.confirm(mensaje)) {
+          event.preventDefault();
+          return;
+        }
+
+        const boton = formulario.querySelector('button[type="submit"]');
+        if (!boton) {
+          return;
+        }
+
+        if (boton.disabled) {
+          event.preventDefault();
+          return;
+        }
+
+        const textoCarga = boton.getAttribute('data-loading-text') || 'Enviando...';
+        const banner = document.getElementById('mail-processing-banner');
+        if (banner) {
+          banner.style.display = 'block';
+        }
+        boton.disabled = true;
+        boton.textContent = '⏳ ' + textoCarga;
+        boton.style.opacity = '0.8';
+        boton.style.cursor = 'not-allowed';
+      });
+    });
+  });
+</script>
+{% endblock %}

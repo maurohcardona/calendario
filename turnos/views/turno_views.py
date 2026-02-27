@@ -205,7 +205,11 @@ def buscar(request):
     if q or turno_id or apellido:
         # Buscar por DNI, apellido o por ID de turno
         if turno_id:
-            resultados = Turno.objects.filter(id=turno_id).select_related('dni', 'agenda')
+            try:
+                turno_id_int = int(turno_id.rstrip('.').strip())
+                resultados = Turno.objects.filter(id=turno_id_int).select_related('dni', 'agenda')
+            except ValueError:
+                resultados = []
         elif apellido:
             resultados = Turno.objects.filter(
                 dni__apellido__icontains=apellido

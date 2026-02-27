@@ -23,6 +23,12 @@ stop_production.bat
 # Generated data
 mensajes/*.pet
 
+# Informes PDF
+informes/enviados/
+informes/pendientes/
+informes/sin_email/
+informes/otros_origenes/
+
 # Tests
 turnos/tests/
 

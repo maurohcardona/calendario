@@ -210,9 +210,10 @@
         <a href="{% url 'determinaciones:buscador' %}">📊 Estadísticas</a>
         {% if user.is_superuser %}
         <a href="{% url 'turnos:audit_log' %}" style="color: #667eea;">📋 Auditoría</a>
+        {% endif %}
         <a href="{% url 'turnos:generar_cupos_masivo' %}">⚙️ Cupos</a>
         <a href="/admin/">📊 Tablas</a>
-        {% endif %}
+        <a href="{% url 'informes:listado' %}">📄 Informes</a>
       </div>
       
       <div class="user-menu">

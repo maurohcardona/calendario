@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'pacientes',
     'determinaciones',
     'medicos',
+    'informes',
     # "debug_toolbar",  # Desactivado
    
     # Apps de terceros
@@ -141,3 +142,24 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Cierra sesión al cerrar el navegador
 
 # Configuración de Auditlog
 AUDITLOG_LOGENTRY_MODEL = 'auditlog.LogEntry'
+
+# Configuración de Email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('SENDER_EMAIL')
+EMAIL_HOST_PASSWORD = os.getenv('SENDER_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('SENDER_EMAIL')
+
+# Carpeta de informes pendientes (puede estar en otra ubicación en producción)
+INFORMES_PENDIENTES_DIR = os.getenv('INFORMES_PENDIENTES_DIR', str(BASE_DIR / 'informes' / 'pendientes'))
+
+# Configuración de WhatsApp (Twilio)
+# Crear cuenta gratuita en https://www.twilio.com y activar el Sandbox de WhatsApp
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '')
+# Número de WhatsApp de Twilio (Sandbox: 'whatsapp:+14155238886' / Producción: el tuyo)
+TWILIO_WHATSAPP_FROM = os.getenv('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')
+# Prefijo internacional para los números del paciente (Argentina móvil = +549)
+WHATSAPP_CODIGO_PAIS = os.getenv('WHATSAPP_CODIGO_PAIS', '+549')
