@@ -109,21 +109,11 @@ class InformesService:
                 return resultado
             
             # Solo los archivos de origen Ambulatorio se envían por mail
-            if datos['origen'] == 'Internacion':
-                resultado['error'] = "Informe de Internación, movido a carpeta Internación (no se envía por mail)"
-                resultado['otro_origen'] = True
-                self.mover_archivo_internacion(archivo_path)
-                return resultado
-            if datos['origen'] == 'Guardia':
-                resultado['error'] = "Informe de Guardia, movido a carpeta Guardia (no se envía por mail)"
-                resultado['otro_origen'] = True
-                self.mover_archivo_guardia(archivo_path)
-                return resultado
-            if datos['origen'] != 'Ambulatorio':
-                resultado['error'] = f"Origen '{datos['origen']}' no corresponde a envío por email"
-                resultado['otro_origen'] = True
-                self.mover_archivo_otro_origen(archivo_path)
-                return resultado
+                if datos['origen'] != 'Ambulatorio':
+                    resultado['error'] = f"Origen '{datos['origen']}' movido a carpeta otros_origenes (no se envía por mail)"
+                    resultado['otro_origen'] = True
+                    self.mover_archivo_otro_origen(archivo_path)
+                    return resultado
                 def mover_archivo_internacion(self, archivo_path):
                     destino = self.base_dir / 'Internación'
                     destino.mkdir(parents=True, exist_ok=True)
