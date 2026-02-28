@@ -28,6 +28,7 @@ informes/enviados/
 informes/pendientes/
 informes/sin_email/
 informes/otros_origenes/
+informes/Guardia/
 
 # Tests
 turnos/tests/
