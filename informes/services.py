@@ -14,20 +14,32 @@ from pacientes.models import Paciente
 
 class InformesService:
     """Servicio para gestionar el envío de informes médicos"""
-    
+
     def __init__(self):
         self.base_dir = Path(settings.BASE_DIR) / 'informes'
         self.pendientes_dir = Path(settings.INFORMES_PENDIENTES_DIR)
         self.enviados_dir = self.base_dir / 'enviados'
         self.sin_email_dir = self.base_dir / 'sin_email'
         self.otros_origenes_dir = self.base_dir / 'otros_origenes'
-        
+
         # Crear directorios si no existen
         self.pendientes_dir.mkdir(parents=True, exist_ok=True)
         self.enviados_dir.mkdir(parents=True, exist_ok=True)
         self.sin_email_dir.mkdir(parents=True, exist_ok=True)
         self.otros_origenes_dir.mkdir(parents=True, exist_ok=True)
-    
+
+    def mover_archivo_guardia(self, archivo_path):
+        import shutil
+        destino = self.base_dir / 'Guardia'
+        destino.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(archivo_path), str(destino / archivo_path.name))
+
+    def mover_archivo_internacion(self, archivo_path):
+        import shutil
+        destino = self.base_dir / 'Internación'
+        destino.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(archivo_path), str(destino / archivo_path.name))
+
     def procesar_archivos_pendientes(self, horas_espera=24):
         """
         Procesa todos los archivos PDF en la carpeta pendientes que tengan
@@ -126,6 +138,7 @@ class InformesService:
             paciente = self.buscar_paciente(datos['iden'])
             if not paciente:
                 resultado['error'] = f"Paciente con identificación {datos['iden']} no encontrado"
+                self.mover_archivo_sin_email(archivo_path)
                 return resultado
             
             # Validar que el paciente tenga email
@@ -200,37 +213,16 @@ class InformesService:
         """
         try:
             nombre_sin_ext = Path(nombre_archivo).stem
-            partes = nombre_sin_ext.split('_')
-            origenes_validos = ('Internacion', 'Guardia', 'Ambulatorio')
+            partes = [p.strip() for p in nombre_sin_ext.split('_') if p.strip()]
+            origenes_validos = ('Internacion', 'Internación', 'Guardia', 'Ambulatorio')
             if len(partes) < 3:
                 return None
-            origen = partes[0].strip()
+            origen = partes[0]
             if origen not in origenes_validos:
                 return None
-            iden = partes[1].strip()
-            # Caso 1: [Origen]_[DNI]_[NPeticion]-[Turno]
-            if len(partes) == 3:
-                sub = partes[2].split('-')
-                if len(sub) == 2:
-                    orden = sub[0].strip()
-                    protocolo = sub[1].strip()
-                elif len(sub) == 1:
-                    orden = sub[0].strip()
-                    protocolo = ''
-                else:
-                    return None
-            # Caso 2: [Origen]_[DNI]_[NPeticion]_[Turno] o [Origen]_[DNI]_[NPeticion]
-            elif len(partes) == 4:
-                orden = partes[2].strip()
-                protocolo = partes[3].strip()
-            elif len(partes) == 3:
-                orden = partes[2].strip()
-                protocolo = ''
-            else:
-                return None
-            # Permitir que Internacion también acepte estos formatos
-            if origen == 'Internacion' and not orden:
-                return None
+            iden = partes[1]
+            orden = partes[2]
+            protocolo = partes[3] if len(partes) > 3 else ''
             return {
                 'origen': origen,
                 'iden': iden,
