@@ -1,28 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-    #id_medico:not(:disabled) {
-        background: #ffffff;
-        opacity: 1;
-        cursor: text;
-    }
-</style>
-<div style="max-width: 800px;">
-    <h2>📅 Turnos del día: <span style="color: #8fb88f; font-weight: bold;">{{ fecha }}</span>
+<div class="apple-dia-container">
+    <h2 class="apple-dia-titulo">Turnos del día: <span class="apple-dia-fecha">{{ fecha }}</span>
     {% if agenda_name %}
-        <small style="font-size:0.9rem; color: var(--text-medium);"> — {{ agenda_name }}</small>
+        <small class="apple-dia-agenda-name"> — {{ agenda_name }}</small>
     {% endif %}
     </h2>
 
     <!-- Advertencia de feriado -->
     {% if es_feriado %}
-        <div style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); border: 2px solid #e65100; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3); color: white;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <div style="font-size: 2.5rem;">🚫</div>
+        <div class="apple-feriado-banner">
+            <div class="apple-feriado-content">
                 <div>
-                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 0.5rem;">DÍA FERIADO</div>
-                    <div style="font-size: 1.1rem;">{{ descripcion_feriado }}</div>
-                    <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">No se pueden crear nuevos turnos en esta fecha</div>
+                    <div class="apple-feriado-titulo">DÍA FERIADO</div>
+                    <div class="apple-feriado-descripcion">{{ descripcion_feriado }}</div>
+                    <div class="apple-feriado-nota">No se pueden crear nuevos turnos en esta fecha</div>
                 </div>
             </div>
         </div>
@@ -31,15 +23,15 @@
     <!-- Información de cupo -->
     {% if modo_vista == 'agenda_seleccionada' %}
         {% if disponibles > 0 or cupo %}
-            <div style="background: linear-gradient(135deg, rgba(143, 184, 143, 0.15), rgba(200, 155, 143, 0.15)); border: 2px solid rgba(143, 184, 143, 0.5); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="apple-cupo-info">
+                <div class="apple-cupo-grid">
                     <div>
-                        <span style="color: var(--text-light); font-size: 0.95rem; font-weight: 600;">Cupo total</span>
-                        <div style="font-size: 1.5rem; color: var(--accent); font-weight: bold;">{% if cupo %}{{ cupo.cantidad_total }}{% else %}{{ disponibles|add:turnos|length }}{% endif %}</div>
+                        <span class="apple-cupo-label">Cupo total</span>
+                        <div class="apple-cupo-value apple-cupo-value-primary">{% if cupo %}{{ cupo.cantidad_total }}{% else %}{{ disponibles|add:turnos|length }}{% endif %}</div>
                     </div>
                     <div>
-                        <span style="color: var(--text-light); font-size: 0.95rem; font-weight: 600;">Disponibles</span>
-                        <div style="font-size: 1.5rem; color: {% if disponibles > 0 %}#8fb88f{% else %}#d89090{% endif %}; font-weight: bold;">{{ disponibles }}</div>
+                        <span class="apple-cupo-label">Disponibles</span>
+                        <div class="apple-cupo-value {% if disponibles > 0 %}apple-cupo-value-success{% else %}apple-cupo-value-danger{% endif %}">{{ disponibles }}</div>
                     </div>
                 </div>
             </div>
@@ -48,8 +40,8 @@
 
     <!-- Formulario de agregar turno -->
     {% if modo_vista == 'agenda_seleccionada' and show_form %}
-        <h3 style="margin-top: 2rem; color: var(--text-light);">➕ Agendar turno</h3>
-        <form method="post" id="turnoForm" style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
+        <h3 class="apple-section-title">Agendar turno</h3>
+        <form method="post" id="turnoForm" class="apple-turno-form">
             {% csrf_token %}
             
             {% if form.non_field_errors %}
@@ -57,15 +49,15 @@
                     <input type="hidden" id="nombreImpresora" />
             <!-- Hidden input for printer name -->
             <input type="hidden" id="printer_name" name="nombre_impresora" />
-                <div style="background: rgba(216, 144, 144, 0.15); border: 2px solid var(--danger); color: #8c4a4a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 500;">
+                <div class="apple-alert apple-alert-danger">
                     {{ form.non_field_errors }}
                 </div>
             {% endif %}
             
             {% if form.errors %}
-                <div style="background: rgba(216, 144, 144, 0.15); border: 2px solid var(--danger); color: #8c4a4a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 500;">
-                    <strong>⚠️ Errores en el formulario:</strong>
-                    <ul style="margin: 0.5rem 0 0 1.5rem;">
+                <div class="apple-alert apple-alert-danger">
+                    <strong>Errores en el formulario:</strong>
+                    <ul>
                         {% for field, errors in form.errors.items %}
                             {% for error in errors %}
                                 <li>{{ field }}: {{ error }}</li>
@@ -76,36 +68,36 @@
             {% endif %}
 
             <!-- Campo DNI -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">DNI</label>
-                <div style="display: flex; gap: 0.5rem;">
-                    <input type="text" id="id_dni" name="dni" required style="flex: 1; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;" />
-                    <button type="button" id="btnBuscarPaciente" style="padding: 0.75rem 1.5rem; background: var(--accent); color: #ffffff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(200, 155, 143, 0.3);">🔍 Buscar</button>
+            <div class="apple-form-group">
+                <label class="apple-label">DNI</label>
+                <div class="apple-form-dni-row">
+                    <input type="text" id="id_dni" name="dni" required class="apple-form-dni-input" />
+                    <button type="button" id="btnBuscarPaciente" class="apple-btn apple-btn-primary">Buscar</button>
                 </div>
-                <div id="pacienteStatus" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+                <div id="pacienteStatus" class="apple-status"></div>
             </div>
 
             <!-- Campos Apellido y Nombre en la misma fila -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="apple-form-grid-2">
                 <div>
-                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Apellido</label>
-                    <input type="text" id="id_apellido" name="apellido" required style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; text-transform: uppercase;" />
+                    <label class="apple-label">Apellido</label>
+                    <input type="text" id="id_apellido" name="apellido" required class="apple-form-text-input" />
                 </div>
                 <div>
-                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nombre</label>
-                    <input type="text" id="id_nombre" name="nombre" required style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; text-transform: uppercase;" />
+                    <label class="apple-label">Nombre</label>
+                    <input type="text" id="id_nombre" name="nombre" required class="apple-form-text-input" />
                 </div>
             </div>
 
             <!-- Campos Fecha de Nacimiento y Sexo en la misma fila -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="apple-form-grid-2">
                 <div>
-                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Fecha de Nacimiento</label>
-                    <input type="date" id="id_fecha_nacimiento" name="fecha_nacimiento" required style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                    <label class="apple-label">Fecha de Nacimiento</label>
+                    <input type="date" id="id_fecha_nacimiento" name="fecha_nacimiento" required class="apple-form-text-input" />
                 </div>
                 <div>
-                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Sexo</label>
-                    <select id="id_sexo" name="sexo" required style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;">
+                    <label class="apple-label">Sexo</label>
+                    <select id="id_sexo" name="sexo" required class="apple-form-select">
                         <option value="">Seleccione...</option>
                         <option value="Masculino">Masculino</option>
                         <option value="Femenino">Femenino</option>
@@ -115,49 +107,49 @@
             </div>
 
             <!-- Campos Teléfono, Email y Médico en una fila -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 0.5rem;">
+            <div class="apple-form-grid-3">
                 <div>
-                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Teléfono</label>
-                    <input type="tel" id="id_telefono" name="telefono" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+                    <label class="apple-label">Teléfono</label>
+                    <input type="tel" id="id_telefono" name="telefono" class="apple-form-text-input" />
                 </div>
                 <div>
-                    <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Email</label>
-                    <input type="email" id="id_email" name="email" oninput="this.value=this.value.toLowerCase()" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; text-transform: lowercase;" />
+                    <label class="apple-label">Email</label>
+                    <input type="email" id="id_email" name="email" oninput="this.value=this.value.toLowerCase()" class="apple-form-text-input" />
                 </div>
-                <div style="position: relative; display: flex; align-items: flex-end; gap: 0.5rem;">
-                    <div style="flex: 1;">
-                        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Médico</label>
-                        <input type="text" id="id_medico" name="medico" autocomplete="off" placeholder="Buscar médico..." style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
-                        <div id="autocompleteMedicos" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(200, 155, 143, 0.5); border-radius: 8px; margin-top: 0.25rem; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
+                <div class="apple-field-with-button">
+                    <div class="apple-input-wrapper">
+                        <label class="apple-label">Médico</label>
+                        <input type="text" id="id_medico" name="medico" autocomplete="off" placeholder="Buscar médico..." class="apple-form-text-input" />
+                        <div id="autocompleteMedicos" class="apple-autocomplete"></div>
                     </div>
-                    <button type="button" id="btnNuevoMedico" title="Agregar médico nuevo" style="height: 2.6rem; width: 2.6rem; background: #4caf50; color: #fff; border: none; border-radius: 50%; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2); margin-bottom: 0.2rem;">+</button>
+                    <button type="button" id="btnNuevoMedico" title="Agregar médico nuevo" class="apple-btn apple-btn-success apple-btn-icon-circle">+</button>
                 </div>
             </div>
-            <div style="margin-bottom: 1.5rem;">
-                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Observaciones de paciente</label>
-                <input type="text" id="id_observaciones_paciente" name="observaciones_paciente" style="width: 100%; background: #fff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;" />
+            <div class="apple-form-group">
+                <label class="apple-label">Observaciones de paciente</label>
+                <input type="text" id="id_observaciones_paciente" name="observaciones_paciente" class="apple-form-text-input" />
             </div>
 
             <!-- Campo Nota Interna -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">Nota Interna</label>
-                <textarea id="id_nota_interna" name="nota_interna" rows="2" disabled style="width: 100%; background: #f5ebe8; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700; opacity: 0.6; cursor: not-allowed;"></textarea>
+            <div class="apple-form-group">
+                <label class="apple-label">Nota Interna</label>
+                <textarea id="id_nota_interna" name="nota_interna" rows="2" disabled class="apple-form-textarea apple-input-disabled"></textarea>
             </div>
 
             <!-- Determinaciones -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="color: var(--text-light); font-weight: 500; display: block; margin-bottom: 0.5rem;">Determinaciones</label>
-                <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <input type="text" id="inputCodigo" placeholder="Código" disabled style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem; opacity: 0.5; cursor: not-allowed;" />
-                    <div style="position: relative;">
-                        <input type="text" id="inputNombre" placeholder="Buscar por nombre..." autocomplete="off" disabled style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.3); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1rem; opacity: 0.5; cursor: not-allowed;" />
-                        <div id="autocompleteLista" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px; margin-top: 0.25rem; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
+            <div class="apple-form-group">
+                <label class="apple-label">Determinaciones</label>
+                <div class="apple-det-grid">
+                    <input type="text" id="inputCodigo" placeholder="Código" disabled class="apple-input apple-input-disabled" />
+                    <div class="apple-input-wrapper">
+                        <input type="text" id="inputNombre" placeholder="Buscar por nombre..." autocomplete="off" disabled class="apple-input apple-input-disabled" />
+                        <div id="autocompleteLista" class="apple-autocomplete"></div>
                     </div>
-                    <button type="button" id="btnAgregarDet" disabled style="padding: 0.75rem 1.5rem; background: #4caf50; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: not-allowed; white-space: nowrap; opacity: 0.5;">➕ Agregar</button>
+                    <button type="button" id="btnAgregarDet" disabled class="apple-btn apple-btn-success apple-btn-disabled">Agregar</button>
                 </div>
-                <div id="detStatus" style="margin-bottom: 0.5rem; font-size: 0.9rem;"></div>
-                <div id="listaDeterminaciones" style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; min-height: 100px; max-height: 300px; overflow-y: auto;">
-                    <p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">Primero debe buscar un paciente por DNI</p>
+                <div id="detStatus" class="apple-status"></div>
+                <div id="listaDeterminaciones" class="apple-det-list-container">
+                    <p class="apple-det-empty">Primero debe buscar un paciente por DNI</p>
                 </div>
                 <input type="hidden" id="id_determinaciones" name="determinaciones" value="" />
             </div>
@@ -166,122 +158,120 @@
             <input type="hidden" name="agenda" value="{{ form.agenda.value }}" />
             <input type="hidden" name="fecha" value="{{ fecha|date:'Y-m-d' }}" />
 
-            <button type="submit" id="btnGuardarTurno" style="width: 100%; padding: 0.85rem; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color: #ffffff; border: none; border-radius: 8px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; margin-top: 1rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);">💾 Guardar turno</button>
+            <button type="submit" id="btnGuardarTurno" class="apple-btn apple-btn-primary apple-btn-block apple-margin-top-xl">Guardar turno</button>
         </form>
     {% endif %}
 
     {% if modo_vista != 'agenda_seleccionada' or not show_form %}
         <!-- Lista de turnos -->
-        <h3 style="margin-top: 2rem; color: var(--text-light);">📋 Turnos agendados</h3>
+        <h3 class="apple-turnos-list-title">Turnos agendados</h3>
         {% if modo_vista == 'todas_agendas' and turnos_por_agenda %}
             <!-- Vista agrupada por agenda y coordinación -->
             {% for agenda_id, info in turnos_por_agenda.items %}
-                <div style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px solid var(--accent); box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid {{ info.agenda.color }};">
-                        <h4 style="margin: 0; color: {{ info.agenda.color }}; font-size: 1.3rem; font-weight: 700;">
-                            📌 {{ info.agenda.name }}
-                        </h4>
-                        <div style="text-align: right;">
-                            <span style="color: var(--text-light); font-size: 0.9rem; font-weight: 600;">Cupo: </span>
-                            <span style="color: #00d4ff; font-weight: bold; font-size: 1.05rem;">{{ info.usados }}/{{ info.capacidad }}</span>
-                            <span style="color: var(--text-light); font-size: 0.9rem; font-weight: 600;"> | Disponibles: </span>
-                            <span style="color: {% if info.disponibles > 0 %}#66ff66{% else %}#ff6666{% endif %}; font-weight: bold; font-size: 1.05rem;">{{ info.disponibles }}</span>
+                <div class="apple-agenda-card">
+                    <div class="apple-agenda-card-header" style="border-bottom-color: {{ info.agenda.color }}; color: {{ info.agenda.color }};">
+                        <h4 class="apple-agenda-card-title">{{ info.agenda.name }}</h4>
+                        <div class="apple-agenda-card-stats">
+                            <span class="apple-agenda-card-stats-label">Cupo:</span>
+                            <span class="apple-agenda-card-stats-value">{{ info.usados }}/{{ info.capacidad }}</span>
+                            <span class="apple-agenda-card-stats-label"> | Disponibles:</span>
+                            <span class="apple-agenda-card-stats-value {% if info.disponibles > 0 %}text-green{% else %}text-red{% endif %}">{{ info.disponibles }}</span>
                         </div>
                     </div>
                     <!-- Turnos coordinados -->
-                    <div style="margin-bottom: 1rem;">
-                        <span style="font-weight: bold; color: #388e3c; font-size: 1.1rem;">Turnos coordinados</span>
+                    <div class="apple-turnos-section">
+                        <span class="apple-turnos-section-title apple-turnos-section-title-coordinados">Turnos coordinados</span>
                         {% if info.coordinados %}
-                            <ul style="margin: 0.5rem 0 0 0; padding-left: 0; list-style: none;">
+                            <ul class="apple-turnos-ul">
                                 {% for t in info.coordinados %}
-                                    <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid #b2dfdb;{% endif %} display: flex; justify-content: space-between; align-items: center; background: #e8f5e9; border-radius: 6px; margin-bottom: 0.5rem;">
-                                        <div>
-                                            <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                            <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.paciente_dni }}</span>
+                                    <li class="apple-turno-item apple-turno-item-coordinado">
+                                        <div class="apple-turno-item-info">
+                                            <strong class="apple-turno-item-nombre">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                            <span class="apple-turno-item-dni">DNI: {{ t.paciente_dni }}</span>
                                         </div>
-                                        <div style="display: flex; gap: 0.5rem;">
-                                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
-                                            <a href="{% url 'turnos:generar_ticket_retiro' t.id %}" target="_blank" style="background: #388e3c; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(56, 142, 60, 0.3); transition: all 0.3s ease;">🖨️ Ticket de retiro</a>
+                                        <div class="apple-turno-item-actions">
+                                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" class="apple-action-btn apple-action-btn-print">Ticket</a>
+                                            <a href="{% url 'turnos:generar_ticket_retiro' t.id %}" target="_blank" class="apple-action-btn apple-action-btn-print-retiro">Ticket de retiro</a>
                                         </div>
                                     </li>
                                 {% endfor %}
                             </ul>
                         {% else %}
-                            <p style="margin: 0.5rem 0 0 0; color: #388e3c; font-style: italic; font-size: 0.95rem;">No hay turnos coordinados para esta agenda.</p>
+                            <p class="apple-empty-message apple-empty-message-success">No hay turnos coordinados para esta agenda.</p>
                         {% endif %}
                     </div>
                     <!-- Turnos NO coordinados -->
-                    <div>
-                        <span style="font-weight: bold; color: #d32f2f; font-size: 1.1rem;">Turnos no coordinados</span>
+                    <div class="apple-turnos-section">
+                        <span class="apple-turnos-section-title apple-turnos-section-title-no-coordinados">Turnos no coordinados</span>
                         {% if info.no_coordinados %}
-                            <ul style="margin: 0.5rem 0 0 0; padding-left: 0; list-style: none;">
+                            <ul class="apple-turnos-ul">
                                 {% for t in info.no_coordinados %}
-                                    <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid #ffcdd2;{% endif %} display: flex; justify-content: space-between; align-items: center; background: #fff3e0; border-radius: 6px; margin-bottom: 0.5rem;">
-                                        <div>
-                                            <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                            <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.paciente_dni }}</span>
+                                    <li class="apple-turno-item apple-turno-item-no-coordinado">
+                                        <div class="apple-turno-item-info">
+                                            <strong class="apple-turno-item-nombre">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                            <span class="apple-turno-item-dni">DNI: {{ t.paciente_dni }}</span>
                                         </div>
-                                        <div style="display: flex; gap: 0.5rem;">
-                                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
-                                            <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
-                                            <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
+                                        <div class="apple-turno-item-actions">
+                                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" class="apple-action-btn apple-action-btn-print">Ticket</a>
+                                            <a href="{% url 'turnos:editar_turno' t.id %}" class="apple-action-btn apple-action-btn-edit">Editar</a>
+                                            <a href="{% url 'turnos:eliminar_turno' t.id %}" class="apple-action-btn apple-action-btn-delete">Eliminar</a>
                                         </div>
                                     </li>
                                 {% endfor %}
                             </ul>
                         {% else %}
-                            <p style="margin: 0.5rem 0 0 0; color: #d32f2f; font-style: italic; font-size: 0.95rem;">No hay turnos no coordinados para esta agenda.</p>
+                            <p class="apple-empty-message apple-empty-message-warning">No hay turnos no coordinados para esta agenda.</p>
                         {% endif %}
                     </div>
                 </div>
             {% endfor %}
         {% else %}
             <!-- Vista simple cuando se selecciona una agenda específica -->
-            <div style="background: var(--bg-card); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border: 2px solid rgba(0, 212, 255, 0.3); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);">
+            <div class="apple-agenda-card">
                 {% if turnos %}
-                    <ul style="margin: 0; padding-left: 0; list-style: none;">
+                    <ul class="apple-turnos-ul">
                         {% for t in turnos %}
-                            <li style="padding: 1rem 0; {% if not forloop.last %}border-bottom: 1px solid rgba(0, 212, 255, 0.2);{% endif %} display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong style="color: #000000; font-size: 1.3rem;">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                    <span style="color: var(--text-medium); font-size: 0.9rem; font-weight: 500;">DNI: {{ t.paciente_dni }}</span>
+                            <li class="apple-turno-item">
+                                <div class="apple-turno-item-info">
+                                    <strong class="apple-turno-item-nombre">{{ t.apellido }} {{ t.nombre }}</strong><br>
+                                    <span class="apple-turno-item-dni">DNI: {{ t.paciente_dni }}</span>
                                 </div>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" style="background: #4caf50; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;">🖨️ Ticket</a>
-                                    <a href="{% url 'turnos:editar_turno' t.id %}" style="background: #66e0ff; color: #000000; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3); transition: all 0.3s ease;">✏️ Editar</a>
-                                    <a href="{% url 'turnos:eliminar_turno' t.id %}" style="background: #ff7066; color: #ffffff; padding: 0.6rem 1.1rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3); transition: all 0.3s ease;">🗑️ Eliminar</a>
+                                <div class="apple-turno-item-actions">
+                                    <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" class="apple-action-btn apple-action-btn-print">Ticket</a>
+                                    <a href="{% url 'turnos:editar_turno' t.id %}" class="apple-action-btn apple-action-btn-edit">Editar</a>
+                                    <a href="{% url 'turnos:eliminar_turno' t.id %}" class="apple-action-btn apple-action-btn-delete">Eliminar</a>
                                 </div>
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <p style="margin: 0; color: var(--text-dark); font-size: 0.95rem; font-style: italic;">No hay turnos agendados.</p>
+                    <p class="apple-no-turnos">No hay turnos agendados para esta fecha.</p>
                 {% endif %}
             </div>
         {% endif %}
     {% endif %}
 
-    <div style="margin-top: 2rem;">
-        <a href="{% url 'turnos:calendario' %}" style="color: #00d4ff; text-decoration: none; font-weight: 600; font-size: 1rem; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 6px; display: inline-block; background: rgba(0, 212, 255, 0.1);">← Volver al calendario</a>
+    <div class="apple-margin-top-xl">
+        <a href="{% url 'turnos:calendario' %}" class="apple-back-link">&#8592; Volver al calendario</a>
     </div>
 </div>
 
 <!-- Modal para agregar médico nuevo -->
-<div id="modalNuevoMedico" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#fff; border-radius:12px; padding:2rem; max-width:400px; margin:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3); position:relative;">
-    <button id="cerrarModalMedico" style="position:absolute; top:0.5rem; right:0.5rem; background:none; border:none; font-size:1.5rem; color:#888; cursor:pointer;">&times;</button>
-    <h3 style="margin-top:0; color:#4caf50;">Agregar nuevo médico</h3>
+<div id="modalNuevoMedico" class="apple-modal">
+  <div class="apple-modal-content apple-modal-content-relative">
+    <button id="cerrarModalMedico" class="apple-modal-close">&times;</button>
+    <h3 class="apple-modal-title apple-modal-title-success">Agregar nuevo médico</h3>
     <form id="formNuevoMedico">
-      <div style="margin-bottom:1rem;">
-        <label for="nombreMedico" style="font-weight:600;">Apellido y Nombre</label>
-        <input type="text" id="nombreMedico" name="nombreMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
+      <div class="apple-form-group">
+        <label for="nombreMedico" class="apple-label">Apellido y Nombre</label>
+        <input type="text" id="nombreMedico" name="nombreMedico" required class="apple-input" />
       </div>
-      <div style="margin-bottom:1.5rem;">
-        <label for="matriculaMedico" style="font-weight:600;">Matrícula Provincial</label>
-        <input type="text" id="matriculaMedico" name="matriculaMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
+      <div class="apple-form-group">
+        <label for="matriculaMedico" class="apple-label">Matrícula Provincial</label>
+        <input type="text" id="matriculaMedico" name="matriculaMedico" required class="apple-input" />
       </div>
-      <button type="submit" style="background:#4caf50; color:#fff; border:none; border-radius:8px; padding:0.7rem 1.5rem; font-weight:700; font-size:1rem; cursor:pointer; width:100%;">Guardar médico</button>
-      <div id="estadoNuevoMedico" style="margin-top:1rem; font-size:0.95rem;"></div>
+      <button type="submit" class="apple-btn apple-btn-success apple-btn-block">Guardar médico</button>
+      <div id="estadoNuevoMedico" class="apple-status"></div>
     </form>
   </div>
 </div>
@@ -342,35 +332,29 @@ document.getElementById('inputNombre').addEventListener('input', async function(
     lista.innerHTML = coincidencias.map(item => {
         let tipoBadge = '';
         let sinStockBadge = '';
-        let estiloGris = '';
+        let disabledClass = '';
         
         if (item.tipo === 'perfil') {
-            tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL</span>';
+            tipoBadge = '<span class="apple-det-badge apple-det-badge-perfil">PERFIL</span>';
         } else if (item.tipo === 'compleja') {
-            tipoBadge = '<span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">COMPLEJA</span>';
+            tipoBadge = '<span class="apple-det-badge apple-det-badge-compleja">COMPLEJA</span>';
         }
         
         if (item.stock === false) {
-            sinStockBadge = '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">SIN STOCK</span>';
-            estiloGris = 'opacity: 0.5;';
+            sinStockBadge = '<span class="apple-det-badge apple-det-badge-sin-stock">SIN STOCK</span>';
+            disabledClass = ' apple-item-disabled';
         }
         
         return `
-            <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(0, 212, 255, 0.1); transition: background 0.2s; ${estiloGris}">
-                <span style="color: #00d4ff; font-weight: bold;">${item.codigo}</span> - <span style="color: #ffffff; font-weight: 600;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
+            <div class="apple-autocomplete-item${disabledClass}" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}">
+                <span class="apple-autocomplete-codigo">${item.codigo}</span> - <span class="apple-autocomplete-nombre">${item.nombre}</span>${tipoBadge}${sinStockBadge}
             </div>
         `;
     }).join('');
     
     lista.style.display = 'block';
     
-    lista.querySelectorAll('.autocomplete-item').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            this.style.background = 'rgba(0, 212, 255, 0.2)';
-        });
-        item.addEventListener('mouseleave', function() {
-            this.style.background = 'transparent';
-        });
+    lista.querySelectorAll('.apple-autocomplete-item').forEach(item => {
         item.addEventListener('click', function() {
             const codigo = this.dataset.codigo;
             const nombre = this.dataset.nombre;
@@ -413,22 +397,16 @@ document.getElementById('id_medico').addEventListener('input', async function() 
     
     lista.innerHTML = coincidencias.map(medico => {
         return `
-            <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
-                <span style="color: #c89b8f; font-weight: 600;">${medico.nombre_apellido}</span>
-                <span style="color: rgba(224, 224, 224, 0.6); font-size: 0.85rem; margin-left: 0.5rem;">Mat: ${medico.matricula_provincial}</span>
+            <div class="apple-autocomplete-item" data-nombre="${medico.nombre_apellido}">
+                <span class="apple-autocomplete-medico-nombre">${medico.nombre_apellido}</span>
+                <span class="apple-autocomplete-medico-matricula">Mat: ${medico.matricula_provincial}</span>
             </div>
         `;
     }).join('');
     
     lista.style.display = 'block';
     
-    lista.querySelectorAll('.autocomplete-medico').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            this.style.background = 'rgba(200, 155, 143, 0.2)';
-        });
-        item.addEventListener('mouseleave', function() {
-            this.style.background = 'transparent';
-        });
+    lista.querySelectorAll('.apple-autocomplete-item').forEach(item => {
         item.addEventListener('click', function() {
             const nombre = this.dataset.nombre;
             document.getElementById('id_medico').value = nombre;
@@ -451,11 +429,11 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
     const status = document.getElementById('pacienteStatus');
     
     if (!dni) {
-        status.innerHTML = '<span style="color: #ff9999;">⚠️ Ingrese un DNI</span>';
+        status.innerHTML = '<span class="apple-status-error">Ingrese un DNI</span>';
         return;
     }
     
-    status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
+    status.innerHTML = '<span class="apple-status-searching">Buscando...</span>';
     
     try {
         const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${dni}`);
@@ -464,7 +442,7 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
         const cartelExistente = document.getElementById('cartel-turno-pendiente');
         if (cartelExistente) cartelExistente.remove();
         if (data.found) {
-            status.innerHTML = '<span style="color: #4caf50;">✅ Paciente encontrado</span>';
+            status.innerHTML = '<span class="apple-status-found">Paciente encontrado</span>';
             document.getElementById('id_nombre').value = data.nombre;
             document.getElementById('id_apellido').value = data.apellido;
             document.getElementById('id_fecha_nacimiento').value = data.fecha_nacimiento;
@@ -474,15 +452,14 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_observaciones_paciente').value = data.observaciones || '';
             habilitarSoloDeterminaciones();
             document.getElementById('id_observaciones_paciente').disabled = false;
-            document.getElementById('id_observaciones_paciente').style.opacity = '1';
-            document.getElementById('id_observaciones_paciente').style.cursor = 'text';
-            document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
+            document.getElementById('id_observaciones_paciente').classList.remove('apple-input-disabled');
+            document.getElementById('id_observaciones_paciente').classList.add('apple-input-enabled');
             // Mostrar cartel si tiene turno pendiente
             if (data.tiene_turno_pendiente && data.proximo_turno) {
                 const cartel = document.createElement('div');
                 cartel.id = 'cartel-turno-pendiente';
-                cartel.style = 'background: #fff3cd; color: #856404; border: 2px solid #ffeeba; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-weight: 600; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(200, 155, 143, 0.15);';
-                cartel.innerHTML = `⚠️ El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b>.<br>¿Desea continuar con el turno de todos modos?<br><button id="btnContinuarTurno" style="margin: 0.5rem 1rem 0 0; padding: 0.5rem 1.2rem; background: #4caf50; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Sí</button><button id="btnVerTurnosPendientes" style="margin: 0.5rem 0 0 0; padding: 0.5rem 1.2rem; background: #2196f3; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Turnos pendientes</button>`;
+                cartel.className = 'apple-warning-banner';
+                cartel.innerHTML = `El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b>.<br>¿Desea continuar con el turno de todos modos?<br><button id="btnContinuarTurno" class="apple-btn apple-btn-success apple-btn-sm">Sí</button> <button id="btnVerTurnosPendientes" class="apple-btn apple-btn-primary apple-btn-sm">Turnos pendientes</button>`;
                 const form = document.getElementById('turnoForm');
                 form.parentNode.insertBefore(cartel, form);
                 cartel.querySelector('#btnContinuarTurno').onclick = function() {
@@ -493,7 +470,7 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
                 };
             }
         } else {
-            status.innerHTML = '<span style="color: #ff9999;">❌ Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
+            status.innerHTML = '<span class="apple-status-not-found">Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
             document.getElementById('id_nombre').value = '';
             document.getElementById('id_apellido').value = '';
             document.getElementById('id_fecha_nacimiento').value = '';
@@ -504,12 +481,11 @@ document.getElementById('btnBuscarPaciente').addEventListener('click', async fun
             document.getElementById('id_observaciones_paciente').value = '';
             habilitarTodosCampos();
             document.getElementById('id_observaciones_paciente').disabled = false;
-            document.getElementById('id_observaciones_paciente').style.opacity = '1';
-            document.getElementById('id_observaciones_paciente').style.cursor = 'text';
-            document.getElementById('id_observaciones_paciente').style.backgroundColor = '#ffffff';
+            document.getElementById('id_observaciones_paciente').classList.remove('apple-input-disabled');
+            document.getElementById('id_observaciones_paciente').classList.add('apple-input-enabled');
         }
     } catch (error) {
-        status.innerHTML = '<span style="color: #ff9999;">❌ Error al buscar</span>';
+        status.innerHTML = '<span class="apple-status-error">Error al buscar</span>';
         habilitarTodosCampos();
     }
 });
@@ -520,12 +496,12 @@ function habilitarSoloDeterminaciones() {
     document.getElementById('inputCodigo').disabled = false;
     document.getElementById('inputNombre').disabled = false;
     document.getElementById('btnAgregarDet').disabled = false;
-    document.getElementById('inputCodigo').style.opacity = '1';
-    document.getElementById('inputCodigo').style.cursor = 'text';
-    document.getElementById('inputNombre').style.opacity = '1';
-    document.getElementById('inputNombre').style.cursor = 'text';
-    document.getElementById('btnAgregarDet').style.opacity = '1';
-    document.getElementById('btnAgregarDet').style.cursor = 'pointer';
+    document.getElementById('inputCodigo').classList.remove('apple-input-disabled');
+    document.getElementById('inputCodigo').classList.add('apple-input-enabled');
+    document.getElementById('inputNombre').classList.remove('apple-input-disabled');
+    document.getElementById('inputNombre').classList.add('apple-input-enabled');
+    document.getElementById('btnAgregarDet').classList.remove('apple-btn-disabled');
+    document.getElementById('btnAgregarDet').classList.add('apple-btn-enabled');
     
     // Datos de paciente permanecen en modo READONLY (se envían pero no se pueden editar)
     //const camposPaciente = ['id_nombre', 'id_apellido', 'id_fecha_nacimiento', 'id_sexo'];
@@ -533,9 +509,7 @@ function habilitarSoloDeterminaciones() {
         //const campo = document.getElementById(campoId);
         //campo.disabled = false;
         //campo.readOnly = False;
-        //campo.style.opacity = '0.7';
-        //campo.style.cursor = 'not-allowed';
-        //campo.style.backgroundColor = 'rgba(100, 100, 100, 0.1)';
+        //campo.classList.add('apple-input-disabled');
     //});
     
     // Los nuevos campos (telefono, email, medico, nota_interna) se pueden editar
@@ -544,68 +518,39 @@ function habilitarSoloDeterminaciones() {
         const campo = document.getElementById(campoId);
         campo.disabled = false; // <-- Esto habilita el campo médico
         campo.readOnly = false;
-        campo.style.opacity = '1';
-        campo.style.cursor = 'text';
-        campo.style.backgroundColor = '#ffffff';
+        campo.classList.remove('apple-input-disabled');
+        campo.classList.add('apple-input-enabled');
     });
     
     // Actualizar mensaje de determinaciones
     const lista = document.getElementById('listaDeterminaciones');
     if (determinaciones.length === 0) {
-        lista.innerHTML = '<p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>';
+        lista.innerHTML = '<p class="apple-det-empty">No hay determinaciones agregadas</p>';
     }
 }
 
 // Función para habilitar TODOS los campos (paciente nuevo)
 function habilitarTodosCampos() {
-    document.getElementById('id_nombre').disabled = false;
-    document.getElementById('id_apellido').disabled = false;
-    document.getElementById('id_fecha_nacimiento').disabled = false;
-    document.getElementById('id_sexo').disabled = false;
-    document.getElementById('id_telefono').disabled = false;
-    document.getElementById('id_email').disabled = false;
-    document.getElementById('id_medico').disabled = false; // <-- Esto habilita el campo médico
-    document.getElementById('id_nota_interna').disabled = false;
-    document.getElementById('inputCodigo').disabled = false;
-    document.getElementById('inputNombre').disabled = false;
-    document.getElementById('btnAgregarDet').disabled = false;
+    const todosLosCampos = ['id_nombre', 'id_apellido', 'id_fecha_nacimiento', 'id_sexo', 
+                            'id_telefono', 'id_email', 'id_medico', 'id_nota_interna',
+                            'inputCodigo', 'inputNombre'];
     
-    // Cambiar estilos visuales
-    document.getElementById('id_nombre').style.opacity = '1';
-    document.getElementById('id_nombre').style.cursor = 'text';
-    document.getElementById('id_nombre').style.backgroundColor = '#ffffff';
-    document.getElementById('id_apellido').style.opacity = '1';
-    document.getElementById('id_apellido').style.cursor = 'text';
-    document.getElementById('id_apellido').style.backgroundColor = '#ffffff';
-    document.getElementById('id_fecha_nacimiento').style.opacity = '1';
-    document.getElementById('id_fecha_nacimiento').style.cursor = 'text';
-    document.getElementById('id_fecha_nacimiento').style.backgroundColor = '#ffffff';
-    document.getElementById('id_sexo').style.opacity = '1';
-    document.getElementById('id_sexo').style.cursor = 'pointer';
-    document.getElementById('id_sexo').style.backgroundColor = '#ffffff';
-    document.getElementById('id_nota_interna').style.opacity = '1';
-    document.getElementById('id_nota_interna').style.cursor = 'text';
-    document.getElementById('id_nota_interna').style.backgroundColor = '#ffffff';
-    document.getElementById('id_telefono').style.opacity = '1';
-    document.getElementById('id_telefono').style.cursor = 'text';
-    document.getElementById('id_telefono').style.backgroundColor = '#ffffff';
-    document.getElementById('id_email').style.opacity = '1';
-    document.getElementById('id_email').style.cursor = 'text';
-    document.getElementById('id_email').style.backgroundColor = '#ffffff';
-    document.getElementById('id_medico').style.opacity = '1';
-    document.getElementById('id_medico').style.cursor = 'text';
-    document.getElementById('id_medico').style.backgroundColor = '#ffffff';
-    document.getElementById('inputCodigo').style.opacity = '1';
-    document.getElementById('inputCodigo').style.cursor = 'text';
-    document.getElementById('inputNombre').style.opacity = '1';
-    document.getElementById('inputNombre').style.cursor = 'text';
-    document.getElementById('btnAgregarDet').style.opacity = '1';
-    document.getElementById('btnAgregarDet').style.cursor = 'pointer';
+    todosLosCampos.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        campo.disabled = false;
+        campo.classList.remove('apple-input-disabled');
+        campo.classList.add('apple-input-enabled');
+    });
+    
+    const btnAgregarDet = document.getElementById('btnAgregarDet');
+    btnAgregarDet.disabled = false;
+    btnAgregarDet.classList.remove('apple-btn-disabled');
+    btnAgregarDet.classList.add('apple-btn-enabled');
     
     // Actualizar mensaje de determinaciones
     const lista = document.getElementById('listaDeterminaciones');
     if (determinaciones.length === 0) {
-        lista.innerHTML = '<p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>';
+        lista.innerHTML = '<p class="apple-det-empty">No hay determinaciones agregadas</p>';
     }
 }
 
@@ -616,11 +561,11 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
     const status = document.getElementById('detStatus');
     
     if (!codigo) {
-        status.innerHTML = '<span style="color: #ff9999;">⚠️ Ingrese un código</span>';
+        status.innerHTML = '<span class="apple-status-error">Ingrese un código</span>';
         return;
     }
     
-    status.innerHTML = '<span style="color: #00d4ff;">⏳ Buscando...</span>';
+    status.innerHTML = '<span class="apple-status-searching">Buscando...</span>';
     
     try {
         const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
@@ -631,7 +576,7 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                 // Para complejas: agregar solo el código de la compleja
                 const yaExiste = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === data.codigo);
                 if (yaExiste) {
-                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Ya agregada</span>';
+                    status.innerHTML = '<span class="apple-status-error">Ya agregada</span>';
                     return;
                 }
                 
@@ -642,7 +587,7 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                     determinaciones: data.determinaciones,
                     stock: data.stock !== undefined ? data.stock : true
                 });
-                status.innerHTML = '<span style="color: #4caf50;">✅ Determinación compleja agregada</span>';
+                status.innerHTML = '<span class="apple-status-found">Determinación compleja agregada</span>';
             } else if (data.tipo === 'perfil') {
                 // Para perfiles: expandir subdeterminaciones (simples o complejas)
                 const detCodesRaw = Array.isArray(data.determinaciones)
@@ -650,7 +595,7 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                     : (data.determinaciones || '').split(',').map(d => d.trim()).filter(Boolean);
 
                 if (detCodesRaw.length === 0) {
-                    status.innerHTML = '<span style="color: #ff9999;">⚠️ El perfil no tiene determinaciones</span>';
+                    status.innerHTML = '<span class="apple-status-error">El perfil no tiene determinaciones</span>';
                     return;
                 }
 
@@ -693,15 +638,15 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                 }
 
                 if (agregadas === 0) {
-                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Todas las determinaciones del perfil ya estaban agregadas</span>';
+                    status.innerHTML = '<span class="apple-status-error">Todas las determinaciones del perfil ya estaban agregadas</span>';
                 } else {
-                    status.innerHTML = `<span style="color: #4caf50;">✅ Perfil agregado (${agregadas} determinaciones)</span>`;
+                    status.innerHTML = `<span class="apple-status-found">Perfil agregado (${agregadas} determinaciones)</span>`;
                 }
             } else {
                 // Agregar determinación individual
                 const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
                 if (yaExiste) {
-                    status.innerHTML = '<span style="color: #ff9999;">⚠️ Ya agregada</span>';
+                    status.innerHTML = '<span class="apple-status-error">Ya agregada</span>';
                     return;
                 }
                 
@@ -711,7 +656,7 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
                     nombre: data.nombre,
                     stock: data.stock !== undefined ? data.stock : true
                 });
-                status.innerHTML = '<span style="color: #4caf50;">✅ Determinación agregada</span>';
+                status.innerHTML = '<span class="apple-status-found">Determinación agregada</span>';
             }
             
             actualizarListaDeterminaciones();
@@ -719,10 +664,10 @@ document.getElementById('btnAgregarDet').addEventListener('click', async functio
             document.getElementById('inputNombre').value = '';
             setTimeout(() => status.innerHTML = '', 2000);
         } else {
-            status.innerHTML = '<span style="color: #ff9999;">❌ Código no encontrado</span>';
+            status.innerHTML = '<span class="apple-status-error">Código no encontrado</span>';
         }
     } catch (error) {
-        status.innerHTML = '<span style="color: #ff9999;">❌ Error al buscar</span>';
+        status.innerHTML = '<span class="apple-status-error">Error al buscar</span>';
     }
 });
 
@@ -745,43 +690,41 @@ function actualizarListaDeterminaciones() {
     const lista = document.getElementById('listaDeterminaciones');
     
     if (determinaciones.length === 0) {
-        lista.innerHTML = '<p style="color: rgba(224, 224, 224, 0.5); text-align: center; margin: 0;">No hay determinaciones agregadas</p>';
+        lista.innerHTML = '<p class="apple-det-empty">No hay determinaciones agregadas</p>';
     } else {
         lista.innerHTML = determinaciones.map((item, index) => {
             if (item.tipo === 'perfil') {
                 return `
-                    <div style="background: rgba(76, 175, 80, 0.15); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">PERFIL</span>
-                                <strong style="color: #4caf50; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: var(--text-light);">${item.nombre}</span>
-                                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(224, 224, 224, 0.7);">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
-                            </div>
-                            <button type="button" class="btn-eliminar" data-index="${index}" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+                    <div class="apple-det-item apple-det-item-perfil">
+                        <div>
+                            <span class="apple-det-badge apple-det-badge-perfil">PERFIL</span>
+                            <strong class="apple-det-codigo apple-det-codigo-perfil">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>
+                            <div class="apple-det-count">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
                         </div>
+                        <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
                     </div>
                 `;
             } else if (item.tipo === 'compleja') {
-                const sinStockBadge = item.stock === false ? '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: bold;">SIN STOCK</span>' : '';
-                const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
+                const sinStockBadge = item.stock === false ? '<span class="apple-det-badge apple-det-badge-sin-stock">SIN STOCK</span>' : '';
+                const disabledClass = item.stock === false ? ' apple-det-item-disabled' : '';
                 return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(156, 39, 176, 0.2); border: 1px solid rgba(156, 39, 176, 0.4); border-radius: 6px; margin-bottom: 0.5rem; ${estiloGris}">
+                    <div class="apple-det-item apple-det-item-compleja${disabledClass}">
                         <div>
-                            <span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">COMPLEJA</span>
-                            <strong style="color: #9c27b0; font-weight: 700; font-size: 1rem; margin-left: 0.5rem;">${item.codigo}</strong> - <span style="color: #1a1a2e; font-weight: 600; font-size: 0.95rem;">${item.nombre}</span>${sinStockBadge}
+                            <span class="apple-det-badge apple-det-badge-compleja">COMPLEJA</span>
+                            <strong class="apple-det-codigo apple-det-codigo-compleja">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>${sinStockBadge}
                         </div>
-                        <button type="button" class="btn-eliminar" data-index="${index}" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+                        <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
                     </div>
                 `;
             } else {
-                const sinStockBadge = item.stock === false ? '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: bold;">SIN STOCK</span>' : '';
-                const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
+                const sinStockBadge = item.stock === false ? '<span class="apple-det-badge apple-det-badge-sin-stock">SIN STOCK</span>' : '';
+                const disabledClass = item.stock === false ? ' apple-det-item-disabled' : '';
                 return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(33, 150, 243, 0.2); border: 1px solid rgba(33, 150, 243, 0.4); border-radius: 6px; margin-bottom: 0.5rem; ${estiloGris}">
+                    <div class="apple-det-item apple-det-item-simple${disabledClass}">
                         <div>
-                            <strong style="color: #2196F3; font-weight: 700; font-size: 1rem;">${item.codigo}</strong> - <span style="color: #1a1a2e; font-weight: 600; font-size: 0.95rem;">${item.nombre}</span>${sinStockBadge}
+                            <strong class="apple-det-codigo apple-det-codigo-simple">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>${sinStockBadge}
                         </div>
-                        <button type="button" class="btn-eliminar" data-index="${index}" style="background: #f44336; color: #fff; border: none; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">🗑️</button>
+                        <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
                     </div>
                 `;
             }
@@ -857,7 +800,7 @@ document.getElementById('turnoForm')?.addEventListener('submit', function(e) {
     const determinacionesInput = document.getElementById('id_determinaciones');
     if (!determinacionesInput.value || determinacionesInput.value.trim() === '') {
         e.preventDefault();
-        alert('⚠️ Debe agregar al menos una determinación antes de guardar el turno.');
+        alert('Debe agregar al menos una determinación antes de guardar el turno.');
         return false;
     }
 
@@ -868,7 +811,7 @@ document.getElementById('turnoForm')?.addEventListener('submit', function(e) {
 
     if (!dni || !nombre || !apellido) {
         e.preventDefault();
-        alert('⚠️ Complete todos los campos requeridos: DNI, Nombre y Apellido.');
+        alert('Complete todos los campos requeridos: DNI, Nombre y Apellido.');
         return false;
     }
 
@@ -883,19 +826,19 @@ if (turnoCreado) {
     // Mostrar modal
     const modal = document.createElement('div');
     modal.id = 'modalTurnoCreado';
-    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+    modal.className = 'apple-modal';
+    modal.style.display = 'flex';
     
     modal.innerHTML = `
-        <div style="background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(15, 15, 30, 0.98)); border: 2px solid #4caf50; border-radius: 12px; padding: 2.5rem; max-width: 500px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); text-align: center;">
-            <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
-            <h3 style="margin: 0 0 1rem 0; color: #4caf50; font-size: 1.8rem;">¡Turno creado exitosamente!</h3>
-            <p style="color: rgba(224, 224, 224, 0.8); margin-bottom: 2rem; font-size: 1.1rem;">El turno ha sido registrado correctamente en el sistema</p>
+        <div class="apple-modal-success">
+            <h3 class="apple-modal-success-title">Turno creado exitosamente</h3>
+            <p class="apple-modal-success-text">El turno ha sido registrado correctamente en el sistema</p>
             
-            <div style="display: flex; gap: 1rem; justify-content: center;">
-                <a href="/turnos/turno/${turnoCreado}/ticket/" target="_blank" style="background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                    🖨️ Imprimir Ticket
+            <div class="apple-modal-success-actions">
+                <a href="/turnos/turno/${turnoCreado}/ticket/" target="_blank" class="apple-btn apple-btn-primary">
+                    Imprimir Ticket
                 </a>
-                <button onclick="cerrarModal()" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255, 255, 255, 0.15)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)';">
+                <button onclick="cerrarModal()" class="apple-btn apple-btn-light">
                     Cerrar
                 </button>
             </div>
@@ -944,11 +887,11 @@ formNuevoMedico.addEventListener('submit', async function(e) {
     const matricula = document.getElementById('matriculaMedico').value.trim();
     if (!nombre || !matricula) {
         estadoNuevoMedico.textContent = 'Complete ambos campos.';
-        estadoNuevoMedico.style.color = '#d32f2f';
+        estadoNuevoMedico.className = 'apple-status apple-status-error';
         return;
     }
     estadoNuevoMedico.textContent = 'Guardando...';
-    estadoNuevoMedico.style.color = '#333';
+    estadoNuevoMedico.className = 'apple-status apple-status-searching';
     try {
         const response = await fetch('/turnos/api/crear-medico/', {
             method: 'POST',
@@ -961,7 +904,7 @@ formNuevoMedico.addEventListener('submit', async function(e) {
         const data = await response.json();
         if (data.success) {
             estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
-            estadoNuevoMedico.style.color = '#388e3c';
+            estadoNuevoMedico.className = 'apple-status apple-status-found';
             // Actualizar cache y autocompletado
             medicosCache = null;
             await cargarMedicos();
@@ -969,11 +912,11 @@ formNuevoMedico.addEventListener('submit', async function(e) {
             setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
         } else {
             estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
-            estadoNuevoMedico.style.color = '#d32f2f';
+            estadoNuevoMedico.className = 'apple-status apple-status-error';
         }
     } catch (err) {
         estadoNuevoMedico.textContent = 'Error de red.';
-        estadoNuevoMedico.style.color = '#d32f2f';
+        estadoNuevoMedico.className = 'apple-status apple-status-error';
     }
     });
 });

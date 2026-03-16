@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import Cupo, Turno, Agenda, Coordinados, Feriados
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as DefaultUserAdmin
@@ -6,150 +7,249 @@ from django.contrib.auth.admin import UserAdmin as DefaultUserAdmin
 
 @admin.register(Agenda)
 class AgendaAdmin(admin.ModelAdmin):
-	list_display = ('name', 'slug', 'color')
-	prepopulated_fields = {"slug": ("name",)}
+    """Configuración del panel de administración para Agendas."""
+
+    list_display = ("name", "slug", "get_color_display")
+    prepopulated_fields = {"slug": ("name",)}
+    search_fields = ("name", "slug")
+
+    fieldsets = (
+        ("Información de la Agenda", {"fields": ("name", "slug")}),
+        ("Configuración Visual", {"fields": ("color",)}),
+        ("Auditoría", {"fields": ("usuario",), "classes": ("collapse",)}),
+    )
+
+    def get_color_display(self, obj):
+        """Muestra el color con una representación visual."""
+        return format_html(
+            '<span style="background-color: {}; padding: 5px 15px; border-radius: 3px; color: white; font-weight: bold;">{}</span>',
+            obj.color,
+            obj.color,
+        )
+
+    get_color_display.short_description = "Color"
+    get_color_display.admin_order_field = "color"
+
+    list_per_page = 25
+    save_on_top = True
 
 
 @admin.register(Coordinados)
 class CoordinadosAdmin(admin.ModelAdmin):
-	list_display = ('id_turno', 'get_dni', 'get_apellido', 'get_nombre', 'fecha_coordinacion')
-	list_filter = ('fecha_coordinacion',)
-	search_fields = ('dni__iden', 'dni__apellido', 'dni__nombre')
-	readonly_fields = ('fecha_coordinacion',)
-	ordering = ('-fecha_coordinacion', 'id_turno')
-	
-	def get_dni(self, obj):
-		return obj.dni.iden if obj.dni else '-'
-	get_dni.short_description = 'DNI'
-	get_dni.admin_order_field = 'dni__iden'
-	
-	def get_apellido(self, obj):
-		return obj.dni.apellido if obj.dni else '-'
-	get_apellido.short_description = 'Apellido'
-	get_apellido.admin_order_field = 'dni__apellido'
-	
-	def get_nombre(self, obj):
-		return obj.dni.nombre if obj.dni else '-'
-	get_nombre.short_description = 'Nombre'
-	get_nombre.admin_order_field = 'dni__nombre'
+    list_display = (
+        "id_turno",
+        "get_dni",
+        "get_apellido",
+        "get_nombre",
+        "fecha_coordinacion",
+    )
+    list_filter = ("fecha_coordinacion",)
+    search_fields = ("dni__iden", "dni__apellido", "dni__nombre")
+    readonly_fields = ("fecha_coordinacion",)
+    ordering = ("-fecha_coordinacion", "id_turno")
 
+    def get_dni(self, obj):
+        return obj.dni.iden if obj.dni else "-"
+
+    get_dni.short_description = "DNI"
+    get_dni.admin_order_field = "dni__iden"
+
+    def get_apellido(self, obj):
+        return obj.dni.apellido if obj.dni else "-"
+
+    get_apellido.short_description = "Apellido"
+    get_apellido.admin_order_field = "dni__apellido"
+
+    def get_nombre(self, obj):
+        return obj.dni.nombre if obj.dni else "-"
+
+    get_nombre.short_description = "Nombre"
+    get_nombre.admin_order_field = "dni__nombre"
 
 
 @admin.register(Cupo)
 class CupoAdmin(admin.ModelAdmin):
-	list_display = ('agenda', 'fecha', 'cantidad_total')
-	list_filter = ('agenda',)
-	actions = ['crear_cupos_rango']
+    """Configuración del panel de administración para Cupos."""
 
-	def crear_cupos_rango(self, request, queryset):
-		"""Admin action: crear cupos de lunes a viernes en un rango de fechas con cantidad configurable."""
-		from django.shortcuts import render
-		from django import forms
-		from datetime import datetime, timedelta
-		from django.contrib import messages
+    list_display = (
+        "agenda",
+        "fecha",
+        "cantidad_total",
+        "get_disponibles",
+        "get_ocupacion",
+    )
+    list_filter = ("agenda", "fecha")
+    search_fields = ("agenda__name",)
+    date_hierarchy = "fecha"
+    actions = ["crear_cupos_rango"]
 
-		class _CreateCuposForm(forms.Form):
-			agenda = forms.ModelChoiceField(queryset=Agenda.objects.all(), label="Agenda")
-			start = forms.DateField(required=True, widget=forms.DateInput(attrs={'type':'date'}), label="Desde")
-			end = forms.DateField(required=True, widget=forms.DateInput(attrs={'type':'date'}), label="Hasta")
-			cantidad = forms.IntegerField(required=True, initial=5, min_value=1, label="Cantidad de cupos")
+    fieldsets = (
+        ("Información del Cupo", {"fields": ("agenda", "fecha", "cantidad_total")}),
+        ("Auditoría", {"fields": ("usuario",), "classes": ("collapse",)}),
+    )
 
-		if 'apply' in request.POST:
-			form = _CreateCuposForm(request.POST)
-			if form.is_valid():
-				start = form.cleaned_data['start']
-				end = form.cleaned_data['end']
-				cantidad = form.cleaned_data['cantidad']
-				agenda = form.cleaned_data['agenda']
-				
-				total_created = 0
-				total_skipped = 0
-				
-				# Iterar desde start hasta end, solo de lunes a viernes
-				cur = start
-				while cur <= end:
-					# weekday(): 0=Lunes, 1=Martes, ..., 4=Viernes, 5=Sábado, 6=Domingo
-					if cur.weekday() < 5:  # Solo lunes a viernes
-						obj, created = Cupo.objects.get_or_create(
-							agenda=agenda,
-							fecha=cur,
-							defaults={'cantidad_total': cantidad}
-						)
-						if created:
-							total_created += 1
-						else:
-							total_skipped += 1
-					cur += timedelta(days=1)
+    def get_disponibles(self, obj):
+        """Muestra los cupos disponibles."""
+        disponibles = obj.disponibles()
+        color = "green" if disponibles > 0 else "red"
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>', color, disponibles
+        )
 
-				messages.success(request, f"✅ Cupos creados: {total_created} nuevos (lunes-viernes). Existentes omitidos: {total_skipped}. Rango: {start} a {end}.")
-				return None
-		else:
-			form = _CreateCuposForm()
+    get_disponibles.short_description = "Disponibles"
 
-		return render(request, 'admin/turnos/cupo_create_range.html', {
-			'form': form,
-			'title': 'Crear Cupos en Rango de Fechas (Lunes-Viernes)'
-		})
+    def get_ocupacion(self, obj):
+        """Muestra el porcentaje de ocupación."""
+        if obj.cantidad_total == 0:
+            return "0%"
+        usados = obj.cantidad_total - obj.disponibles()
+        porcentaje = int((usados / obj.cantidad_total) * 100)
 
-	crear_cupos_rango.short_description = "Crear cupos en rango de fechas (Lunes-Viernes)"
+        if porcentaje >= 90:
+            color = "red"
+        elif porcentaje >= 70:
+            color = "orange"
+        else:
+            color = "green"
+
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}%</span>', color, porcentaje
+        )
+
+    get_ocupacion.short_description = "Ocupación"
+
+    def crear_cupos_rango(self, request, queryset):
+        """Admin action: crear cupos de lunes a viernes en un rango de fechas con cantidad configurable."""
+        from django.shortcuts import render
+        from django import forms
+        from datetime import datetime, timedelta
+        from django.contrib import messages
+
+        class _CreateCuposForm(forms.Form):
+            agenda = forms.ModelChoiceField(
+                queryset=Agenda.objects.all(), label="Agenda"
+            )
+            start = forms.DateField(
+                required=True,
+                widget=forms.DateInput(attrs={"type": "date"}),
+                label="Desde",
+            )
+            end = forms.DateField(
+                required=True,
+                widget=forms.DateInput(attrs={"type": "date"}),
+                label="Hasta",
+            )
+            cantidad = forms.IntegerField(
+                required=True, initial=5, min_value=1, label="Cantidad de cupos"
+            )
+
+        if "apply" in request.POST:
+            form = _CreateCuposForm(request.POST)
+            if form.is_valid():
+                start = form.cleaned_data["start"]
+                end = form.cleaned_data["end"]
+                cantidad = form.cleaned_data["cantidad"]
+                agenda = form.cleaned_data["agenda"]
+
+                total_created = 0
+                total_skipped = 0
+
+                # Iterar desde start hasta end, solo de lunes a viernes
+                cur = start
+                while cur <= end:
+                    # weekday(): 0=Lunes, 1=Martes, ..., 4=Viernes, 5=Sábado, 6=Domingo
+                    if cur.weekday() < 5:  # Solo lunes a viernes
+                        obj, created = Cupo.objects.get_or_create(
+                            agenda=agenda,
+                            fecha=cur,
+                            defaults={"cantidad_total": cantidad},
+                        )
+                        if created:
+                            total_created += 1
+                        else:
+                            total_skipped += 1
+                    cur += timedelta(days=1)
+
+                messages.success(
+                    request,
+                    f"✅ Cupos creados: {total_created} nuevos (lunes-viernes). Existentes omitidos: {total_skipped}. Rango: {start} a {end}.",
+                )
+                return None
+        else:
+            form = _CreateCuposForm()
+
+        return render(
+            request,
+            "admin/turnos/cupo_create_range.html",
+            {"form": form, "title": "Crear Cupos en Rango de Fechas (Lunes-Viernes)"},
+        )
+
+    crear_cupos_rango.short_description = (
+        "Crear cupos en rango de fechas (Lunes-Viernes)"
+    )
 
 
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
-	list_display = ('id', 'agenda', 'fecha', 'get_dni', 'usuario', 'creado')
-	list_filter = ('agenda', 'fecha',)
-	search_fields = ('dni__iden', 'dni__apellido', 'dni__nombre', 'medico__nombre')
-	readonly_fields = ('creado',)
-	fieldsets = (
-		('Información del Paciente', {
-			'fields': ('dni',)
-		}),
-		('Turno', {
-			'fields': ('agenda', 'fecha', 'medico')
-		}),
-		('Información Adicional', {
-			'fields': ('determinaciones', 'nota_interna')
-		}),
-		('Auditoría', {
-			'fields': ('usuario', 'creado'),
-			'classes': ('collapse',)
-		}),
-	)
-	
-	def get_search_results(self, request, queryset, search_term):
-		"""Personalizar búsqueda para incluir búsqueda de médicos."""
-		queryset, use_distinct = super().get_search_results(request, queryset, search_term)
-		return queryset, use_distinct
+    list_display = ("id", "agenda", "fecha", "get_dni", "usuario", "creado")
+    list_filter = (
+        "agenda",
+        "fecha",
+    )
+    search_fields = ("dni__iden", "dni__apellido", "dni__nombre", "medico__nombre")
+    readonly_fields = ("creado",)
+    fieldsets = (
+        ("Información del Paciente", {"fields": ("dni",)}),
+        ("Turno", {"fields": ("agenda", "fecha", "medico")}),
+        ("Información Adicional", {"fields": ("determinaciones", "nota_interna")}),
+        ("Auditoría", {"fields": ("usuario", "creado"), "classes": ("collapse",)}),
+    )
 
-	def get_dni(self, obj):
-		return obj.dni.iden if obj.dni else '-'
-	get_dni.short_description = 'DNI'
-	get_dni.admin_order_field = 'dni__iden'
+    def get_search_results(self, request, queryset, search_term):
+        """Personalizar búsqueda para incluir búsqueda de médicos."""
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term
+        )
+        return queryset, use_distinct
+
+    def get_dni(self, obj):
+        return obj.dni.iden if obj.dni else "-"
+
+    get_dni.short_description = "DNI"
+    get_dni.admin_order_field = "dni__iden"
 
 
 @admin.register(Feriados)
 class FeriadosAdmin(admin.ModelAdmin):
-	list_display = ('fecha', 'descripcion')
-	list_filter = ('fecha',)
-	search_fields = ('descripcion',)
-	ordering = ('-fecha',)
+    list_display = ("fecha", "descripcion")
+    list_filter = ("fecha",)
+    search_fields = ("descripcion",)
+    ordering = ("-fecha",)
 
 
 # Mostrar nombre y apellido en el admin de usuarios
 class UserAdmin(DefaultUserAdmin):
-	list_display = ('username', 'first_name', 'last_name', 'email', 'is_staff')
-	add_fieldsets = (
-		(None, {
-			'classes': ('wide',),
-			'fields': ('username', 'first_name', 'last_name', 'email', 'password1', 'password2'),
-		}),
-	)
+    list_display = ("username", "first_name", "last_name", "email", "is_staff")
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": (
+                    "username",
+                    "first_name",
+                    "last_name",
+                    "email",
+                    "password1",
+                    "password2",
+                ),
+            },
+        ),
+    )
+
 
 try:
-	admin.site.unregister(User)
+    admin.site.unregister(User)
 except Exception:
-	pass
+    pass
 admin.site.register(User, UserAdmin)
-
-
-

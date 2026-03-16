@@ -6,102 +6,61 @@
   <title>Agendador</title>
   {% load static %}
   <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/apple-design.css' %}" rel="stylesheet">
   <style>
-    :root {
-      --dark-bg: #f9f5f3;
-      --darker-bg: #fefefe;
-      --accent: #c89b8f;
-      --accent-hover: #b08678;
-      --text-light: #2d2d2d;
-      --text-medium: #4a4a4a;
-      --text-dark: #6a6a6a;
-      --success: #8fb88f;
-      --warning: #e8b88f;
-      --danger: #d89090;
-      --border-color: rgba(200, 155, 143, 0.3);
-      --bg-elevated: #f5ebe8;
-      --bg-card: #faf6f4;
-    }
-    * {
-      margin: 0;
-      padding: 0;
-    }
+    /* Estilos específicos del menú de usuario y etiquetadoras */
     body {
-      background: #faf6f4;
-      color: var(--text-light);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
-    header {
-      background: linear-gradient(135deg, #faf6f4 0%, #f5ebe8 100%);
-      border-bottom: 3px solid var(--accent);
-      padding: 1rem 0;
-      box-shadow: 0 2px 10px rgba(200, 155, 143, 0.2);
-    }
-    nav {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px;
-      display: flex;
-      gap: 2rem;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-    }
-    .nav-center {
-      display: flex;
-      gap: 2rem;
-      align-items: center;
+    main {
+      flex: 1;
+      width: 100%;
     }
     .user-info {
       display: flex;
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      background: rgba(0, 212, 255, 0.1);
-      border-radius: 8px;
-      border: 1px solid rgba(0, 212, 255, 0.3);
+      background: var(--apple-blue-light);
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--apple-blue);
     }
     .user-info .username {
-      color: var(--accent);
-      font-weight: 600;
+      color: var(--apple-blue);
+      font-weight: var(--font-weight-semibold);
     }
     .user-menu {
       position: relative;
       display: inline-block;
     }
     .user-menu-btn {
-      background: rgba(0, 212, 255, 0.1);
-      border: 1px solid rgba(0, 212, 255, 0.3);
-      color: var(--accent);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
+      background: var(--apple-blue-light);
+      border: 1px solid var(--apple-blue);
+      color: var(--apple-blue);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--border-radius-sm);
       cursor: pointer;
-      font-weight: 500;
-      transition: all 0.3s ease;
+      font-weight: var(--font-weight-medium);
+      transition: all var(--transition-base);
     }
     .user-menu-btn:hover {
-      background: rgba(0, 212, 255, 0.2);
-      border-color: var(--accent);
+      background: var(--apple-blue);
+      color: var(--apple-white);
     }
     .user-menu-content {
       display: none;
       position: absolute;
       right: 0;
       top: 100%;
-      margin-top: 0.5rem;
-      background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
-      border: 1px solid rgba(0, 212, 255, 0.3);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      margin-top: var(--space-sm);
+      background: var(--apple-white);
+      border: 1px solid var(--apple-gray-light);
+      border-radius: var(--border-radius-md);
+      box-shadow: var(--shadow-lg);
       min-width: 200px;
-      z-index: 1000;
+      z-index: var(--z-dropdown);
     }
     .user-menu.active .user-menu-content {
       display: block;
@@ -109,119 +68,64 @@
     .user-menu-content a,
     .user-menu-content button {
       display: block;
-      padding: 0.75rem 1rem;
-      color: var(--text-light);
+      padding: var(--space-md) var(--space-lg);
+      color: var(--apple-gray-dark);
       text-decoration: none;
       border: none;
       background: none;
       width: 100%;
       text-align: left;
       cursor: pointer;
-      transition: all 0.3s ease;
-      font-weight: 500;
+      transition: all var(--transition-base);
+      font-weight: var(--font-weight-medium);
     }
     .user-menu-content a:hover {
-      background: rgba(0, 212, 255, 0.1);
-      color: var(--accent);
+      background: var(--apple-gray-lightest);
+      color: var(--apple-blue);
     }
     .user-menu-content button {
-      color: var(--danger);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--apple-red);
+      border-top: 1px solid var(--apple-gray-light);
     }
     .user-menu-content button:hover {
-      background: rgba(244, 67, 54, 0.1);
-      color: #ff6b6b;
+      background: var(--apple-red-light);
+      color: var(--apple-red);
     }
-    nav a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 1rem;
+    #etiquetadoras-menu {
+      margin-left: 1.5em;
+      margin-top: 0.5em;
     }
-    nav a:hover {
-      color: var(--text-light);
-      background: rgba(200, 155, 143, 0.2);
-      box-shadow: 0 2px 8px rgba(200, 155, 143, 0.3);
+    #etiquetadoras-menu div {
+      padding: 0.25rem 0;
     }
-    nav button {
-      background: none;
-      border: none;
-      color: var(--danger);
-      text-decoration: none;
-      font-weight: 500;
-      cursor: pointer;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      transition: all 0.3s ease;
-    }
-    nav button:hover {
-      background: rgba(244, 67, 54, 0.1);
-      color: #ff6b6b;
-    }
-    main {
-      flex: 1;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem 20px;
-      width: 100%;
-    }
-    .alert-container {
-      max-width: 1200px;
-      margin: 1.5rem auto;
-      padding: 0 20px;
-    }
-    .alert {
-      background: rgba(143, 184, 143, 0.15);
-      border: 2px solid var(--success);
-      color: #4a7c4a;
-      border-radius: 8px;
-      padding: 1rem;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      box-shadow: 0 2px 8px rgba(143, 184, 143, 0.2);
-    }
-    h1, h2, h3 {
-      color: var(--text-light);
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
-    h1 { font-size: 2rem; }
-    h2 { font-size: 1.5rem; }
-    h3 { font-size: 1.2rem; }
   </style>
 </head>
 <body>
-  <header>
-    <nav>
-      <div class="nav-left">
-        <div class="user-info">
-          <span style="color: var(--accent);">👤</span>
-          <span class="username">{{ user.username }}</span>
-        </div>
+  <header class="apple-header">
+    <div class="apple-header-content">
+      <div class="user-info">
+        <span class="username">{{ user.username }}</span>
       </div>
       
-      <div class="nav-center">
-        <a href="{% url 'turnos:calendario' %}">📅 Agenda</a>
-        <a href="{% url 'turnos:buscar' %}">🔍 Buscar</a>
-        <a href="{% url 'turnos:control' %}">✅ Control</a>
-        <a href="{% url 'determinaciones:buscador' %}">📊 Estadísticas</a>
+      <nav class="apple-nav">
+        <a href="{% url 'turnos:calendario' %}" class="apple-nav-link">Agenda</a>
+        <a href="{% url 'turnos:buscar' %}" class="apple-nav-link">Buscar</a>
+        <a href="{% url 'turnos:control' %}" class="apple-nav-link">Control</a>
+        <a href="{% url 'determinaciones:buscador' %}" class="apple-nav-link">Estadísticas</a>
         {% if user.is_superuser %}
-        <a href="{% url 'turnos:audit_log' %}" style="color: #667eea;">📋 Auditoría</a>
+        <a href="{% url 'turnos:audit_log' %}" class="apple-nav-link">Auditoría</a>
         {% endif %}
-        <a href="{% url 'turnos:generar_cupos_masivo' %}">⚙️ Cupos</a>
-        <a href="/admin/">📊 Tablas</a>
-        <a href="{% url 'informes:listado' %}">📄 Informes</a>
-      </div>
+        <a href="{% url 'turnos:generar_cupos_masivo' %}" class="apple-nav-link">Cupos</a>
+        <a href="/admin/" class="apple-nav-link">Tablas</a>
+        <a href="{% url 'informes:listado' %}" class="apple-nav-link">Informes</a>
+      </nav>
       
       <div class="user-menu">
-        <button class="user-menu-btn">⚙️ Opciones ▼</button>
+        <button class="user-menu-btn">Opciones ▼</button>
         <div class="user-menu-content">
-          <a href="{% url 'password_change' %}">🔐 Cambiar contraseña</a>
-          <button type="button" id="etiquetadoras-btn" class="dropdown-item">🏷️ Etiquetadoras ▼</button>
-          <div id="etiquetadoras-menu" style="display:none; margin-left:1.5em; margin-top:0.5em;">
+          <a href="{% url 'password_change' %}">Cambiar contraseña</a>
+          <button type="button" id="etiquetadoras-btn" class="dropdown-item">Etiquetadoras ▼</button>
+          <div id="etiquetadoras-menu" style="display:none;">
             <div>
               <input type="radio" name="etiquetadora" id="etq-adm1" value="ADM1">
               <label for="etq-adm1">ADM1</label>
@@ -241,20 +145,20 @@
           </div>
           <form method="post" action="{% url 'logout' %}" style="display:inline; margin:0;">
             {% csrf_token %}
-            <button type="submit">🚪 Cerrar sesión</button>
+            <button type="submit">Cerrar sesión</button>
           </form>
         </div>
       </div>
-    </nav>
+    </div>
   </header>
   {% if messages %}
-    <div class="alert-container">
+    <div class="apple-container mt-lg">
       {% for message in messages %}
-        <div class="alert">✓ {{ message }}</div>
+        <div class="apple-alert apple-alert-success">{{ message }}</div>
       {% endfor %}
     </div>
   {% endif %}
-  <main>
+  <main class="apple-container apple-section">
     {% block content %}{% endblock %}
   </main>
   <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>

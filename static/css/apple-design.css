@@ -1,0 +1,1434 @@
+/* ========================================
+   APPLE DESIGN SYSTEM - Sistema de diseño minimalista
+   ======================================== */
+
+/* ========================================
+   VARIABLES CSS
+   ======================================== */
+:root {
+    /* Colores principales */
+    --apple-blue: #007aff;
+    --apple-blue-light: #e3f2fd;
+    --apple-blue-hover: #0056b3;
+    
+    --apple-green: #34c759;
+    --apple-green-light: #e8f5e9;
+    --apple-green-hover: #2da44e;
+    
+    --apple-red: #ff3b30;
+    --apple-red-light: #ffebee;
+    --apple-red-hover: #d32f2f;
+    
+    --apple-orange: #ff9500;
+    --apple-orange-light: #fff3e0;
+    
+    --apple-purple: #9c27b0;
+    --apple-purple-light: #f3e5f5;
+    
+    /* Grises */
+    --apple-gray-darkest: #1d1d1f;
+    --apple-gray-dark: #424245;
+    --apple-gray: #86868b;
+    --apple-gray-light: #d2d2d7;
+    --apple-gray-lightest: #f5f5f7;
+    --apple-white: #ffffff;
+    
+    /* Espaciado */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+    
+    /* Bordes */
+    --border-radius-sm: 6px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+    
+    /* Sombras */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+    
+    /* Transiciones */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    
+    /* Z-index */
+    --z-dropdown: 1000;
+    --z-modal: 1050;
+    --z-tooltip: 1100;
+}
+
+/* ========================================
+   RESET Y BASE
+   ======================================== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    color: var(--apple-gray-darkest);
+    background-color: var(--apple-gray-lightest);
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+}
+
+/* ========================================
+   CONTENEDORES
+   ======================================== */
+.apple-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-lg);
+}
+
+/* ========================================
+   TIPOGRAFIA
+   ======================================== */
+.apple-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--apple-gray-darkest);
+    margin-bottom: var(--space-lg);
+}
+
+.apple-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--apple-gray-darkest);
+    margin-bottom: var(--space-md);
+}
+
+/* Utilidades de texto */
+.text-center { text-align: center; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+
+.text-bold { font-weight: 700; }
+.text-semibold { font-weight: 600; }
+.text-light { font-weight: 300; }
+.text-medium { font-weight: 500; }
+
+.text-gray { color: var(--apple-gray); }
+.text-blue { color: var(--apple-blue); }
+.text-green { color: var(--apple-green); }
+.text-red { color: var(--apple-red); }
+.text-purple { color: var(--apple-purple); }
+
+/* ========================================
+   TARJETAS (CARDS)
+   ======================================== */
+.apple-card {
+    background: var(--apple-white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.apple-card-hover {
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.apple-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.apple-card-header {
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--apple-gray-light);
+    margin-bottom: var(--space-md);
+}
+
+.apple-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--apple-gray-darkest);
+    margin: 0;
+}
+
+.apple-card-body {
+    padding: var(--space-md) 0;
+}
+
+.apple-card-footer {
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--apple-gray-light);
+    margin-top: var(--space-md);
+}
+
+/* ========================================
+   BOTONES
+   ======================================== */
+.apple-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: var(--border-radius-md);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    gap: var(--space-sm);
+}
+
+.apple-btn:hover {
+    transform: translateY(-1px);
+}
+
+.apple-btn:active {
+    transform: translateY(0);
+}
+
+.apple-btn-primary {
+    background-color: var(--apple-blue);
+    color: var(--apple-white);
+}
+
+.apple-btn-primary:hover {
+    background-color: var(--apple-blue-hover);
+}
+
+.apple-btn-secondary {
+    background-color: var(--apple-gray-light);
+    color: var(--apple-gray-darkest);
+}
+
+.apple-btn-secondary:hover {
+    background-color: var(--apple-gray);
+    color: var(--apple-white);
+}
+
+.apple-btn-success {
+    background-color: var(--apple-green);
+    color: var(--apple-white);
+}
+
+.apple-btn-success:hover {
+    background-color: var(--apple-green-hover);
+}
+
+.apple-btn-danger {
+    background-color: var(--apple-red);
+    color: var(--apple-white);
+}
+
+.apple-btn-danger:hover {
+    background-color: var(--apple-red-hover);
+}
+
+.apple-btn-light {
+    background-color: var(--apple-gray-lightest);
+    color: var(--apple-gray-dark);
+    border: 1px solid var(--apple-gray-light);
+}
+
+.apple-btn-light:hover {
+    background-color: var(--apple-gray-light);
+}
+
+.apple-btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.apple-btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+}
+
+.apple-btn-block {
+    width: 100%;
+}
+
+/* ========================================
+   FORMULARIOS
+   ======================================== */
+.apple-form-group {
+    margin-bottom: var(--space-md);
+}
+
+.apple-form-group-relative {
+    position: relative;
+}
+
+.apple-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--apple-gray-dark);
+    margin-bottom: var(--space-xs);
+}
+
+.apple-input,
+.apple-form-text-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--apple-gray-light);
+    border-radius: var(--border-radius-md);
+    background-color: var(--apple-white);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.apple-input:focus,
+.apple-form-text-input:focus {
+    outline: none;
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.apple-input-dni {
+    background: var(--apple-gray-lightest);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.apple-input-readonly {
+    background: var(--apple-gray-lightest);
+}
+
+.apple-select,
+.apple-form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--apple-gray-light);
+    border-radius: var(--border-radius-md);
+    background-color: var(--apple-white);
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+}
+
+.apple-select:focus,
+.apple-form-select:focus {
+    outline: none;
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.apple-textarea,
+.apple-form-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--apple-gray-light);
+    border-radius: var(--border-radius-md);
+    background-color: var(--apple-white);
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color var(--transition-fast);
+}
+
+.apple-textarea:focus,
+.apple-form-textarea:focus {
+    outline: none;
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+/* Formulario de DNI */
+.apple-form-dni-row {
+    display: flex;
+    gap: var(--space-md);
+    align-items: flex-end;
+}
+
+.apple-form-dni-input {
+    flex: 1;
+}
+
+/* ========================================
+   GRIDS
+   ======================================== */
+.apple-grid {
+    display: grid;
+    gap: var(--space-md);
+}
+
+.apple-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+.apple-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+}
+
+.apple-grid-determinaciones {
+    display: grid;
+    grid-template-columns: 1fr 2fr auto;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.apple-form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+.apple-form-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+}
+
+/* ========================================
+   FLEXBOX UTILITIES
+   ======================================== */
+.apple-flex {
+    display: flex;
+}
+
+.apple-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.apple-flex-buttons {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.apple-flex-buttons > * {
+    flex: 1;
+}
+
+/* ========================================
+   BADGES
+   ======================================== */
+.apple-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: var(--border-radius-xl);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.apple-badge-green {
+    background-color: var(--apple-green-light);
+    color: var(--apple-green);
+}
+
+.apple-badge-gray {
+    background-color: var(--apple-gray-light);
+    color: var(--apple-gray-dark);
+}
+
+.apple-badge-purple {
+    background-color: var(--apple-purple-light);
+    color: var(--apple-purple);
+}
+
+/* ========================================
+   ALERTAS
+   ======================================== */
+.apple-alert {
+    padding: var(--space-md);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--space-md);
+}
+
+.apple-alert-success {
+    background-color: var(--apple-green-light);
+    color: var(--apple-green-hover);
+    border: 1px solid var(--apple-green);
+}
+
+.apple-alert-danger {
+    background-color: var(--apple-red-light);
+    color: var(--apple-red-hover);
+    border: 1px solid var(--apple-red);
+}
+
+/* ========================================
+   STATUS MESSAGES
+   ======================================== */
+.apple-status {
+    min-height: 1.5rem;
+    margin: var(--space-sm) 0;
+}
+
+.apple-status-success {
+    color: var(--apple-green);
+    font-weight: 600;
+}
+
+.apple-status-warning {
+    color: var(--apple-orange);
+    font-weight: 600;
+}
+
+.apple-status-error {
+    color: var(--apple-red);
+    font-weight: 600;
+}
+
+/* ========================================
+   AUTOCOMPLETADO
+   ======================================== */
+.apple-autocomplete-list {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--apple-white);
+    border: 1px solid var(--apple-gray-light);
+    border-radius: var(--border-radius-md);
+    margin-top: var(--space-xs);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: var(--z-dropdown);
+    box-shadow: var(--shadow-lg);
+}
+
+.apple-autocomplete-item {
+    padding: var(--space-md);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    border-bottom: 1px solid var(--apple-gray-lightest);
+}
+
+.apple-autocomplete-item:hover {
+    background: var(--apple-gray-lightest);
+}
+
+.apple-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+/* ========================================
+   LISTA DE DETERMINACIONES
+   ======================================== */
+.apple-determinaciones-list {
+    background: var(--apple-gray-lightest);
+    border: 1px solid var(--apple-gray-light);
+    border-radius: var(--border-radius-md);
+    padding: var(--space-md);
+    min-height: 100px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.apple-turno-item {
+    padding: var(--space-md);
+    background: var(--apple-white);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--space-sm);
+    border: 1px solid var(--apple-gray-light);
+}
+
+.apple-turno-item:last-child {
+    margin-bottom: 0;
+}
+
+.apple-item-disabled {
+    opacity: 0.6;
+}
+
+.item-perfil {
+    background-color: var(--apple-green-light);
+    border-color: var(--apple-green);
+}
+
+.item-compleja {
+    background-color: var(--apple-purple-light);
+    border-color: var(--apple-purple);
+}
+
+/* ========================================
+   NAVEGACION
+   ======================================== */
+.apple-nav {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.apple-nav-link {
+    color: var(--apple-blue);
+    text-decoration: none;
+    font-weight: 600;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius-sm);
+    transition: background var(--transition-fast);
+}
+
+.apple-nav-link:hover {
+    background: var(--apple-blue-light);
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+.apple-header {
+    background: var(--apple-white);
+    padding: var(--space-md) var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.apple-header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ========================================
+   MODALES
+   ======================================== */
+.apple-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: var(--z-modal);
+    align-items: center;
+    justify-content: center;
+}
+
+.apple-modal-content {
+    background: var(--apple-white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-xl);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+}
+
+.apple-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--apple-gray-darkest);
+    margin-bottom: var(--space-md);
+}
+
+.apple-modal-body {
+    margin-bottom: var(--space-lg);
+}
+
+.apple-modal-empty {
+    text-align: center;
+    color: var(--apple-gray);
+    padding: var(--space-xl);
+}
+
+/* Modales específicos para turnos */
+.apple-modal-turno-nombre {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+}
+
+.apple-modal-turno-detalles {
+    color: var(--apple-gray-dark);
+    margin-bottom: var(--space-md);
+}
+
+.apple-modal-turno-coordinado {
+    border-left: 4px solid var(--apple-green);
+    padding-left: var(--space-md);
+}
+
+.apple-modal-turno-no-coordinado {
+    border-left: 4px solid var(--apple-orange);
+    padding-left: var(--space-md);
+}
+
+.apple-modal-turnos-grid {
+    display: grid;
+    gap: var(--space-md);
+}
+
+.apple-modal-agenda-section {
+    margin-bottom: var(--space-lg);
+}
+
+/* Modales históricos */
+.apple-modal-historicos {
+    max-width: 800px;
+}
+
+.apple-modal-historicos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.apple-modal-historicos-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.apple-modal-historicos-stats {
+    display: flex;
+    gap: var(--space-lg);
+}
+
+.apple-modal-historicos-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ========================================
+   AGENDA CARDS
+   ======================================== */
+.apple-agenda-card {
+    background: var(--apple-white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+}
+
+.apple-agenda-card-header {
+    padding: var(--space-md);
+    border-bottom: 3px solid;
+    font-weight: 600;
+}
+
+.apple-agenda-card-title {
+    font-size: 1.125rem;
+    margin: 0;
+}
+
+.apple-agenda-card-stats {
+    padding: var(--space-md);
+    display: flex;
+    gap: var(--space-lg);
+}
+
+.apple-agenda-card-stats-label {
+    font-size: 0.875rem;
+    color: var(--apple-gray);
+}
+
+.apple-agenda-card-stats-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* ========================================
+   AGENDA LEGEND
+   ======================================== */
+.apple-agenda-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.apple-agenda-legend-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.875rem;
+}
+
+.apple-agenda-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--border-radius-sm);
+    background: var(--apple-gray-lightest);
+}
+
+.apple-agenda-chip-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.apple-agenda-chip-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ========================================
+   CUPO GRID
+   ======================================== */
+.apple-cupo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-md);
+}
+
+.apple-cupo-info {
+    text-align: center;
+    padding: var(--space-md);
+    background: var(--apple-gray-lightest);
+    border-radius: var(--border-radius-md);
+}
+
+.apple-cupo-label {
+    font-size: 0.75rem;
+    color: var(--apple-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-xs);
+}
+
+.apple-cupo-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--apple-gray-darkest);
+}
+
+.apple-cupo-value-primary {
+    color: var(--apple-blue);
+}
+
+.apple-cupo-value-success {
+    color: var(--apple-green);
+}
+
+.apple-cupo-value-danger {
+    color: var(--apple-red);
+}
+
+/* ========================================
+   TURNOS LIST
+   ======================================== */
+.apple-turnos-section {
+    margin-bottom: var(--space-xl);
+}
+
+.apple-turnos-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 2px solid var(--apple-gray-light);
+}
+
+.apple-turnos-section-title-coordinados {
+    border-bottom-color: var(--apple-green);
+    color: var(--apple-green-hover);
+}
+
+.apple-turnos-section-title-no-coordinados {
+    border-bottom-color: var(--apple-orange);
+    color: var(--apple-orange);
+}
+
+.apple-turnos-list-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+}
+
+.apple-turnos-ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.apple-turno-item-info {
+    flex: 1;
+}
+
+.apple-turno-item-nombre {
+    font-weight: 600;
+    color: var(--apple-gray-darkest);
+}
+
+.apple-turno-item-dni {
+    font-size: 0.875rem;
+    color: var(--apple-gray);
+}
+
+.apple-turno-item-coordinado {
+    border-left: 4px solid var(--apple-green);
+}
+
+.apple-turno-item-no-coordinado {
+    border-left: 4px solid var(--apple-orange);
+}
+
+.apple-turno-item-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.apple-no-turnos {
+    text-align: center;
+    color: var(--apple-gray);
+    padding: var(--space-lg);
+    font-style: italic;
+}
+
+/* ========================================
+   ACTION BUTTONS
+   ======================================== */
+.apple-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--border-radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+}
+
+.apple-action-btn-edit {
+    background: var(--apple-blue-light);
+    color: var(--apple-blue);
+}
+
+.apple-action-btn-edit:hover {
+    background: var(--apple-blue);
+    color: var(--apple-white);
+}
+
+.apple-action-btn-delete {
+    background: var(--apple-red-light);
+    color: var(--apple-red);
+}
+
+.apple-action-btn-delete:hover {
+    background: var(--apple-red);
+    color: var(--apple-white);
+}
+
+.apple-action-btn-print,
+.apple-action-btn-print-retiro {
+    background: var(--apple-gray-lightest);
+    color: var(--apple-gray-dark);
+}
+
+.apple-action-btn-print:hover,
+.apple-action-btn-print-retiro:hover {
+    background: var(--apple-gray-light);
+    color: var(--apple-gray-darkest);
+}
+
+/* ========================================
+   TURNO FORM
+   ======================================== */
+.apple-turno-form {
+    background: var(--apple-white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-md);
+}
+
+/* ========================================
+   DIA VIEW
+   ======================================== */
+.apple-dia-container {
+    max-width: 1400px;
+}
+
+.apple-dia-titulo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.apple-dia-fecha {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--apple-gray-darkest);
+}
+
+.apple-dia-agenda-name {
+    font-size: 1.25rem;
+    color: var(--apple-gray);
+}
+
+/* ========================================
+   FERIADOS
+   ======================================== */
+.apple-feriado-banner {
+    background: linear-gradient(135deg, var(--apple-red-light), var(--apple-orange-light));
+    border: 2px solid var(--apple-red);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-xl);
+    text-align: center;
+    margin-bottom: var(--space-xl);
+}
+
+.apple-feriado-content {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.apple-feriado-titulo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--apple-red);
+    margin-bottom: var(--space-sm);
+}
+
+.apple-feriado-descripcion {
+    font-size: 1.25rem;
+    color: var(--apple-gray-darkest);
+    margin-bottom: var(--space-sm);
+}
+
+.apple-feriado-nota {
+    font-size: 0.875rem;
+    color: var(--apple-gray);
+}
+
+/* ========================================
+   CALENDAR WRAPPER
+   ======================================== */
+.apple-calendar-wrapper {
+    background: var(--apple-white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-lg);
+    overflow: hidden;
+}
+
+/* ========================================
+   SECTION
+   ======================================== */
+.apple-section {
+    margin-bottom: var(--space-xl);
+}
+
+/* ========================================
+   SPACING UTILITIES
+   ======================================== */
+.apple-margin-top-xl {
+    margin-top: var(--space-xl);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+/* ========================================
+   FIELD WITH BUTTON (Medico field pattern)
+   ======================================== */
+.apple-field-with-button {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-sm);
+}
+
+.apple-field-with-button .apple-input-wrapper {
+    flex: 1;
+    position: relative;
+}
+
+.apple-btn-icon-circle {
+    border-radius: 50%;
+    width: 2.6rem;
+    height: 2.6rem;
+    padding: 0;
+    font-size: 1.25rem;
+}
+
+/* ========================================
+   INPUT STATES
+   ======================================== */
+.apple-input-disabled,
+.apple-btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.apple-input-enabled {
+    opacity: 1;
+    cursor: text;
+    background-color: var(--apple-white);
+}
+
+.apple-btn-enabled {
+    opacity: 1;
+    cursor: pointer;
+}
+
+/* ========================================
+   DETERMINACIONES
+   ======================================== */
+.apple-det-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr auto;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.apple-det-list-container {
+    background: var(--apple-gray-lightest);
+    border: 1px solid var(--apple-gray-light);
+    border-radius: var(--border-radius-md);
+    padding: var(--space-md);
+    min-height: 100px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.apple-det-empty {
+    color: var(--apple-gray);
+    text-align: center;
+    margin: 0;
+}
+
+.apple-det-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.apple-det-item:last-child {
+    margin-bottom: 0;
+}
+
+.apple-det-item-perfil {
+    background: var(--apple-green-light);
+    border: 1px solid var(--apple-green);
+}
+
+.apple-det-item-compleja {
+    background: var(--apple-purple-light);
+    border: 1px solid var(--apple-purple);
+}
+
+.apple-det-item-simple {
+    background: var(--apple-blue-light);
+    border: 1px solid var(--apple-blue);
+}
+
+.apple-det-item-disabled {
+    opacity: 0.6;
+}
+
+.apple-det-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--apple-white);
+}
+
+.apple-det-badge-perfil {
+    background: var(--apple-green);
+}
+
+.apple-det-badge-compleja {
+    background: var(--apple-purple);
+}
+
+.apple-det-badge-sin-stock {
+    background: var(--apple-gray);
+}
+
+.apple-det-codigo {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-left: var(--space-sm);
+}
+
+.apple-det-codigo-perfil {
+    color: var(--apple-green);
+}
+
+.apple-det-codigo-compleja {
+    color: var(--apple-purple);
+}
+
+.apple-det-codigo-simple {
+    color: var(--apple-blue);
+}
+
+.apple-det-nombre {
+    color: var(--apple-gray-darkest);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.apple-det-count {
+    margin-top: var(--space-xs);
+    font-size: 0.85rem;
+    color: var(--apple-gray);
+}
+
+.apple-det-btn-eliminar {
+    background: var(--apple-red);
+    color: var(--apple-white);
+    border: none;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background var(--transition-fast);
+}
+
+.apple-det-btn-eliminar:hover {
+    background: var(--apple-red-hover);
+}
+
+/* ========================================
+   AUTOCOMPLETE (Apple Design)
+   ======================================== */
+.apple-autocomplete {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--apple-white);
+    border: 1px solid var(--apple-gray-light);
+    border-radius: var(--border-radius-md);
+    margin-top: var(--space-xs);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: var(--z-dropdown);
+    box-shadow: var(--shadow-lg);
+}
+
+.apple-autocomplete-visible {
+    display: block;
+}
+
+.apple-autocomplete-item {
+    padding: var(--space-md);
+    cursor: pointer;
+    border-bottom: 1px solid var(--apple-gray-lightest);
+    transition: background var(--transition-fast);
+}
+
+.apple-autocomplete-item:hover {
+    background: var(--apple-gray-lightest);
+}
+
+.apple-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.apple-autocomplete-codigo {
+    color: var(--apple-blue);
+    font-weight: 700;
+}
+
+.apple-autocomplete-nombre {
+    color: var(--apple-gray-darkest);
+    font-weight: 600;
+}
+
+.apple-autocomplete-medico-nombre {
+    color: var(--apple-gray-darkest);
+    font-weight: 600;
+}
+
+.apple-autocomplete-medico-matricula {
+    color: var(--apple-gray);
+    font-size: 0.85rem;
+    margin-left: var(--space-sm);
+}
+
+/* ========================================
+   BACK LINK
+   ======================================== */
+.apple-back-link {
+    color: var(--apple-blue);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all var(--transition-normal);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius-sm);
+    display: inline-block;
+    background: var(--apple-blue-light);
+}
+
+.apple-back-link:hover {
+    background: var(--apple-blue);
+    color: var(--apple-white);
+}
+
+/* ========================================
+   MODAL - Close Button
+   ======================================== */
+.apple-modal-close {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--apple-gray);
+    cursor: pointer;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+}
+
+.apple-modal-close:hover {
+    background: var(--apple-gray-lightest);
+    color: var(--apple-gray-darkest);
+}
+
+.apple-modal-content-relative {
+    position: relative;
+}
+
+.apple-modal-title-success {
+    color: var(--apple-green);
+}
+
+/* ========================================
+   STATUS MESSAGES (inline)
+   ======================================== */
+.apple-status-searching {
+    color: var(--apple-blue);
+}
+
+.apple-status-found {
+    color: var(--apple-green);
+}
+
+.apple-status-not-found {
+    color: var(--apple-red);
+}
+
+/* ========================================
+   WARNING BANNER (turno pendiente)
+   ======================================== */
+.apple-warning-banner {
+    background: var(--apple-orange-light);
+    color: #856404;
+    border: 2px solid #ffeeba;
+    border-radius: var(--border-radius-md);
+    padding: var(--space-md);
+    margin: var(--space-md) 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ========================================
+   SUCCESS MODAL
+   ======================================== */
+.apple-modal-success {
+    background: var(--apple-white);
+    border: 2px solid var(--apple-green);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-xl);
+    max-width: 500px;
+    box-shadow: var(--shadow-xl);
+    text-align: center;
+}
+
+.apple-modal-success-title {
+    margin: 0 0 var(--space-md) 0;
+    color: var(--apple-green);
+    font-size: 1.8rem;
+}
+
+.apple-modal-success-text {
+    color: var(--apple-gray);
+    margin-bottom: var(--space-lg);
+    font-size: 1.1rem;
+}
+
+.apple-modal-success-actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: center;
+}
+
+/* ========================================
+   EMPTY STATE MESSAGES
+   ======================================== */
+.apple-empty-message {
+    margin: var(--space-sm) 0 0 0;
+    font-style: italic;
+    font-size: 0.95rem;
+}
+
+.apple-empty-message-success {
+    color: var(--apple-green);
+}
+
+.apple-empty-message-warning {
+    color: var(--apple-red);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 768px) {
+    .apple-grid-2,
+    .apple-grid-3,
+    .apple-form-grid-2,
+    .apple-form-grid-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .apple-grid-determinaciones,
+    .apple-det-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .apple-flex-buttons {
+        flex-direction: column;
+    }
+    
+    .apple-container {
+        padding: var(--space-md);
+    }
+    
+    .apple-modal-content {
+        width: 95%;
+        padding: var(--space-md);
+    }
+    
+    .apple-field-with-button {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .apple-btn-icon-circle {
+        width: 100%;
+        border-radius: var(--border-radius-md);
+    }
+}

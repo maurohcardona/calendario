@@ -1,44 +1,89 @@
 from datetime import date
-from django.http import JsonResponse
+from typing import Any, Dict
+
+from django.http import JsonResponse, HttpRequest
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+
 from turnos.models import Turno
 from pacientes.models import Paciente
 
 
 @login_required
-def buscar_paciente_api(request):
-    """API para buscar paciente por DNI en PostgreSQL"""
-    dni = request.GET.get('dni', '').strip()
+@require_http_methods(["GET"])
+def buscar_paciente_api(request: HttpRequest) -> JsonResponse:
+    """API para buscar paciente por DNI.
+
+    Args:
+        request: HttpRequest con el parámetro 'dni' en GET
+
+    Returns:
+        JsonResponse con los datos del paciente si se encuentra,
+        o {'found': False} si no existe.
+
+    Example:
+        GET /api/pacientes/buscar/?dni=12345678
+
+        Response:
+        {
+            'found': True,
+            'nombre': 'Juan',
+            'apellido': 'Pérez',
+            'fecha_nacimiento': '1990-01-15',
+            'sexo': 'Masculino',
+            'telefono': '1234567890',
+            'email': 'juan@example.com',
+            'observaciones': 'Alérgico a penicilina',
+            'tiene_turno_pendiente': True,
+            'proximo_turno': '15-03-26'
+        }
+    """
+    dni = request.GET.get("dni", "").strip()
+
     if not dni:
-        return JsonResponse({'found': False})
-    
+        return JsonResponse({"found": False, "error": "DNI no proporcionado"})
+
     try:
         paciente = Paciente.objects.filter(iden=dni).first()
 
-        # Buscar si tiene turno pendiente (fecha >= hoy)
-        tiene_turno_pendiente = False
-        proximo_turno = None
-        if paciente:
-            turnos_pendientes = Turno.objects.filter(dni=paciente, fecha__gte=date.today()).order_by('fecha')
-            if turnos_pendientes.exists():
-                tiene_turno_pendiente = True
-                proximo_turno = turnos_pendientes.first().fecha.strftime('%d-%m-%y')
+        if not paciente:
+            return JsonResponse({"found": False})
 
-        if paciente:
-            return JsonResponse({
-                'found': True,
-                'nombre': paciente.nombre,
-                'apellido': paciente.apellido,
-                'fecha_nacimiento': paciente.fecha_nacimiento.isoformat() if paciente.fecha_nacimiento else '',
-                'sexo': paciente.sexo,  # Devolver el valor directo del modelo
-                'telefono': paciente.telefono or '',
-                'email': paciente.email or '',
-                'observaciones': paciente.observaciones or '',
-                'tiene_turno_pendiente': tiene_turno_pendiente,
-                'proximo_turno': proximo_turno
-            })
+        # Construir respuesta con datos del paciente
+        response_data: Dict[str, Any] = {
+            "found": True,
+            "nombre": paciente.nombre,
+            "apellido": paciente.apellido,
+            "fecha_nacimiento": paciente.fecha_nacimiento.isoformat()
+            if paciente.fecha_nacimiento
+            else "",
+            "sexo": paciente.sexo,
+            "telefono": paciente.telefono or "",
+            "email": paciente.email or "",
+            "observaciones": paciente.observaciones or "",
+        }
 
-        return JsonResponse({'found': False})
+        # Buscar turno pendiente (fecha >= hoy)
+        turnos_pendientes = (
+            Turno.objects.filter(dni=paciente, fecha__gte=date.today())
+            .order_by("fecha")
+            .select_related("agenda")
+        )
+
+        if turnos_pendientes.exists():
+            proximo = turnos_pendientes.first()
+            response_data["tiene_turno_pendiente"] = True
+            response_data["proximo_turno"] = proximo.fecha.strftime("%d-%m-%y")
+            response_data["agenda_proximo_turno"] = (
+                proximo.agenda.name if proximo.agenda else ""
+            )
+        else:
+            response_data["tiene_turno_pendiente"] = False
+            response_data["proximo_turno"] = None
+
+        return JsonResponse(response_data)
 
     except Exception as e:
-        return JsonResponse({'found': False, 'error': str(e)})
+        return JsonResponse(
+            {"found": False, "error": f"Error al buscar paciente: {str(e)}"}, status=500
+        )

@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width: 1000px;">
-  <h2>🔍 Buscar Paciente</h2>
+<div>
+  <h2 class="text-2xl text-bold mb-lg">Buscar Paciente</h2>
   
-  <form method="get" style="background: rgba(26, 26, 46, 0.6); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 0.5rem;">
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; color: #000000; font-weight: 600;">Buscar por DNI</label>
-        <input type="text" id="inputDni" name="q" placeholder="Ingrese DNI del paciente" value="{{ q }}" onfocus="limpiarOtrosCampos('q')" style="width: 100%; background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(0, 212, 255, 0.3); color: #000000; padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;">
+  <form method="get" class="apple-card mb-xl">
+    <div class="apple-grid-3 mb-md">
+      <div class="apple-form-group">
+        <label class="apple-label">Buscar por DNI</label>
+        <input type="text" id="inputDni" name="q" placeholder="Ingrese DNI del paciente" value="{{ q }}" onfocus="limpiarOtrosCampos('q')" class="apple-input" style="font-size: 1.5rem; font-weight: 700;">
       </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; color: #000000; font-weight: 600;">Buscar por Apellido</label>
-        <input type="text" id="inputApellido" name="apellido" placeholder="Ingrese apellido del paciente" value="{{ apellido }}" onfocus="limpiarOtrosCampos('apellido')" style="width: 100%; background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(0, 212, 255, 0.3); color: #000000; padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;">
+      <div class="apple-form-group">
+        <label class="apple-label">Buscar por Apellido</label>
+        <input type="text" id="inputApellido" name="apellido" placeholder="Ingrese apellido del paciente" value="{{ apellido }}" onfocus="limpiarOtrosCampos('apellido')" class="apple-input" style="font-size: 1.5rem; font-weight: 700;">
       </div>
-      <div>
-        <label style="display: block; margin-bottom: 0.5rem; color: #000000; font-weight: 600;">Buscar por ID de Turno</label>
-        <input type="number" id="inputTurnoId" name="turno_id" placeholder="Ingrese ID del turno" value="{{ turno_id }}" min="1" step="1" onfocus="limpiarOtrosCampos('turno_id')" style="width: 100%; background: rgba(255, 255, 255, 0.3); border: 1px solid rgba(0, 212, 255, 0.3); color: #000000; padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 2rem; font-weight: 700;">
+      <div class="apple-form-group">
+        <label class="apple-label">Buscar por ID de Turno</label>
+        <input type="number" id="inputTurnoId" name="turno_id" placeholder="Ingrese ID del turno" value="{{ turno_id }}" min="1" step="1" onfocus="limpiarOtrosCampos('turno_id')" class="apple-input" style="font-size: 1.5rem; font-weight: 700;">
       </div>
     </div>
-    <button type="submit" style="padding: 0.75rem 2rem; background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; width: 100%;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 212, 255, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none;'">🔍 Buscar</button>
+    <button type="submit" class="apple-btn apple-btn-primary apple-btn-block apple-btn-lg">Buscar</button>
   </form>
 
 <script>
@@ -45,60 +45,60 @@ function limpiarOtrosCampos(campoActivo) {
 
   {% if q or turno_id or apellido %}
     <!-- Turnos Pendientes -->
-    <div style="margin-bottom: 2rem;">
-      <h3 style="color: #000000; margin-bottom: 1rem;">📅 Turnos Pendientes</h3>
+    <div class="mb-xl">
+      <h3 class="text-xl text-semibold mb-md">Turnos Pendientes</h3>
       {% if turnos_pendientes %}
         <div style="display: grid; gap: 1rem;">
           {% for turno in turnos_pendientes %}
-            <div style="background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem;">
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start;">
-                <div>
-                  <div style="font-size: 1.1rem; font-weight: bold; color: #000000; margin-bottom: 0.5rem;">
+            <div class="apple-card" style="background: var(--apple-blue-light);">
+              <div class="apple-flex-between" style="align-items: start;">
+                <div style="flex: 1;">
+                  <div class="text-lg text-bold mb-sm">
                     {{ turno.apellido }} {{ turno.nombre }}
                   </div>
-                  <div style="color: #000000; font-size: 0.95rem; margin-bottom: 0.25rem;">
+                  <div class="text-sm mb-xs">
                     <strong>DNI:</strong> {{ turno.paciente_dni }}
                   </div>
-                  <div style="color: #000000; font-size: 0.95rem; margin-bottom: 0.25rem;">
-                    <strong>Fecha:</strong> <span style="color: #4caf50; font-weight: 600;">{{ turno.fecha }}</span>
+                  <div class="text-sm mb-xs">
+                    <strong>Fecha:</strong> <span class="text-green text-semibold">{{ turno.fecha }}</span>
                   </div>
-                  <div style="color: #000000; font-size: 0.95rem; margin-bottom: 0.25rem;">
+                  <div class="text-sm mb-xs">
                     <strong>Agenda:</strong> {{ turno.agenda.name }}
                   </div>
-                  <div style="color: #000000; font-size: 0.95rem;">
+                  <div class="text-sm">
                     <strong>Determinaciones:</strong> {{ turno.determinaciones_nombres|default:turno.determinaciones }}
                   </div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 200px;">
                   {% if turno.esta_coordinado %}
                     <!-- Turno ya coordinado -->
-                    <div style="padding: 0.75rem; background: rgba(76, 175, 80, 0.2); border: 1px solid rgba(76, 175, 80, 0.5); border-radius: 6px; text-align: center; color: #4caf50; font-weight: 600;">
-                      ✅ Turno Coordinado
+                    <div class="apple-badge apple-badge-green" style="padding: 0.75rem; font-size: 0.95rem; justify-content: center;">
+                      Turno Coordinado
                     </div>
-                    <a href="{% url 'turnos:ver_coordinacion' turno.id %}" style="padding: 0.5rem 1rem; background: #2196F3; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#1976D2';" onmouseout="this.style.background='#2196F3';">
-                      👁️ Ver Coordinación
+                    <a href="{% url 'turnos:ver_coordinacion' turno.id %}" class="apple-btn apple-btn-primary apple-btn-sm">
+                      Ver Coordinación
                     </a>
-                    <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" style="padding: 0.5rem 1rem; background: #9C27B0; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#7B1FA2';" onmouseout="this.style.background='#9C27B0';">
-                      🎫 Generar Ticket
+                    <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: #9C27B0; color: white; border-color: #9C27B0;">
+                      Generar Ticket
                     </a>
-                    <a href="{% url 'turnos:generar_ticket_retiro' turno.id %}" target="_blank" style="padding: 0.5rem 1rem; background: #4caf50; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#388e3c';" onmouseout="this.style.background='#4caf50';">
-                      🖨️ Ticket de retiro
+                    <a href="{% url 'turnos:generar_ticket_retiro' turno.id %}" target="_blank" class="apple-btn apple-btn-success apple-btn-sm">
+                      Ticket de retiro
                     </a>
                   {% else %}
                     <!-- Turno no coordinado - botones activos -->
-                    <a href="{% url 'turnos:editar_turno' turno.id %}" style="padding: 0.5rem 1rem; background: #00d4ff; color: #000; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#00a8cc';" onmouseout="this.style.background='#00d4ff';">
-                      ✏️ Editar Turno
+                    <a href="{% url 'turnos:editar_turno' turno.id %}" class="apple-btn apple-btn-primary apple-btn-sm">
+                      Editar Turno
                     </a>
-                    <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" style="padding: 0.5rem 1rem; background: #9C27B0; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#7B1FA2';" onmouseout="this.style.background='#9C27B0';">
-                      🎫 Generar Ticket
+                    <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: #9C27B0; color: white; border-color: #9C27B0;">
+                      Generar Ticket
                     </a>
                     {% if turno.fecha == hoy %}
-                    <a href="{% url 'turnos:precoordinacion' turno.id %}" style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3); text-decoration: none; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(244, 67, 54, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(244, 67, 54, 0.3)';">
-                      📝 Pre-coordinacion
+                    <a href="{% url 'turnos:precoordinacion' turno.id %}" class="apple-btn apple-btn-danger">
+                      Pre-coordinacion
                     </a>
                     {% else %}
-                    <div style="padding: 0.75rem 1rem; background: rgba(128, 128, 128, 0.3); color: rgba(255, 255, 255, 0.4); border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; text-align: center; cursor: not-allowed;">
-                      📝 Pre-coordinacion
+                    <div class="apple-btn apple-btn-light" style="opacity: 0.5; cursor: not-allowed;">
+                      Pre-coordinacion
                     </div>
                     {% endif %}
                   {% endif %}
@@ -108,7 +108,7 @@ function limpiarOtrosCampos(campoActivo) {
           {% endfor %}
         </div>
       {% else %}
-        <div style="background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 8px; padding: 1.5rem; text-align: center; color: rgba(224, 224, 224, 0.7);">
+        <div class="apple-card text-center text-gray">
           No hay turnos pendientes
         </div>
       {% endif %}
@@ -116,35 +116,35 @@ function limpiarOtrosCampos(campoActivo) {
 
     <!-- Turnos Previos -->
     <div>
-      <h3 style="color: #000000; margin-bottom: 1rem;">📋 Turnos Previos</h3>
+      <h3 class="text-xl text-semibold mb-md">Turnos Previos</h3>
       {% if turnos_previos %}
         <div style="display: grid; gap: 1rem;">
           {% for turno in turnos_previos %}
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1rem;">
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start;">
-                <div>
-                  <div style="font-weight: bold; color: #000000; margin-bottom: 0.5rem;">
+            <div class="apple-card">
+              <div class="apple-flex-between" style="align-items: start;">
+                <div style="flex: 1;">
+                  <div class="text-base text-bold mb-sm">
                     {{ turno.apellido }} {{ turno.nombre }}
                   </div>
-                  <div style="color: #000000; font-size: 0.9rem;">
-                    <strong>DNI:</strong> {{ turno.paciente_dni }} | <strong>Fecha:</strong> <span style="color: #4caf50; font-weight: 600;">{{ turno.fecha }}</span> | <strong>Agenda:</strong> {{ turno.agenda.name }}
+                  <div class="text-sm mb-xs">
+                    <strong>DNI:</strong> {{ turno.paciente_dni }} | <strong>Fecha:</strong> <span class="text-green text-semibold">{{ turno.fecha }}</span> | <strong>Agenda:</strong> {{ turno.agenda.name }}
                   </div>
-                  <div style="color: #000000; font-size: 0.95rem;">
+                  <div class="text-sm">
                     <strong>Determinaciones:</strong> {{ turno.determinaciones_nombres|default:turno.determinaciones }}
                   </div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 150px;">
                   {% if turno.esta_coordinado %}
-                    <a href="{% url 'turnos:ver_coordinacion' turno.id %}" style="padding: 0.5rem 1rem; background: #2196F3; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem;" onmouseover="this.style.background='#1976D2';" onmouseout="this.style.background='#2196F3';">
-                      👁️ Ver
+                    <a href="{% url 'turnos:ver_coordinacion' turno.id %}" class="apple-btn apple-btn-primary apple-btn-sm">
+                      Ver
                     </a>
                   {% else %}
-                    <a href="{% url 'turnos:editar_turno' turno.id %}" style="padding: 0.5rem 1rem; background: #00d4ff; color: #000; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem;" onmouseover="this.style.background='#00a8cc';" onmouseout="this.style.background='#00d4ff';">
-                      ✏️ Editar
+                    <a href="{% url 'turnos:editar_turno' turno.id %}" class="apple-btn apple-btn-primary apple-btn-sm">
+                      Editar
                     </a>
                   {% endif %}
-                  <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" style="padding: 0.5rem 1rem; background: #9C27B0; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-weight: 500; text-align: center; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem;" onmouseover="this.style.background='#7B1FA2';" onmouseout="this.style.background='#9C27B0';">
-                    🎫 Ticket
+                  <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: #9C27B0; color: white; border-color: #9C27B0;">
+                    Ticket
                   </a>
                 </div>
               </div>
@@ -152,31 +152,31 @@ function limpiarOtrosCampos(campoActivo) {
           {% endfor %}
         </div>
       {% else %}
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1.5rem; text-align: center; color: rgba(224, 224, 224, 0.5);">
+        <div class="apple-card text-center text-gray">
           No hay turnos previos
         </div>
       {% endif %}
     </div>
   {% endif %}
 
-  <div style="margin-top: 2rem;">
-    <a href="{% url 'turnos:calendario' %}" style="color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block;" onmouseover="this.style.background='rgba(0, 212, 255, 0.1)';" onmouseout="this.style.background='transparent';">← Volver al calendario</a>
+  <div class="mt-xl">
+    <a href="{% url 'turnos:calendario' %}" class="apple-btn apple-btn-light">← Volver al calendario</a>
   </div>
 </div>
 
 <!-- Modal de confirmación -->
 <div id="modalConfirmar" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 9999; align-items: center; justify-content: center;">
-  <div style="background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(18, 18, 36, 0.95)); border: 2px solid rgba(244, 67, 54, 0.5); border-radius: 12px; padding: 2rem; max-width: 500px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
-    <h3 style="color: #f44336; margin-bottom: 1rem; font-size: 1.5rem;">⚠️ Confirmar Coordinación</h3>
-    <p style="color: #ffffff; margin-bottom: 1.5rem; font-size: 1.1rem;">
+  <div class="apple-card" style="max-width: 500px; border: 2px solid var(--apple-red);">
+    <h3 class="text-2xl text-red text-bold mb-md">Confirmar Coordinación</h3>
+    <p class="text-base mb-lg">
       ¿Está seguro de coordinar este turno?
     </p>
-    <div id="modalDetalles" style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; color: rgba(224, 224, 224, 0.8);"></div>
-    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-      <button onclick="cerrarModal()" style="padding: 0.75rem 1.5rem; background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255, 255, 255, 0.15)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)';">
+    <div id="modalDetalles" class="apple-card mb-lg" style="background: var(--apple-gray-lightest);"></div>
+    <div class="apple-flex" style="justify-content: flex-end;">
+      <button onclick="cerrarModal()" class="apple-btn apple-btn-light">
         Cancelar
       </button>
-      <button id="btnConfirmarCoordinar" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(244, 67, 54, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+      <button id="btnConfirmarCoordinar" class="apple-btn apple-btn-danger">
         Sí, Coordinar
       </button>
     </div>
@@ -224,9 +224,9 @@ document.getElementById('btnConfirmarCoordinar').addEventListener('click', funct
         modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;';
         modal.innerHTML = `
           <div style="background: linear-gradient(135deg, #e0f7fa 0%, #b2dfdb 100%); border: 2px solid #4caf50; border-radius: 12px; padding: 2rem; max-width: 400px; box-shadow: 0 8px 32px rgba(76, 175, 80, 0.2); text-align: center;">
-            <h3 style="color: #388e3c; margin-bottom: 1rem; font-size: 1.5rem;">✅ Turno coordinado exitosamente</h3>
+            <h3 style="color: #388e3c; margin-bottom: 1rem; font-size: 1.5rem;">Turno coordinado exitosamente</h3>
             <p style="color: #333; margin-bottom: 1.2rem; font-size: 1.1rem;">Mensaje generado y enviado.<br>Puede imprimir el ticket de retiro:</p>
-            <a href="${data.ticket_retiro_url}" target="_blank" style="background: #4caf50; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1rem; display: inline-block; margin-bottom: 1rem;">🖨️ Ticket de retiro</a>
+            <a href="${data.ticket_retiro_url}" target="_blank" style="background: #4caf50; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1rem; display: inline-block; margin-bottom: 1rem;">Ticket de retiro</a>
             <br>
             <button onclick="document.getElementById('modalCoordinacionExitosa').remove(); location.reload();" style="background: rgba(255,255,255,0.1); border: 1px solid #4caf50; color: #388e3c; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Cerrar</button>
           </div>
