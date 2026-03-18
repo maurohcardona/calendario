@@ -693,9 +693,6 @@ body {
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: var(--color-cream);
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--color-teal);
 }
 
 .user-info .username {
@@ -710,8 +707,8 @@ body {
 }
 
 .user-menu-btn {
-    background: var(--color-cream);
-    border: 1px solid var(--color-teal);
+    background: transparent;
+    border: none;
     color: var(--color-primary);
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--border-radius-sm);
@@ -943,9 +940,19 @@ body {
     display: inline-flex;
     align-items: center;
     gap: var(--space-xs);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--border-radius-sm);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius-md);
     background: var(--apple-gray-lightest);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 2px solid transparent;
+}
+
+.apple-agenda-chip:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
+    background: var(--color-cream);
+    border-color: var(--color-teal);
 }
 
 .apple-agenda-chip-color {
@@ -1199,6 +1206,100 @@ body {
     box-shadow: var(--shadow-md);
     padding: var(--space-lg);
     overflow: hidden;
+}
+
+/* ========================================
+   FULLCALENDAR CUSTOM STYLES
+   ======================================== */
+
+/* Días de la semana - Headers */
+.fc-col-header-cell {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.fc-col-header-cell-cushion {
+    color: #248F8D !important;
+    text-transform: capitalize;
+    padding: var(--space-sm) 0;
+}
+
+/* Números de fecha */
+.fc-daygrid-day-number {
+    color: #248F8D !important;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+/* Título del mes y año */
+.fc-toolbar-title {
+    color: #248F8D !important;
+    font-weight: 700;
+}
+
+/* Evento/agenda completa (100% capacidad) */
+.fc-event.evento-completo {
+    background-color: #605063 !important;
+    border-color: #605063 !important;
+    opacity: 0.85;
+}
+
+.fc-event.evento-completo .fc-event-title {
+    text-decoration: line-through;
+    color: #ffffff !important;
+}
+
+/* Día con todas las agendas completas */
+.fc-daygrid-day.dia-todo-completo {
+    background-color: rgba(96, 80, 99, 0.05) !important;
+}
+
+/* Hover en eventos del calendario */
+.fc-event:hover {
+    opacity: 0.9;
+    cursor: pointer;
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+}
+
+/* Contraste de texto para eventos claros */
+.fc-event[style*="#B2D5BA"] .fc-event-title,
+.fc-event[style*="#EFF3CD"] .fc-event-title {
+    color: #605063 !important;
+}
+
+/* Contraste de texto para eventos oscuros */
+.fc-event[style*="#61ADA0"] .fc-event-title,
+.fc-event[style*="#605063"] .fc-event-title {
+    color: #ffffff !important;
+}
+
+/* Día actual destacado */
+.fc-day-today {
+    background-color: rgba(36, 143, 141, 0.08) !important;
+    border: 2px solid #248F8D !important;
+}
+
+.fc-day-today .fc-daygrid-day-number {
+    font-weight: 700;
+    background-color: #248F8D;
+    color: white !important;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Animación de actualización automática */
+@keyframes pulse-update {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.calendar-updating {
+    animation: pulse-update 1s ease-in-out;
 }
 
 /* ========================================
