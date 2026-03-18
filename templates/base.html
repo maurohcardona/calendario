@@ -98,13 +98,23 @@
     #etiquetadoras-menu div {
       padding: 0.25rem 0;
     }
+    /* Header alignment improvements */
+    .apple-header-content {
+      gap: 2rem;
+    }
+    .user-info {
+      margin-right: auto; /* Usuario a la izquierda */
+    }
+    .user-menu {
+      margin-left: auto; /* Opciones a la derecha */
+    }
   </style>
 </head>
 <body>
   <header class="apple-header">
     <div class="apple-header-content">
       <div class="user-info">
-        <span class="username">{{ user.username }}</span>
+        <span class="username">{{ user.last_name }}, {{ user.first_name }}</span>
       </div>
       
       <nav class="apple-nav">
