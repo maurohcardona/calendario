@@ -435,6 +435,8 @@ body {
 .apple-form-dni-input {
     flex: 1;
     min-width: 200px; /* Asegurar que el input de DNI no sea muy angosto */
+    font-size: 1.25rem;
+    font-weight: 600;
 }
 
 /* Fila de acciones: botón volver (izq) + botones de acción (der) */
