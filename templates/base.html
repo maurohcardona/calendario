@@ -8,7 +8,7 @@
   <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'css/apple-design.css' %}" rel="stylesheet">
   <style>
-    /* Estilos especificos del menu de usuario y etiquetadoras */
+    /* Estilos especificos del layout principal */
     body {
       min-height: 100vh;
       display: flex;
@@ -18,105 +18,17 @@
       flex: 1;
       width: 100%;
     }
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: var(--color-cream);
-      border-radius: var(--border-radius-sm);
-      border: 1px solid var(--color-teal);
-    }
-    .user-info .username {
-      color: var(--color-primary);
-      font-weight: 600;
-    }
-    .user-menu {
-      position: relative;
-      display: inline-block;
-    }
-    .user-menu-btn {
-      background: var(--color-cream);
-      border: 1px solid var(--color-teal);
-      color: var(--color-primary);
-      padding: var(--space-sm) var(--space-md);
-      border-radius: var(--border-radius-sm);
-      cursor: pointer;
-      font-weight: 500;
-      transition: all var(--transition-normal);
-    }
-    .user-menu-btn:hover {
-      background: var(--color-primary);
-      color: var(--color-white);
-    }
-    .user-menu-content {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 100%;
-      margin-top: var(--space-sm);
-      background: var(--color-white);
-      border: 1px solid var(--color-gray-light);
-      border-radius: var(--border-radius-md);
-      box-shadow: var(--shadow-lg);
-      min-width: 200px;
-      z-index: var(--z-dropdown);
-    }
-    .user-menu.active .user-menu-content {
-      display: block;
-    }
-    .user-menu-content a,
-    .user-menu-content button {
-      display: block;
-      padding: var(--space-md) var(--space-lg);
-      color: var(--color-text);
-      text-decoration: none;
-      border: none;
-      background: none;
-      width: 100%;
-      text-align: left;
-      cursor: pointer;
-      transition: all var(--transition-normal);
-      font-weight: 500;
-    }
-    .user-menu-content a:hover {
-      background: var(--color-gray-lightest);
-      color: var(--color-primary);
-    }
-    .user-menu-content button {
-      color: var(--color-danger);
-      border-top: 1px solid var(--color-gray-light);
-    }
-    .user-menu-content button:hover {
-      background: var(--color-danger-light);
-      color: var(--color-danger);
-    }
-    #etiquetadoras-menu {
-      margin-left: 1.5em;
-      margin-top: 0.5em;
-    }
-    #etiquetadoras-menu div {
-      padding: 0.25rem 0;
-    }
-    /* Header alignment improvements */
-    .apple-header-content {
-      gap: 2rem;
-    }
-    .user-info {
-      margin-right: auto; /* Usuario a la izquierda */
-    }
-    .user-menu {
-      margin-left: auto; /* Opciones a la derecha */
-    }
   </style>
 </head>
 <body>
   <header class="apple-header">
+    <!-- Usuario a la izquierda extrema -->
+    <div class="user-info">
+      <span class="username">{{ user.last_name }}, {{ user.first_name }}</span>
+    </div>
+    
+    <!-- Navegación centrada con max-width -->
     <div class="apple-header-content">
-      <div class="user-info">
-        <span class="username">{{ user.last_name }}, {{ user.first_name }}</span>
-      </div>
-      
       <nav class="apple-nav">
         <a href="{% url 'turnos:calendario' %}" class="apple-nav-link">Agenda</a>
         <a href="{% url 'turnos:buscar' %}" class="apple-nav-link">Buscar</a>
@@ -129,35 +41,36 @@
         <a href="/admin/" class="apple-nav-link">Tablas</a>
         <a href="{% url 'informes:listado' %}" class="apple-nav-link">Informes</a>
       </nav>
-      
-      <div class="user-menu">
-        <button class="user-menu-btn">Opciones ▼</button>
-        <div class="user-menu-content">
-          <a href="{% url 'password_change' %}">Cambiar contraseña</a>
-          <button type="button" id="etiquetadoras-btn" class="dropdown-item">Etiquetadoras ▼</button>
-          <div id="etiquetadoras-menu" style="display:none;">
-            <div>
-              <input type="radio" name="etiquetadora" id="etq-adm1" value="ADM1">
-              <label for="etq-adm1">ADM1</label>
-            </div>
-            <div>
-              <input type="radio" name="etiquetadora" id="etq-adm2" value="ADM2">
-              <label for="etq-adm2">ADM2</label>
-            </div>
-            <div>
-              <input type="radio" name="etiquetadora" id="etq-guardia" value="GUARDIA">
-              <label for="etq-guardia">GUARDIA</label>
-            </div>
-            <div>
-              <input type="radio" name="etiquetadora" id="etq-hemato" value="HEMATO">
-              <label for="etq-hemato">HEMATO</label>
-            </div>
+    </div>
+    
+    <!-- Botón Opciones a la derecha extrema -->
+    <div class="user-menu">
+      <button class="user-menu-btn">Opciones ▼</button>
+      <div class="user-menu-content">
+        <a href="{% url 'password_change' %}">Cambiar contraseña</a>
+        <button type="button" id="etiquetadoras-btn" class="dropdown-item">Etiquetadoras ▼</button>
+        <div id="etiquetadoras-menu" style="display:none;">
+          <div>
+            <input type="radio" name="etiquetadora" id="etq-adm1" value="ADM1">
+            <label for="etq-adm1">ADM1</label>
           </div>
-          <form method="post" action="{% url 'logout' %}" style="display:inline; margin:0;">
-            {% csrf_token %}
-            <button type="submit">Cerrar sesión</button>
-          </form>
+          <div>
+            <input type="radio" name="etiquetadora" id="etq-adm2" value="ADM2">
+            <label for="etq-adm2">ADM2</label>
+          </div>
+          <div>
+            <input type="radio" name="etiquetadora" id="etq-guardia" value="GUARDIA">
+            <label for="etq-guardia">GUARDIA</label>
+          </div>
+          <div>
+            <input type="radio" name="etiquetadora" id="etq-hemato" value="HEMATO">
+            <label for="etq-hemato">HEMATO</label>
+          </div>
         </div>
+        <form method="post" action="{% url 'logout' %}" style="display:inline; margin:0;">
+          {% csrf_token %}
+          <button type="submit">Cerrar sesión</button>
+        </form>
       </div>
     </div>
   </header>
