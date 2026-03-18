@@ -274,22 +274,6 @@ Contextos de uso:
     {% endif %}
 </form>
 
-<!-- Botones de acción (fuera del formulario, a la altura del botón volver) -->
-<div class="apple-margin-top-xl apple-flex apple-flex-buttons">
-    {% if mode == 'create' %}
-        <button type="submit" form="turnoForm" id="btnGuardarTurno" class="apple-btn apple-btn-primary">
-            Guardar turno
-        </button>
-    {% elif mode == 'edit' %}
-        <button type="submit" form="turnoForm" class="apple-btn apple-btn-primary">Guardar cambios</button>
-        <a href="{% url 'turnos:eliminar_turno' turno.id %}" class="apple-btn apple-btn-danger">Eliminar Turno</a>
-        <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" class="apple-btn apple-btn-light">Cancelar</a>
-    {% elif mode == 'precoord' %}
-        <button type="button" id="btnCoordinarTurno" class="apple-btn apple-btn-primary">Coordinar Turno</button>
-        <a href="{% url 'turnos:buscar' %}" class="apple-btn apple-btn-light">Cancelar</a>
-    {% endif %}
-</div>
-
 <!-- ===================================================================
      JAVASCRIPT UNIFICADO
      =================================================================== -->

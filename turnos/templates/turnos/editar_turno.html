@@ -5,8 +5,13 @@
 
     {% include "turnos/_formulario_turno.html" with mode='edit' show_dni_search=False show_agenda_field=True show_fecha_field=True readonly_fields='dni,apellido,nombre' turno=turno paciente=paciente agendas=agendas fecha=turno.fecha agenda_id=turno.agenda.id %}
 
-    <div class="apple-margin-top-xl">
+    <div class="apple-actions-row">
         <a href="{% url 'turnos:calendario' %}" class="apple-nav-link">← Volver al calendario</a>
+        <div class="apple-actions-buttons">
+            <button type="submit" form="turnoForm" class="apple-btn apple-btn-primary">Guardar cambios</button>
+            <a href="{% url 'turnos:eliminar_turno' turno.id %}" class="apple-btn apple-btn-danger">Eliminar Turno</a>
+            <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" class="apple-btn apple-btn-light">Cancelar</a>
+        </div>
     </div>
 </div>
 

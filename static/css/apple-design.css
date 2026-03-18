@@ -435,9 +435,21 @@ body {
 .apple-form-dni-input {
     flex: 1;
     min-width: 200px; /* Asegurar que el input de DNI no sea muy angosto */
-    background: var(--apple-gray-lightest);
-    font-size: 2rem;
-    font-weight: 700;
+}
+
+/* Fila de acciones: botón volver (izq) + botones de acción (der) */
+.apple-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-xl);
+    gap: var(--space-lg);
+}
+
+.apple-actions-buttons {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
 }
 
 /* ========================================

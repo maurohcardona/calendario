@@ -134,9 +134,18 @@
         {% endif %}
     {% endif %}
 
-    <div class="apple-margin-top-xl">
-        <a href="{% url 'turnos:calendario' %}" class="apple-back-link">&#8592; Volver al calendario</a>
-    </div>
+    {% if modo_vista == 'agenda_seleccionada' and show_form %}
+        <div class="apple-actions-row">
+            <a href="{% url 'turnos:calendario' %}" class="apple-back-link">&#8592; Volver al calendario</a>
+            <div class="apple-actions-buttons">
+                <button type="submit" form="turnoForm" id="btnGuardarTurno" class="apple-btn apple-btn-primary">Guardar turno</button>
+            </div>
+        </div>
+    {% else %}
+        <div class="apple-margin-top-xl">
+            <a href="{% url 'turnos:calendario' %}" class="apple-back-link">&#8592; Volver al calendario</a>
+        </div>
+    {% endif %}
 </div>
 
 <!-- Modal para agregar médico nuevo -->

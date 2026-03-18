@@ -4,8 +4,12 @@
     <h2 class="apple-title">Pre-coordinación de Turno</h2>
     {% include "turnos/_formulario_turno.html" with mode='precoord' show_dni_search=False show_agenda_field=True show_fecha_field=True show_nuevo_medico=True readonly_fields='dni,fecha' turno=turno paciente=paciente agendas=agendas fecha=turno.fecha agenda_id=turno.agenda.id %}
 
-    <div class="apple-margin-top-xl">
+    <div class="apple-actions-row">
         <a href="{% url 'turnos:buscar' %}" class="apple-nav-link">← Volver a buscar turnos</a>
+        <div class="apple-actions-buttons">
+            <button type="button" id="btnCoordinarTurno" class="apple-btn apple-btn-primary">Coordinar Turno</button>
+            <a href="{% url 'turnos:buscar' %}" class="apple-btn apple-btn-light">Cancelar</a>
+        </div>
     </div>
 </div>
 
