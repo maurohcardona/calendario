@@ -157,12 +157,10 @@ Contextos de uso:
                                class="apple-form-text-input" />
                         <div id="autocompleteMedicos" class="apple-autocomplete"></div>
                     </div>
-                    {% if show_nuevo_medico %}
                     <button type="button" 
                             id="btnNuevoMedico" 
                             title="Agregar médico nuevo" 
                             class="apple-btn apple-btn-success apple-btn-icon-circle">+</button>
-                    {% endif %}
                 </div>
             </div>
 
@@ -224,24 +222,6 @@ Contextos de uso:
                 </div>
             {% endif %}
 
-            <!-- Botones de acción (arriba en columna derecha) -->
-            <div class="apple-form-group">
-                <div class="apple-flex apple-flex-buttons" style="margin-top: 1rem;">
-                    {% if mode == 'create' %}
-                        <button type="submit" id="btnGuardarTurno" class="apple-btn apple-btn-primary apple-btn-block">
-                            Guardar turno
-                        </button>
-                    {% elif mode == 'edit' %}
-                        <button type="submit" class="apple-btn apple-btn-primary">Guardar cambios</button>
-                        <a href="{% url 'turnos:eliminar_turno' turno.id %}" class="apple-btn apple-btn-danger">Eliminar Turno</a>
-                        <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" class="apple-btn apple-btn-light">Cancelar</a>
-                    {% elif mode == 'precoord' %}
-                        <button type="button" id="btnCoordinarTurno" class="apple-btn apple-btn-primary">Coordinar Turno</button>
-                        <a href="{% url 'turnos:buscar' %}" class="apple-btn apple-btn-light">Cancelar</a>
-                    {% endif %}
-                </div>
-            </div>
-
             <!-- Determinaciones -->
             <div class="apple-form-group">
                 <label class="apple-label">Determinaciones</label>
@@ -281,6 +261,24 @@ Contextos de uso:
                        id="id_determinaciones" 
                        name="determinaciones" 
                        value="{% if turno %}{{ turno.determinaciones }}{% endif %}" />
+            </div>
+
+            <!-- Botones de acción (debajo de determinaciones) -->
+            <div class="apple-form-group">
+                <div class="apple-flex apple-flex-buttons" style="margin-top: 1rem;">
+                    {% if mode == 'create' %}
+                        <button type="submit" id="btnGuardarTurno" class="apple-btn apple-btn-primary apple-btn-block">
+                            Guardar turno
+                        </button>
+                    {% elif mode == 'edit' %}
+                        <button type="submit" class="apple-btn apple-btn-primary">Guardar cambios</button>
+                        <a href="{% url 'turnos:eliminar_turno' turno.id %}" class="apple-btn apple-btn-danger">Eliminar Turno</a>
+                        <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" class="apple-btn apple-btn-light">Cancelar</a>
+                    {% elif mode == 'precoord' %}
+                        <button type="button" id="btnCoordinarTurno" class="apple-btn apple-btn-primary">Coordinar Turno</button>
+                        <a href="{% url 'turnos:buscar' %}" class="apple-btn apple-btn-light">Cancelar</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

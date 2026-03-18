@@ -9,7 +9,91 @@
     </div>
 </div>
 
+<!-- Modal para agregar médico nuevo -->
+<div id="modalNuevoMedico" class="apple-modal">
+  <div class="apple-modal-content apple-modal-content-relative">
+    <button id="cerrarModalMedico" class="apple-modal-close">&times;</button>
+    <h3 class="apple-modal-title apple-modal-title-success">Agregar nuevo médico</h3>
+    <form id="formNuevoMedico">
+      <div class="apple-form-group">
+        <label for="nombreMedico" class="apple-label">Apellido y Nombre</label>
+        <input type="text" id="nombreMedico" name="nombreMedico" required class="apple-input" />
+      </div>
+      <div class="apple-form-group">
+        <label for="matriculaMedico" class="apple-label">Matrícula Provincial</label>
+        <input type="text" id="matriculaMedico" name="matriculaMedico" required class="apple-input" />
+      </div>
+      <button type="submit" class="apple-btn apple-btn-success apple-btn-block">Guardar médico</button>
+      <div id="estadoNuevoMedico" class="apple-status"></div>
+    </form>
+  </div>
+</div>
+
 <script>
+// Modal de nuevo médico
+document.addEventListener('DOMContentLoaded', function() {
+    const btnNuevoMedico = document.getElementById('btnNuevoMedico');
+    const modalNuevoMedico = document.getElementById('modalNuevoMedico');
+    const cerrarModalMedico = document.getElementById('cerrarModalMedico');
+    const formNuevoMedico = document.getElementById('formNuevoMedico');
+    const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
+
+    if (!btnNuevoMedico || !modalNuevoMedico) return;
+
+    btnNuevoMedico.addEventListener('click', function() {
+        modalNuevoMedico.style.display = 'flex';
+        estadoNuevoMedico.textContent = '';
+        formNuevoMedico.reset();
+    });
+    
+    cerrarModalMedico.addEventListener('click', function() {
+        modalNuevoMedico.style.display = 'none';
+    });
+    
+    modalNuevoMedico.addEventListener('click', function(e) {
+        if (e.target === modalNuevoMedico) {
+            modalNuevoMedico.style.display = 'none';
+        }
+    });
+    
+    formNuevoMedico.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const nombre = document.getElementById('nombreMedico').value.trim();
+        const matricula = document.getElementById('matriculaMedico').value.trim();
+        
+        if (!nombre || !matricula) {
+            estadoNuevoMedico.innerHTML = '<span class="apple-status-error">Complete ambos campos</span>';
+            return;
+        }
+        
+        estadoNuevoMedico.innerHTML = '<span class="apple-status-searching">Guardando...</span>';
+        
+        try {
+            const response = await fetch('/turnos/api/crear-medico/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ nombre_apellido: nombre, matricula_provincial: matricula })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                estadoNuevoMedico.innerHTML = '<span class="apple-status-found">Médico guardado correctamente</span>';
+                if (typeof medicosCache !== 'undefined') medicosCache = null;
+                if (typeof cargarMedicos === 'function') await cargarMedicos();
+                document.getElementById('id_medico').value = nombre;
+                setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
+            } else {
+                estadoNuevoMedico.innerHTML = '<span class="apple-status-error">' + (data.error || 'Error al guardar') + '</span>';
+            }
+        } catch (err) {
+            estadoNuevoMedico.innerHTML = '<span class="apple-status-error">Error de red</span>';
+        }
+    });
+});
+
 // Cargar determinaciones existentes del turno en paralelo (optimización)
 window.addEventListener('DOMContentLoaded', async function() {
     const codigosExistentes = '{{ turno.determinaciones }}'.split(',').map(c => c.trim()).filter(c => c);
