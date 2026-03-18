@@ -61,7 +61,7 @@ Contextos de uso:
                                value="{% if paciente %}{{ paciente.dni }}{% elif turno %}{{ turno.paciente_dni }}{% endif %}"
                                required 
                                {% if 'dni' in readonly_fields %}readonly{% endif %}
-                               class="apple-form-dni-input {% if 'dni' in readonly_fields %}apple-input-readonly{% endif %}" />
+                               class="apple-input apple-form-dni-input {% if 'dni' in readonly_fields %}apple-input-readonly{% endif %}" />
                         <button type="button" id="btnBuscarPaciente" class="apple-btn apple-btn-primary">Buscar</button>
                     </div>
                     <div id="pacienteStatus" class="apple-status"></div>
