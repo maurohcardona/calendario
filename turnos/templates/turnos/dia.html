@@ -41,125 +41,8 @@
     <!-- Formulario de agregar turno -->
     {% if modo_vista == 'agenda_seleccionada' and show_form %}
         <h3 class="apple-section-title">Agendar turno</h3>
-        <form method="post" id="turnoForm" class="apple-turno-form">
-            {% csrf_token %}
-            
-            {% if form.non_field_errors %}
-                    <!-- Selector de impresora oculto: ahora solo se usa el menú de opciones -->
-                    <input type="hidden" id="nombreImpresora" />
-            <!-- Hidden input for printer name -->
-            <input type="hidden" id="printer_name" name="nombre_impresora" />
-                <div class="apple-alert apple-alert-danger">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
-            
-            {% if form.errors %}
-                <div class="apple-alert apple-alert-danger">
-                    <strong>Errores en el formulario:</strong>
-                    <ul>
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}
-                                <li>{{ field }}: {{ error }}</li>
-                            {% endfor %}
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-
-            <!-- Campo DNI -->
-            <div class="apple-form-group">
-                <label class="apple-label">DNI</label>
-                <div class="apple-form-dni-row">
-                    <input type="text" id="id_dni" name="dni" required class="apple-form-dni-input" />
-                    <button type="button" id="btnBuscarPaciente" class="apple-btn apple-btn-primary">Buscar</button>
-                </div>
-                <div id="pacienteStatus" class="apple-status"></div>
-            </div>
-
-            <!-- Campos Apellido y Nombre en la misma fila -->
-            <div class="apple-form-grid-2">
-                <div>
-                    <label class="apple-label">Apellido</label>
-                    <input type="text" id="id_apellido" name="apellido" required class="apple-form-text-input" />
-                </div>
-                <div>
-                    <label class="apple-label">Nombre</label>
-                    <input type="text" id="id_nombre" name="nombre" required class="apple-form-text-input" />
-                </div>
-            </div>
-
-            <!-- Campos Fecha de Nacimiento y Sexo en la misma fila -->
-            <div class="apple-form-grid-2">
-                <div>
-                    <label class="apple-label">Fecha de Nacimiento</label>
-                    <input type="date" id="id_fecha_nacimiento" name="fecha_nacimiento" required class="apple-form-text-input" />
-                </div>
-                <div>
-                    <label class="apple-label">Sexo</label>
-                    <select id="id_sexo" name="sexo" required class="apple-form-select">
-                        <option value="">Seleccione...</option>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Femenino">Femenino</option>
-                        <option value="Sin asignar">Sin asignar</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Campos Teléfono, Email y Médico en una fila -->
-            <div class="apple-form-grid-3">
-                <div>
-                    <label class="apple-label">Teléfono</label>
-                    <input type="tel" id="id_telefono" name="telefono" class="apple-form-text-input" />
-                </div>
-                <div>
-                    <label class="apple-label">Email</label>
-                    <input type="email" id="id_email" name="email" oninput="this.value=this.value.toLowerCase()" class="apple-form-text-input" />
-                </div>
-                <div class="apple-field-with-button">
-                    <div class="apple-input-wrapper">
-                        <label class="apple-label">Médico</label>
-                        <input type="text" id="id_medico" name="medico" autocomplete="off" placeholder="Buscar médico..." class="apple-form-text-input" />
-                        <div id="autocompleteMedicos" class="apple-autocomplete"></div>
-                    </div>
-                    <button type="button" id="btnNuevoMedico" title="Agregar médico nuevo" class="apple-btn apple-btn-success apple-btn-icon-circle">+</button>
-                </div>
-            </div>
-            <div class="apple-form-group">
-                <label class="apple-label">Observaciones de paciente</label>
-                <input type="text" id="id_observaciones_paciente" name="observaciones_paciente" class="apple-form-text-input" />
-            </div>
-
-            <!-- Campo Nota Interna -->
-            <div class="apple-form-group">
-                <label class="apple-label">Nota Interna</label>
-                <textarea id="id_nota_interna" name="nota_interna" rows="2" disabled class="apple-form-textarea apple-input-disabled"></textarea>
-            </div>
-
-            <!-- Determinaciones -->
-            <div class="apple-form-group">
-                <label class="apple-label">Determinaciones</label>
-                <div class="apple-det-grid">
-                    <input type="text" id="inputCodigo" placeholder="Código" disabled class="apple-input apple-input-disabled" />
-                    <div class="apple-input-wrapper">
-                        <input type="text" id="inputNombre" placeholder="Buscar por nombre..." autocomplete="off" disabled class="apple-input apple-input-disabled" />
-                        <div id="autocompleteLista" class="apple-autocomplete"></div>
-                    </div>
-                    <button type="button" id="btnAgregarDet" disabled class="apple-btn apple-btn-success apple-btn-disabled">Agregar</button>
-                </div>
-                <div id="detStatus" class="apple-status"></div>
-                <div id="listaDeterminaciones" class="apple-det-list-container">
-                    <p class="apple-det-empty">Primero debe buscar un paciente por DNI</p>
-                </div>
-                <input type="hidden" id="id_determinaciones" name="determinaciones" value="" />
-            </div>
-
-            <!-- Campos ocultos -->
-            <input type="hidden" name="agenda" value="{{ form.agenda.value }}" />
-            <input type="hidden" name="fecha" value="{{ fecha|date:'Y-m-d' }}" />
-
-            <button type="submit" id="btnGuardarTurno" class="apple-btn apple-btn-primary apple-btn-block apple-margin-top-xl">Guardar turno</button>
-        </form>
+        
+        {% include "turnos/_formulario_turno.html" with mode='create' show_dni_search=True show_agenda_field=False show_fecha_field=False fecha=fecha agenda_id=form.agenda.value readonly_fields=empty_list %}
     {% endif %}
 
     {% if modo_vista != 'agenda_seleccionada' or not show_form %}
@@ -277,146 +160,12 @@
 </div>
 
 <script>
-let determinaciones = [];
-let determinacionesCache = null;
-let medicosCache = null;
-
-// Cargar todos los médicos al inicio
-async function cargarMedicos() {
-    if (medicosCache) return medicosCache;
-    
-    try {
-        const response = await fetch('/turnos/api/listar-medicos/');
-        medicosCache = await response.json();
-        return medicosCache;
-    } catch (error) {
-        console.error('Error cargando médicos:', error);
-        return [];
-    }
-}
-
-// Cargar todas las determinaciones y perfiles al inicio
-async function cargarDeterminaciones() {
-    if (determinacionesCache) return determinacionesCache;
-    
-    try {
-        const response = await fetch('/determinaciones/api/listar-determinaciones/');
-        determinacionesCache = await response.json();
-        return determinacionesCache;
-    } catch (error) {
-        console.error('Error cargando determinaciones:', error);
-        return [];
-    }
-}
-
-// Autocompletado por nombre
-document.getElementById('inputNombre').addEventListener('input', async function() {
-    const texto = this.value.trim().toLowerCase();
-    const lista = document.getElementById('autocompleteLista');
-    
-    if (texto.length < 2) {
-        lista.style.display = 'none';
-        return;
-    }
-    
-    const items = await cargarDeterminaciones();
-    const coincidencias = items.filter(d => 
-        d.nombre.toLowerCase().includes(texto)
-    ).slice(0, 20);
-    
-    if (coincidencias.length === 0) {
-        lista.style.display = 'none';
-        return;
-    }
-    
-    lista.innerHTML = coincidencias.map(item => {
-        let tipoBadge = '';
-        let sinStockBadge = '';
-        let disabledClass = '';
-        
-        if (item.tipo === 'perfil') {
-            tipoBadge = '<span class="apple-det-badge apple-det-badge-perfil">PERFIL</span>';
-        } else if (item.tipo === 'compleja') {
-            tipoBadge = '<span class="apple-det-badge apple-det-badge-compleja">COMPLEJA</span>';
-        }
-        
-        if (item.stock === false) {
-            sinStockBadge = '<span class="apple-det-badge apple-det-badge-sin-stock">SIN STOCK</span>';
-            disabledClass = ' apple-item-disabled';
-        }
-        
-        return `
-            <div class="apple-autocomplete-item${disabledClass}" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}">
-                <span class="apple-autocomplete-codigo">${item.codigo}</span> - <span class="apple-autocomplete-nombre">${item.nombre}</span>${tipoBadge}${sinStockBadge}
-            </div>
-        `;
-    }).join('');
-    
-    lista.style.display = 'block';
-    
-    lista.querySelectorAll('.apple-autocomplete-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const codigo = this.dataset.codigo;
-            const nombre = this.dataset.nombre;
-            document.getElementById('inputCodigo').value = codigo;
-            document.getElementById('inputNombre').value = nombre;
-            lista.style.display = 'none';
-        });
-    });
-});
-
-// Cerrar autocompletado al hacer clic fuera
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('#inputNombre') && !e.target.closest('#autocompleteLista')) {
-        document.getElementById('autocompleteLista').style.display = 'none';
-    }
-    if (!e.target.closest('#id_medico') && !e.target.closest('#autocompleteMedicos')) {
-        document.getElementById('autocompleteMedicos').style.display = 'none';
-    }
-});
-
-// Autocompletado de médicos
-document.getElementById('id_medico').addEventListener('input', async function() {
-    const texto = this.value.trim().toLowerCase();
-    const lista = document.getElementById('autocompleteMedicos');
-    
-    if (texto.length < 2) {
-        lista.style.display = 'none';
-        return;
-    }
-    
-    const medicos = await cargarMedicos();
-    const coincidencias = medicos.filter(m => 
-        m.nombre_apellido.toLowerCase().includes(texto)
-    ).slice(0, 15);
-    
-    if (coincidencias.length === 0) {
-        lista.style.display = 'none';
-        return;
-    }
-    
-    lista.innerHTML = coincidencias.map(medico => {
-        return `
-            <div class="apple-autocomplete-item" data-nombre="${medico.nombre_apellido}">
-                <span class="apple-autocomplete-medico-nombre">${medico.nombre_apellido}</span>
-                <span class="apple-autocomplete-medico-matricula">Mat: ${medico.matricula_provincial}</span>
-            </div>
-        `;
-    }).join('');
-    
-    lista.style.display = 'block';
-    
-    lista.querySelectorAll('.apple-autocomplete-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const nombre = this.dataset.nombre;
-            document.getElementById('id_medico').value = nombre;
-            lista.style.display = 'none';
-        });
-    });
-});
+// ===================================================================
+// JAVASCRIPT ESPECÍFICO DE DIA.HTML (buscar paciente, validación, etc.)
+// ===================================================================
 
 // Buscar paciente por DNI al presionar Enter
-document.getElementById('id_dni').addEventListener('keypress', function(e) {
+document.getElementById('id_dni')?.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         document.getElementById('btnBuscarPaciente').click();
@@ -424,7 +173,7 @@ document.getElementById('id_dni').addEventListener('keypress', function(e) {
 });
 
 // Buscar paciente por DNI
-document.getElementById('btnBuscarPaciente').addEventListener('click', async function() {
+document.getElementById('btnBuscarPaciente')?.addEventListener('click', async function() {
     const dni = document.getElementById('id_dni').value.trim();
     const status = document.getElementById('pacienteStatus');
     
@@ -503,20 +252,11 @@ function habilitarSoloDeterminaciones() {
     document.getElementById('btnAgregarDet').classList.remove('apple-btn-disabled');
     document.getElementById('btnAgregarDet').classList.add('apple-btn-enabled');
     
-    // Datos de paciente permanecen en modo READONLY (se envían pero no se pueden editar)
-    //const camposPaciente = ['id_nombre', 'id_apellido', 'id_fecha_nacimiento', 'id_sexo'];
-    //camposPaciente.forEach(campoId => {
-        //const campo = document.getElementById(campoId);
-        //campo.disabled = false;
-        //campo.readOnly = False;
-        //campo.classList.add('apple-input-disabled');
-    //});
-    
     // Los nuevos campos (telefono, email, medico, nota_interna) se pueden editar
     const camposEditables = ['id_telefono', 'id_email', 'id_medico', 'id_nota_interna'];
     camposEditables.forEach(campoId => {
         const campo = document.getElementById(campoId);
-        campo.disabled = false; // <-- Esto habilita el campo médico
+        campo.disabled = false;
         campo.readOnly = false;
         campo.classList.remove('apple-input-disabled');
         campo.classList.add('apple-input-enabled');
@@ -554,211 +294,6 @@ function habilitarTodosCampos() {
     }
 }
 
-
-// Agregar determinación o perfil
-document.getElementById('btnAgregarDet').addEventListener('click', async function() {
-    const codigo = document.getElementById('inputCodigo').value.trim();
-    const status = document.getElementById('detStatus');
-    
-    if (!codigo) {
-        status.innerHTML = '<span class="apple-status-error">Ingrese un código</span>';
-        return;
-    }
-    
-    status.innerHTML = '<span class="apple-status-searching">Buscando...</span>';
-    
-    try {
-        const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
-        const data = await response.json();
-        
-        if (data.found) {
-            if (data.tipo === 'compleja') {
-                // Para complejas: agregar solo el código de la compleja
-                const yaExiste = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === data.codigo);
-                if (yaExiste) {
-                    status.innerHTML = '<span class="apple-status-error">Ya agregada</span>';
-                    return;
-                }
-                
-                determinaciones.unshift({
-                    tipo: 'compleja',
-                    codigo: data.codigo,
-                    nombre: data.nombre,
-                    determinaciones: data.determinaciones,
-                    stock: data.stock !== undefined ? data.stock : true
-                });
-                status.innerHTML = '<span class="apple-status-found">Determinación compleja agregada</span>';
-            } else if (data.tipo === 'perfil') {
-                // Para perfiles: expandir subdeterminaciones (simples o complejas)
-                const detCodesRaw = Array.isArray(data.determinaciones)
-                    ? data.determinaciones
-                    : (data.determinaciones || '').split(',').map(d => d.trim()).filter(Boolean);
-
-                if (detCodesRaw.length === 0) {
-                    status.innerHTML = '<span class="apple-status-error">El perfil no tiene determinaciones</span>';
-                    return;
-                }
-
-                const catalogo = await cargarDeterminaciones();
-                let agregadas = 0;
-
-                for (const code of detCodesRaw) {
-                    // Si comienza con /, es una determinación compleja
-                    if (code.startsWith('/')) {
-                        const yaExisteCompleja = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === code);
-                        if (yaExisteCompleja) continue;
-                        
-                        // Buscar la determinación compleja en el catálogo
-                        const itemCompleja = catalogo.find(d => d.codigo === code && d.tipo === 'compleja');
-                        if (itemCompleja) {
-                            determinaciones.unshift({
-                                tipo: 'compleja',
-                                codigo: itemCompleja.codigo,
-                                nombre: itemCompleja.nombre,
-                                determinaciones: itemCompleja.determinaciones,
-                                stock: itemCompleja.stock !== undefined ? itemCompleja.stock : true
-                            });
-                            agregadas += 1;
-                        }
-                    } else {
-                        // Es una determinación simple
-                        const yaExisteDet = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === code);
-                        if (yaExisteDet) continue;
-                        
-                        const itemCat = catalogo.find(d => d.codigo === code && d.tipo === 'determinacion');
-                        const nombreDet = itemCat ? itemCat.nombre : code;
-                        determinaciones.unshift({
-                            tipo: 'determinacion',
-                            codigo: code,
-                            nombre: nombreDet,
-                            stock: itemCat && itemCat.stock !== undefined ? itemCat.stock : true
-                        });
-                        agregadas += 1;
-                    }
-                }
-
-                if (agregadas === 0) {
-                    status.innerHTML = '<span class="apple-status-error">Todas las determinaciones del perfil ya estaban agregadas</span>';
-                } else {
-                    status.innerHTML = `<span class="apple-status-found">Perfil agregado (${agregadas} determinaciones)</span>`;
-                }
-            } else {
-                // Agregar determinación individual
-                const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
-                if (yaExiste) {
-                    status.innerHTML = '<span class="apple-status-error">Ya agregada</span>';
-                    return;
-                }
-                
-                determinaciones.unshift({
-                    tipo: 'determinacion',
-                    codigo: data.codigo,
-                    nombre: data.nombre,
-                    stock: data.stock !== undefined ? data.stock : true
-                });
-                status.innerHTML = '<span class="apple-status-found">Determinación agregada</span>';
-            }
-            
-            actualizarListaDeterminaciones();
-            document.getElementById('inputCodigo').value = '';
-            document.getElementById('inputNombre').value = '';
-            setTimeout(() => status.innerHTML = '', 2000);
-        } else {
-            status.innerHTML = '<span class="apple-status-error">Código no encontrado</span>';
-        }
-    } catch (error) {
-        status.innerHTML = '<span class="apple-status-error">Error al buscar</span>';
-    }
-});
-
-// Enter para agregar determinación
-document.getElementById('inputCodigo').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('btnAgregarDet').click();
-    }
-});
-
-document.getElementById('inputNombre').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('btnAgregarDet').click();
-    }
-});
-
-function actualizarListaDeterminaciones() {
-    const lista = document.getElementById('listaDeterminaciones');
-    
-    if (determinaciones.length === 0) {
-        lista.innerHTML = '<p class="apple-det-empty">No hay determinaciones agregadas</p>';
-    } else {
-        lista.innerHTML = determinaciones.map((item, index) => {
-            if (item.tipo === 'perfil') {
-                return `
-                    <div class="apple-det-item apple-det-item-perfil">
-                        <div>
-                            <span class="apple-det-badge apple-det-badge-perfil">PERFIL</span>
-                            <strong class="apple-det-codigo apple-det-codigo-perfil">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>
-                            <div class="apple-det-count">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
-                        </div>
-                        <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
-                    </div>
-                `;
-            } else if (item.tipo === 'compleja') {
-                const sinStockBadge = item.stock === false ? '<span class="apple-det-badge apple-det-badge-sin-stock">SIN STOCK</span>' : '';
-                const disabledClass = item.stock === false ? ' apple-det-item-disabled' : '';
-                return `
-                    <div class="apple-det-item apple-det-item-compleja${disabledClass}">
-                        <div>
-                            <span class="apple-det-badge apple-det-badge-compleja">COMPLEJA</span>
-                            <strong class="apple-det-codigo apple-det-codigo-compleja">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>${sinStockBadge}
-                        </div>
-                        <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
-                    </div>
-                `;
-            } else {
-                const sinStockBadge = item.stock === false ? '<span class="apple-det-badge apple-det-badge-sin-stock">SIN STOCK</span>' : '';
-                const disabledClass = item.stock === false ? ' apple-det-item-disabled' : '';
-                return `
-                    <div class="apple-det-item apple-det-item-simple${disabledClass}">
-                        <div>
-                            <strong class="apple-det-codigo apple-det-codigo-simple">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>${sinStockBadge}
-                        </div>
-                        <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
-                    </div>
-                `;
-            }
-        }).join('');
-        
-        // Event delegation para botones de eliminar
-        lista.querySelectorAll('.btn-eliminar').forEach(btn => {
-            btn.addEventListener('click', function() {
-                eliminarItem(parseInt(this.dataset.index));
-            });
-        });
-    }
-    
-    // Actualizar campo oculto con códigos
-    // Para perfiles: código del perfil, para determinaciones: código individual
-    const codigos = [];
-    determinaciones.forEach(item => {
-        if (item.tipo === 'perfil' || item.tipo === 'compleja') {
-            codigos.push(item.codigo);
-        } else {
-            codigos.push(item.codigo.toString());
-        }
-    });
-    document.getElementById('id_determinaciones').value = codigos.join(',');
-}
-
-function eliminarItem(index) {
-    determinaciones.splice(index, 1);
-    actualizarListaDeterminaciones();
-}
-
-// Cargar determinaciones al cargar la página
-cargarDeterminaciones();
-
 // Auto-refresh: Recargar listado de turnos cada 15 segundos
 setInterval(function() {
     // Obtener la URL actual con el parámetro agenda
@@ -793,8 +328,7 @@ setInterval(function() {
 // Validar formulario antes de enviar
 document.getElementById('turnoForm')?.addEventListener('submit', function(e) {
     // Copy printer name from localStorage to hidden input before submit
-    // Tomar impresora seleccionada desde el menú de opciones (clave correcta)
-    const printerName = localStorage.getItem('nombre_impresora') || document.getElementById('nombreImpresora')?.value || '';
+    const printerName = localStorage.getItem('nombre_impresora') || '';
     document.getElementById('printer_name').value = printerName;
 
     const determinacionesInput = document.getElementById('id_determinaciones');
@@ -869,55 +403,55 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     btnNuevoMedico.addEventListener('click', function() {
-    modalNuevoMedico.style.display = 'flex';
-    estadoNuevoMedico.textContent = '';
-    formNuevoMedico.reset();
-});
-cerrarModalMedico.addEventListener('click', function() {
-    modalNuevoMedico.style.display = 'none';
-});
-modalNuevoMedico.addEventListener('click', function(e) {
-    if (e.target === modalNuevoMedico) {
+        modalNuevoMedico.style.display = 'flex';
+        estadoNuevoMedico.textContent = '';
+        formNuevoMedico.reset();
+    });
+    cerrarModalMedico.addEventListener('click', function() {
         modalNuevoMedico.style.display = 'none';
-    }
-});
-formNuevoMedico.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const nombre = document.getElementById('nombreMedico').value.trim();
-    const matricula = document.getElementById('matriculaMedico').value.trim();
-    if (!nombre || !matricula) {
-        estadoNuevoMedico.textContent = 'Complete ambos campos.';
-        estadoNuevoMedico.className = 'apple-status apple-status-error';
-        return;
-    }
-    estadoNuevoMedico.textContent = 'Guardando...';
-    estadoNuevoMedico.className = 'apple-status apple-status-searching';
-    try {
-        const response = await fetch('/turnos/api/crear-medico/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({ nombre_apellido: nombre, matricula_provincial: matricula })
-        });
-        const data = await response.json();
-        if (data.success) {
-            estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
-            estadoNuevoMedico.className = 'apple-status apple-status-found';
-            // Actualizar cache y autocompletado
-            medicosCache = null;
-            await cargarMedicos();
-            document.getElementById('id_medico').value = nombre;
-            setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
-        } else {
-            estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
+    });
+    modalNuevoMedico.addEventListener('click', function(e) {
+        if (e.target === modalNuevoMedico) {
+            modalNuevoMedico.style.display = 'none';
+        }
+    });
+    formNuevoMedico.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const nombre = document.getElementById('nombreMedico').value.trim();
+        const matricula = document.getElementById('matriculaMedico').value.trim();
+        if (!nombre || !matricula) {
+            estadoNuevoMedico.textContent = 'Complete ambos campos.';
+            estadoNuevoMedico.className = 'apple-status apple-status-error';
+            return;
+        }
+        estadoNuevoMedico.textContent = 'Guardando...';
+        estadoNuevoMedico.className = 'apple-status apple-status-searching';
+        try {
+            const response = await fetch('/turnos/api/crear-medico/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ nombre_apellido: nombre, matricula_provincial: matricula })
+            });
+            const data = await response.json();
+            if (data.success) {
+                estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
+                estadoNuevoMedico.className = 'apple-status apple-status-found';
+                // Actualizar cache y autocompletado
+                medicosCache = null;
+                await cargarMedicos();
+                document.getElementById('id_medico').value = nombre;
+                setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
+            } else {
+                estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
+                estadoNuevoMedico.className = 'apple-status apple-status-error';
+            }
+        } catch (err) {
+            estadoNuevoMedico.textContent = 'Error de red.';
             estadoNuevoMedico.className = 'apple-status apple-status-error';
         }
-    } catch (err) {
-        estadoNuevoMedico.textContent = 'Error de red.';
-        estadoNuevoMedico.className = 'apple-status apple-status-error';
-    }
     });
 });
 </script>

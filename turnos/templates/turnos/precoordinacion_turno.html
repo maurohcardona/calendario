@@ -1,642 +1,124 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="precoord-container">
-    <h2 class="precoord-title">Pre-coordinación de Turno</h2>
-    <form method="post" class="precoord-form">
+<div class="apple-container">
+    <h2 class="apple-title">Pre-coordinación de Turno</h2>
+    <form method="post" class="apple-card">
         {% csrf_token %}
-        <div class="precoord-grid-main">
-            <!-- Datos personales -->
-            <div>
-                <div class="precoord-form-group">
-                    <label class="precoord-label">DNI</label>
-                    <input type="text" name="dni" value="{{ paciente.dni|default:turno.dni }}" readonly class="precoord-input-text precoord-input-dni" required />
-                </div>
-                <div class="precoord-grid-2">
-                    <div>
-                        <label class="precoord-label">Apellido</label>
-                        <input type="text" name="apellido" value="{{ paciente.apellido|default:turno.apellido }}" class="precoord-input-text precoord-input-name" required />
-                    </div>
-                    <div>
-                        <label class="precoord-label">Nombre</label>
-                        <input type="text" name="nombre" value="{{ paciente.nombre|default:turno.nombre }}" class="precoord-input-text precoord-input-name" required />
-                    </div>
-                </div>
-                <div class="precoord-grid-2">
-                    <div>
-                        <label class="precoord-label">Fecha de Nacimiento</label>
-                        <input type="date" name="fecha_nacimiento" value="{{ paciente.fecha_nacimiento|date:'Y-m-d' }}" class="precoord-input-text precoord-input-name" />
-                    </div>
-                    <div>
-                        <label class="precoord-label">Sexo</label>
-                        <select name="sexo" class="precoord-select precoord-input-name">
-                            <option value="" {% if not paciente.sexo %}selected{% endif %}>-</option>
-                            <option value="Masculino" {% if paciente.sexo == 'Masculino' %}selected{% endif %}>Masculino</option>
-                            <option value="Femenino" {% if paciente.sexo == 'Femenino' %}selected{% endif %}>Femenino</option>
-                            <option value="Sin asignar" {% if paciente.sexo == 'Sin asignar' %}selected{% endif %}>Sin asignar</option>
-                            <option value="Desconocido" {% if paciente.sexo == 'Desconocido' %}selected{% endif %}>Desconocido</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="precoord-form-group">
-                    <label class="precoord-label">Teléfono</label>
-                    <input type="text" name="telefono" value="{{ paciente.telefono }}" class="precoord-input-text precoord-input-name" />
-                </div>
-                <div class="precoord-form-group">
-                    <label class="precoord-label">Email</label>
-                    <input type="email" name="email" value="{{ paciente.email|lower }}" oninput="this.value=this.value.toLowerCase()" class="precoord-input-text precoord-input-name precoord-input-email" />
-                </div>
-                <div class="precoord-medico-group">
-                    <div class="precoord-medico-input-wrapper">
-                        <label class="precoord-label">Médico</label>
-                        <input type="text" id="id_medico" name="medico" value="{% if turno.medico %}{{ turno.medico.nombre }}{% endif %}" autocomplete="off" placeholder="Buscar médico..." class="precoord-input-text precoord-input-name" />
-                        <div id="autocompleteMedicos" class="precoord-autocomplete-list"></div>
-                    </div>
-                    <button type="button" id="btnNuevoMedico" title="Agregar médico nuevo" class="precoord-btn-add-medico">+</button>
-                </div>
-                <div class="precoord-form-group">
-                    <label class="precoord-label">Observaciones</label>
-                    <textarea name="observaciones_paciente" class="precoord-textarea">{{ paciente.observaciones }}</textarea>
-                </div>
-                <div class="precoord-form-group">
-                    <label class="precoord-label">Nota interna</label>
-                    <textarea name="nota_interna" class="precoord-textarea">{{ turno.nota_interna }}</textarea>
-                </div>
-            </div>
-            <!-- Determinaciones y datos de turno -->
-            <div>
-                <div class="precoord-form-group">
-                    <label class="precoord-label">Agenda</label>
-                    <select name="agenda" id="id_agenda" required class="precoord-select precoord-input-name">
-                        {% for agenda in agendas %}
-                            <option value="{{ agenda.id }}" {% if agenda.id == turno.agenda.id %}selected{% endif %}>{{ agenda.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="precoord-form-group">
-                    <label class="precoord-label">Fecha</label>
-                    <input type="date" name="fecha" value="{{ turno.fecha|date:'Y-m-d' }}" readonly class="precoord-input-text precoord-input-name precoord-input-readonly" required />
-                </div>
-                <div class="precoord-form-group">
-                    <label class="precoord-label">Determinaciones</label>
-                    <div class="precoord-determinaciones-input-grid">
-                        <input type="text" id="inputCodigo" placeholder="Código" class="precoord-input-text precoord-input-name" style="width: 100px;" />
-                        <div class="precoord-determinaciones-search-wrapper">
-                            <input type="text" id="inputNombre" placeholder="Buscar por nombre..." autocomplete="off" class="precoord-input-text precoord-input-name" style="min-width: 300px;" />
-                            <div id="autocompleteLista" class="precoord-autocomplete-list"></div>
-                        </div>
-                        <button type="button" id="btnAgregarDet" class="precoord-btn-add-det">Agregar</button>
-                    </div>
-                    <div id="detStatus" class="precoord-status"></div>
-                    <div id="listaDeterminaciones" class="precoord-determinaciones-list">
-                        <p class="precoord-no-determinaciones">No hay determinaciones agregadas</p>
-                    </div>
-                    <input type="hidden" id="id_determinaciones" name="determinaciones" value="{{ turno.determinaciones }}" />
-                </div>
-            </div>
+        
+        {% include "turnos/_formulario_turno.html" with mode='precoord' show_dni_search=False show_agenda_field=True show_fecha_field=True show_nuevo_medico=True readonly_fields='dni,fecha' turno=turno paciente=paciente agendas=agendas fecha=turno.fecha agenda_id=turno.agenda.id %}
+
+        <div class="apple-flex apple-flex-buttons">
+            <button type="button" id="btnCoordinarTurno" class="apple-btn apple-btn-primary">Coordinar Turno</button>
+            <a href="{% url 'turnos:buscar' %}" class="apple-btn apple-btn-light">Cancelar</a>
         </div>
-        <div class="precoord-actions">
-            <button type="button" id="btnCoordinarTurno" class="precoord-btn-primary">Coordinar Turno</button>
-            <a href="{% url 'turnos:buscar' %}" class="precoord-btn-secondary">Cancelar</a>
-        </div>
-        <script>
-        // ...existing code...
-        document.getElementById('btnCoordinarTurno').addEventListener('click', async function() {
-            const form = this.closest('form');
-            const formData = new FormData(form);
-            formData.append('accion', 'coordinar');
-            
-            // Extraer turno_id del pathname actual (ej: /turnos/turno/123/precoordinacion/)
-            const pathParts = window.location.pathname.split('/');
-            const turnoIdIndex = pathParts.indexOf('turno') + 1;
-            const turnoId = pathParts[turnoIdIndex];
-            
-            // Guardar cambios primero
-            const response = await fetch(window.location.pathname, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
-                body: formData,
-                redirect: 'manual'
-            });
-            
-            // Coordinar turno usando el turno_id extraído
-            const nombreImpresora = localStorage.getItem('nombre_impresora') || '';
-            const coordUrl = `/turnos/turno/${turnoId}/coordinar/`;
-            const coordResp = await fetch(coordUrl, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken'), 'Content-Type': 'application/json' },
-                body: JSON.stringify({ impresora: nombreImpresora })
-            });
-            const data = await coordResp.json();
-            if (data.success) {
-                // Modal de éxito igual que buscar.html
-                const modal = document.createElement('div');
-                modal.id = 'modalCoordinacionExitosa';
-                modal.className = 'apple-modal'; // Usar clase de apple-design
-                modal.innerHTML = `
-                  <div class="apple-modal-content">
-                    <h3 class="apple-modal-title" style="color: var(--apple-green);">Turno coordinado exitosamente</h3>
-                    <p class="apple-modal-body">Mensaje generado y enviado.<br>Puede imprimir el ticket de retiro:</p>
-                    <a href="/turnos/turno/${turnoId}/retiro/" target="_blank" class="apple-btn apple-btn-success" style="margin-bottom: 1rem;">Ticket de retiro</a>
-                    <br>
-                    <button onclick="window.location.href='{% url 'turnos:buscar' %}';" class="apple-btn apple-btn-secondary">Cerrar</button>
-                  </div>
-                `;
-                document.body.appendChild(modal);
-                modal.style.display = 'flex'; // Mostrar modal
-            } else {
-                alert(data.error || 'Error al coordinar turno');
-            }
-        });
-        // ...existing code...
-        </script>
-    <script>
-    // Copia el JS de determinaciones de editar_turno.html aquí
-    let determinaciones = [];
-    let determinacionesCache = null;
-
-    // Cargar determinaciones existentes al cargar la página
-    window.addEventListener('DOMContentLoaded', async function() {
-        const codigosExistentes = '{{ turno.determinaciones }}'.split(',').map(c => c.trim()).filter(c => c);
-        if (codigosExistentes.length > 0) {
-            // Crear todas las promesas de fetch en paralelo
-            const fetchPromises = codigosExistentes.map(codigo => 
-                fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`)
-                    .then(response => response.json())
-                    .then(data => ({ codigo, data }))
-                    .catch(error => {
-                        console.error('Error cargando determinación:', codigo, error);
-                        return null;
-                    })
-            );
-            
-            // Esperar todas las respuestas en paralelo
-            const resultados = await Promise.all(fetchPromises);
-            
-            // Procesar los resultados
-            resultados.reverse().forEach(resultado => {
-                if (!resultado || !resultado.data || !resultado.data.found) return;
-                
-                const { data } = resultado;
-                if (data.tipo === 'perfil') {
-                    determinaciones.unshift({
-                        tipo: 'perfil',
-                        codigo: data.codigo,
-                        nombre: data.nombre,
-                        determinaciones: data.determinaciones
-                    });
-                } else if (data.tipo === 'compleja') {
-                    determinaciones.unshift({
-                        tipo: 'compleja',
-                        codigo: data.codigo,
-                        nombre: data.nombre,
-                        determinaciones: data.determinaciones,
-                        stock: data.stock !== undefined ? data.stock : true
-                    });
-                } else {
-                    determinaciones.unshift({
-                        tipo: 'determinacion',
-                        codigo: data.codigo,
-                        nombre: data.nombre,
-                        stock: data.stock !== undefined ? data.stock : true
-                    });
-                }
-            });
-            
-            actualizarListaDeterminaciones();
-        }
-    });
-
-    // Autocompletado de médicos
-    let medicosCache = null;
-    async function cargarMedicos() {
-        if (medicosCache) return medicosCache;
-        try {
-            const response = await fetch('/turnos/api/listar-medicos/');
-            medicosCache = await response.json();
-            return medicosCache;
-        } catch (error) {
-            console.error('Error cargando médicos:', error);
-            return [];
-        }
-    }
-    
-    document.getElementById('id_medico').addEventListener('input', async function() {
-        const texto = this.value.trim().toLowerCase();
-        const lista = document.getElementById('autocompleteMedicos');
-        if (texto.length < 2) {
-            lista.style.display = 'none';
-            return;
-        }
-        const medicos = await cargarMedicos();
-        const coincidencias = medicos.filter(m => 
-            m.nombre_apellido.toLowerCase().includes(texto)
-        ).slice(0, 15);
-        if (coincidencias.length === 0) {
-            lista.style.display = 'none';
-            return;
-        }
-        lista.innerHTML = coincidencias.map(medico => {
-            return `
-                <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(36, 143, 141, 0.2); transition: background 0.2s;">
-                    <span style="color: var(--color-primary); font-weight: 600;">${medico.nombre_apellido}</span>
-                    <span style="color: var(--color-text-light); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
-                </div>
-            `;
-        }).join('');
-        lista.style.display = 'block';
-        lista.querySelectorAll('.autocomplete-medico').forEach(item => {
-            item.addEventListener('mouseenter', function() {
-                this.style.background = 'rgba(36, 143, 141, 0.15)';
-            });
-            item.addEventListener('mouseleave', function() {
-                this.style.background = 'transparent';
-            });
-            item.addEventListener('click', function() {
-                const nombre = this.dataset.nombre;
-                document.getElementById('id_medico').value = nombre;
-                lista.style.display = 'none';
-            });
-        });
-    });
-    
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#id_medico') && !e.target.closest('#autocompleteMedicos')) {
-            document.getElementById('autocompleteMedicos').style.display = 'none';
-        }
-    });
-
-    async function cargarDeterminaciones() {
-        if (determinacionesCache) return determinacionesCache;
-        try {
-            const response = await fetch('/determinaciones/api/listar-determinaciones/');
-            determinacionesCache = await response.json();
-            return determinacionesCache;
-        } catch (error) {
-            console.error('Error cargando determinaciones:', error);
-            return [];
-        }
-    }
-
-    document.getElementById('inputNombre').addEventListener('input', async function() {
-        const texto = this.value.trim().toLowerCase();
-        const lista = document.getElementById('autocompleteLista');
-        
-        if (texto.length < 2) {
-            lista.style.display = 'none';
-            return;
-        }
-        
-        const items = await cargarDeterminaciones();
-        const coincidencias = items.filter(d => 
-            d.nombre.toLowerCase().includes(texto)
-        ).slice(0, 20);
-        
-        if (coincidencias.length === 0) {
-            lista.style.display = 'none';
-            return;
-        }
-        
-        lista.innerHTML = coincidencias.map(item => {
-            let tipoBadge = '';
-            let sinStockBadge = '';
-            let estiloGris = '';
-            
-            if (item.tipo === 'perfil') {
-                tipoBadge = '<span class="precoord-badge-perfil">PERFIL</span>';
-            } else if (item.tipo === 'compleja') {
-                tipoBadge = '<span class="precoord-badge-compleja">COMPLEJA</span>';
-            }
-            
-            if (item.stock === false) {
-                sinStockBadge = '<span class="precoord-badge-stock">SIN STOCK</span>';
-                estiloGris = 'opacity: 0.5;';
-            }
-            
-            return `
-                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(36, 143, 141, 0.1); transition: background 0.2s; ${estiloGris}">
-                    <span style="color: var(--color-primary); font-weight: bold;">${item.codigo}</span> - <span style="color: var(--color-text); font-weight: 600;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
-                </div>
-            `;
-        }).join('');
-        
-        lista.style.display = 'block';
-        
-        lista.querySelectorAll('.autocomplete-item').forEach(item => {
-            item.addEventListener('mouseenter', function() {
-                this.style.background = 'rgba(36, 143, 141, 0.15)';
-            });
-            item.addEventListener('mouseleave', function() {
-                this.style.background = 'transparent';
-            });
-            item.addEventListener('click', function() {
-                const codigo = this.dataset.codigo;
-                const nombre = this.dataset.nombre;
-                document.getElementById('inputCodigo').value = codigo;
-                document.getElementById('inputNombre').value = nombre;
-                lista.style.display = 'none';
-            });
-        });
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#inputNombre') && !e.target.closest('#autocompleteLista')) {
-            document.getElementById('autocompleteLista').style.display = 'none';
-        }
-    });
-
-    document.getElementById('btnAgregarDet').addEventListener('click', async function() {
-        const codigo = document.getElementById('inputCodigo').value.trim();
-        const status = document.getElementById('detStatus');
-        
-        if (!codigo) {
-            status.innerHTML = '<span class="precoord-status-error">Ingrese un código</span>';
-            return;
-        }
-        
-        status.innerHTML = '<span class="precoord-status-loading">Buscando...</span>';
-        
-        try {
-            const response = await fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`);
-            const data = await response.json();
-            
-            if (data.found) {
-                if (data.tipo === 'compleja') {
-                    // Para complejas: agregar solo el código de la compleja
-                    const yaExiste = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === data.codigo);
-                    if (yaExiste) {
-                        status.innerHTML = '<span class="precoord-status-error">Ya agregada</span>';
-                        return;
-                    }
-                    
-                    determinaciones.unshift({
-                        tipo: 'compleja',
-                        codigo: data.codigo,
-                        nombre: data.nombre,
-                        determinaciones: data.determinaciones,
-                        stock: data.stock !== undefined ? data.stock : true
-                    });
-                    status.innerHTML = '<span class="precoord-status-success">Determinación compleja agregada</span>';
-                } else if (data.tipo === 'perfil') {
-                    // Para perfiles: expandir subdeterminaciones (simples o complejas)
-                    const detCodesRaw = Array.isArray(data.determinaciones)
-                        ? data.determinaciones
-                        : (data.determinaciones || '').split(',').map(d => d.trim()).filter(Boolean);
-
-                    if (detCodesRaw.length === 0) {
-                        status.innerHTML = '<span class="precoord-status-error">El perfil no tiene determinaciones</span>';
-                        return;
-                    }
-
-                    const catalogo = await cargarDeterminaciones();
-                    let agregadas = 0;
-
-                    for (const code of detCodesRaw) {
-                        // Si comienza con /, es una determinación compleja
-                        if (code.startsWith('/')) {
-                            const yaExisteCompleja = determinaciones.find(d => d.tipo === 'compleja' && d.codigo === code);
-                            if (yaExisteCompleja) continue;
-                            
-                            // Buscar la determinación compleja en el catálogo
-                            const itemCompleja = catalogo.find(d => d.codigo === code && d.tipo === 'compleja');
-                            if (itemCompleja) {
-                                determinaciones.unshift({
-                                    tipo: 'compleja',
-                                    codigo: itemCompleja.codigo,
-                                    nombre: itemCompleja.nombre,
-                                    determinaciones: itemCompleja.determinaciones,
-                                    stock: itemCompleja.stock !== undefined ? itemCompleja.stock : true
-                                });
-                                agregadas += 1;
-                            }
-                        } else {
-                            // Es una determinación simple
-                            const yaExisteDet = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === code);
-                            if (yaExisteDet) continue;
-                            
-                            const itemCat = catalogo.find(d => d.codigo === code && d.tipo === 'determinacion');
-                            const nombreDet = itemCat ? itemCat.nombre : code;
-                            determinaciones.unshift({
-                                tipo: 'determinacion',
-                                codigo: code,
-                                nombre: nombreDet,
-                                stock: itemCat && itemCat.stock !== undefined ? itemCat.stock : true
-                            });
-                            agregadas += 1;
-                        }
-                    }
-
-                    if (agregadas === 0) {
-                        status.innerHTML = '<span class="precoord-status-error">Todas las determinaciones del perfil ya estaban agregadas</span>';
-                    } else {
-                        status.innerHTML = `<span class="precoord-status-success">Perfil agregado (${agregadas} determinaciones)</span>`;
-                    }
-                } else {
-                    // Determinación simple
-                    const yaExiste = determinaciones.find(d => d.tipo === 'determinacion' && d.codigo === data.codigo);
-                    if (yaExiste) {
-                        status.innerHTML = '<span class="precoord-status-error">Ya agregada</span>';
-                        return;
-                    }
-                    
-                    determinaciones.unshift({
-                        tipo: 'determinacion',
-                        codigo: data.codigo,
-                        nombre: data.nombre,
-                        stock: data.stock !== undefined ? data.stock : true
-                    });
-                    status.innerHTML = '<span class="precoord-status-success">Determinación agregada</span>';
-                }
-                
-                actualizarListaDeterminaciones();
-                document.getElementById('inputCodigo').value = '';
-                document.getElementById('inputNombre').value = '';
-                setTimeout(() => status.innerHTML = '', 2000);
-            } else {
-                status.innerHTML = '<span class="precoord-status-error">Código no encontrado</span>';
-            }
-        } catch (error) {
-            console.error('Error al buscar determinación:', error);
-            status.innerHTML = '<span class="precoord-status-error">Error al buscar: ' + error.message + '</span>';
-        }
-    });
-
-    document.getElementById('inputCodigo').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('btnAgregarDet').click();
-        }
-    });
-    document.getElementById('inputNombre').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('btnAgregarDet').click();
-        }
-    });
-
-    function actualizarListaDeterminaciones() {
-        const lista = document.getElementById('listaDeterminaciones');
-        if (determinaciones.length === 0) {
-            lista.innerHTML = '<p class="precoord-no-determinaciones">No hay determinaciones agregadas</p>';
-        } else {
-            lista.innerHTML = determinaciones.map((item, index) => {
-                let itemHtml = '';
-                if (item.tipo === 'perfil') {
-                    itemHtml = `
-                        <div class="precoord-det-item precoord-det-item-perfil">
-                            <div>
-                                <span class="precoord-badge-perfil">PERFIL</span>
-                                <strong>${item.codigo}</strong> - <span>${item.nombre}</span>
-                                <div class="precoord-det-item-count">${(item.determinaciones && typeof item.determinaciones === 'string') ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
-                            </div>
-                            <button type="button" class="precoord-btn-delete" data-index="${index}">Eliminar</button>
-                        </div>
-                    `;
-                } else if (item.tipo === 'compleja') {
-                    const sinStockBadge = item.stock === false ? '<span class="precoord-badge-stock">SIN STOCK</span>' : '';
-                    const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
-                    itemHtml = `
-                        <div class="precoord-det-item precoord-det-item-compleja" style="${estiloGris}">
-                            <div>
-                                <span class="precoord-badge-compleja">COMPLEJA</span>
-                                <strong>${item.codigo}</strong> - <span>${item.nombre}</span>${sinStockBadge}
-                            </div>
-                            <button type="button" class="precoord-btn-delete" data-index="${index}">Eliminar</button>
-                        </div>
-                    `;
-                } else {
-                    const sinStockBadge = item.stock === false ? '<span class="precoord-badge-stock">SIN STOCK</span>' : '';
-                    const estiloGris = item.stock === false ? 'opacity: 0.6;' : '';
-                    itemHtml = `
-                        <div class="precoord-det-item" style="${estiloGris}">
-                            <div>
-                                <strong>${item.codigo}</strong> - <span>${item.nombre}</span>${sinStockBadge}
-                            </div>
-                            <button type="button" class="precoord-btn-delete" data-index="${index}">Eliminar</button>
-                        </div>
-                    `;
-                }
-                return itemHtml;
-            }).join('');
-            
-            // Event delegation para botones de eliminar
-            lista.querySelectorAll('.precoord-btn-delete').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    eliminarItem(parseInt(this.dataset.index));
-                });
-            });
-        }
-        // Actualizar campo oculto con códigos
-        const codigos = [];
-        determinaciones.forEach(item => {
-            if (item.tipo === 'perfil' || item.tipo === 'compleja') {
-                codigos.push(item.codigo);
-            } else {
-                codigos.push(item.codigo.toString());
-            }
-        });
-        document.getElementById('id_determinaciones').value = codigos.join(',');
-    }
-    function eliminarItem(index) {
-        determinaciones.splice(index, 1);
-        actualizarListaDeterminaciones();
-    }
-    cargarDeterminaciones();
-    </script>
-
     </form>
-</div>
 
-<!-- Modal para agregar médico nuevo -->
-<div id="modalNuevoMedico" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:12px; padding:2rem; max-width:400px; margin:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3); position:relative;">
-        <button id="cerrarModalMedico" style="position:absolute; top:0.5rem; right:0.5rem; background:none; border:none; font-size:1.5rem; color:#888; cursor:pointer;">&times;</button>
-        <h3 style="margin-top:0; color:var(--color-primary);">Agregar nuevo médico</h3>
-        <form id="formNuevoMedico">
-            <div style="margin-bottom:1rem;">
-                <label for="nombreMedico" style="font-weight:600;">Apellido y Nombre</label>
-                <input type="text" id="nombreMedico" name="nombreMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
-            </div>
-            <div style="margin-bottom:1.5rem;">
-                <label for="matriculaMedico" style="font-weight:600;">Matrícula Provincial</label>
-                <input type="text" id="matriculaMedico" name="matriculaMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
-            </div>
-            <button type="submit" style="background:var(--color-primary); color:#fff; border:none; border-radius:8px; padding:0.7rem 1.5rem; font-weight:700; font-size:1rem; cursor:pointer; width:100%;">Guardar médico</button>
-            <div id="estadoNuevoMedico" style="margin-top:1rem; font-size:0.95rem;"></div>
-        </form>
+    <div class="apple-margin-top-xl">
+        <a href="{% url 'turnos:buscar' %}" class="apple-nav-link">← Volver a buscar turnos</a>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const btnNuevoMedico = document.getElementById('btnNuevoMedico');
-    const modalNuevoMedico = document.getElementById('modalNuevoMedico');
-    const cerrarModalMedico = document.getElementById('cerrarModalMedico');
-    const formNuevoMedico = document.getElementById('formNuevoMedico');
-    const estadoNuevoMedico = document.getElementById('estadoNuevoMedico');
-
-    // Verificar que todos los elementos existen
-    if (!btnNuevoMedico || !modalNuevoMedico || !cerrarModalMedico || !formNuevoMedico || !estadoNuevoMedico) {
-        console.error('Modal elements not found:', {
-            btnNuevoMedico: !!btnNuevoMedico,
-            modalNuevoMedico: !!modalNuevoMedico,
-            cerrarModalMedico: !!cerrarModalMedico,
-            formNuevoMedico: !!formNuevoMedico,
-            estadoNuevoMedico: !!estadoNuevoMedico
-        });
-        return;
-    }
-
-    btnNuevoMedico.addEventListener('click', function() {
-        modalNuevoMedico.style.display = 'flex';
-        estadoNuevoMedico.textContent = '';
-        formNuevoMedico.reset();
-    });
-    cerrarModalMedico.addEventListener('click', function() {
-        modalNuevoMedico.style.display = 'none';
-    });
-    modalNuevoMedico.addEventListener('click', function(e) {
-        if (e.target === modalNuevoMedico) {
-            modalNuevoMedico.style.display = 'none';
-        }
-    });
-    formNuevoMedico.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const nombre = document.getElementById('nombreMedico').value.trim();
-        const matricula = document.getElementById('matriculaMedico').value.trim();
-        if (!nombre || !matricula) {
-            estadoNuevoMedico.textContent = 'Complete ambos campos.';
-            estadoNuevoMedico.style.color = 'var(--color-danger)';
-            return;
-        }
-        estadoNuevoMedico.textContent = 'Guardando...';
-        estadoNuevoMedico.style.color = 'var(--color-text)';
-        try {
-            const response = await fetch('/turnos/api/crear-medico/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({ nombre_apellido: nombre, matricula_provincial: matricula })
-            });
-            const data = await response.json();
-            if (data.success) {
-                estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
-                estadoNuevoMedico.style.color = 'var(--color-success-text)';
-                // Actualizar cache y autocompletado
-                if (typeof medicosCache !== 'undefined') medicosCache = null;
-                if (typeof cargarMedicos === 'function') await cargarMedicos();
-                document.getElementById('id_medico').value = nombre;
-                setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
+// Cargar determinaciones existentes del turno en paralelo (optimización)
+window.addEventListener('DOMContentLoaded', async function() {
+    const codigosExistentes = '{{ turno.determinaciones }}'.split(',').map(c => c.trim()).filter(c => c);
+    
+    if (codigosExistentes.length > 0) {
+        // Crear todas las promesas de fetch en paralelo
+        const fetchPromises = codigosExistentes.map(codigo => 
+            fetch(`/determinaciones/api/buscar-codigo/?codigo=${encodeURIComponent(codigo)}`)
+                .then(response => response.json())
+                .then(data => ({ codigo, data }))
+                .catch(error => {
+                    console.error('Error cargando determinación:', codigo, error);
+                    return null;
+                })
+        );
+        
+        // Esperar todas las respuestas en paralelo
+        const resultados = await Promise.all(fetchPromises);
+        
+        // Procesar los resultados en orden inverso para mantener el orden original
+        resultados.reverse().forEach(resultado => {
+            if (!resultado || !resultado.data || !resultado.data.found) return;
+            
+            const { data } = resultado;
+            if (data.tipo === 'perfil') {
+                determinaciones.unshift({
+                    tipo: 'perfil',
+                    codigo: data.codigo,
+                    nombre: data.nombre,
+                    determinaciones: data.determinaciones
+                });
+            } else if (data.tipo === 'compleja') {
+                determinaciones.unshift({
+                    tipo: 'compleja',
+                    codigo: data.codigo,
+                    nombre: data.nombre,
+                    determinaciones: data.determinaciones,
+                    stock: data.stock !== undefined ? data.stock : true
+                });
             } else {
-                estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
-                estadoNuevoMedico.style.color = 'var(--color-danger)';
+                determinaciones.unshift({
+                    tipo: 'determinacion',
+                    codigo: data.codigo,
+                    nombre: data.nombre,
+                    stock: data.stock !== undefined ? data.stock : true
+                });
             }
-        } catch (err) {
-            estadoNuevoMedico.textContent = 'Error de red.';
-            estadoNuevoMedico.style.color = 'var(--color-danger)';
-        }
+        });
+        
+        actualizarListaDeterminaciones();
+    }
+});
+
+// Lógica específica del botón "Coordinar Turno"
+document.getElementById('btnCoordinarTurno').addEventListener('click', async function() {
+    const form = this.closest('form');
+    const formData = new FormData(form);
+    formData.append('accion', 'coordinar');
+    
+    // Extraer turno_id del pathname actual (ej: /turnos/turno/123/precoordinacion/)
+    const pathParts = window.location.pathname.split('/');
+    const turnoIdIndex = pathParts.indexOf('turno') + 1;
+    const turnoId = pathParts[turnoIdIndex];
+    
+    // Guardar cambios primero
+    const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
+        body: formData,
+        redirect: 'manual'
     });
+    
+    // Coordinar turno usando el turno_id extraído
+    const nombreImpresora = localStorage.getItem('nombre_impresora') || '';
+    const coordUrl = `/turnos/turno/${turnoId}/coordinar/`;
+    const coordResp = await fetch(coordUrl, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken'), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ impresora: nombreImpresora })
+    });
+    const data = await coordResp.json();
+    if (data.success) {
+        // Modal de éxito
+        const modal = document.createElement('div');
+        modal.id = 'modalCoordinacionExitosa';
+        modal.className = 'apple-modal';
+        modal.innerHTML = `
+          <div class="apple-modal-content">
+            <h3 class="apple-modal-title" style="color: var(--apple-green);">Turno coordinado exitosamente</h3>
+            <p class="apple-modal-body">Mensaje generado y enviado.<br>Puede imprimir el ticket de retiro:</p>
+            <a href="/turnos/turno/${turnoId}/retiro/" target="_blank" class="apple-btn apple-btn-success" style="margin-bottom: 1rem;">Ticket de retiro</a>
+            <br>
+            <button onclick="window.location.href='{% url 'turnos:buscar' %}';" class="apple-btn apple-btn-secondary">Cerrar</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        modal.style.display = 'flex';
+    } else {
+        alert(data.error || 'Error al coordinar turno');
+    }
 });
 </script>
 

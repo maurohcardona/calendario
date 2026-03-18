@@ -1317,6 +1317,55 @@ body {
 }
 
 /* ========================================
+   FORMULARIO TURNO - LAYOUT 2 COLUMNAS
+   ======================================== */
+.apple-turno-form-grid {
+    width: 100%;
+}
+
+.apple-turno-form-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-xl);
+}
+
+.apple-turno-form-col-left,
+.apple-turno-form-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.apple-turno-form-col-right {
+    border-left: 2px solid var(--color-gray-light);
+    padding-left: var(--space-xl);
+}
+
+.apple-turno-form-actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: flex-start;
+    padding-top: var(--space-lg);
+    border-top: 2px solid var(--color-gray-light);
+}
+
+/* Responsive: En pantallas pequeñas, cambiar a 1 columna */
+@media (max-width: 768px) {
+    .apple-turno-form-grid-2col {
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
+    
+    .apple-turno-form-col-right {
+        border-left: none;
+        border-top: 2px solid var(--color-gray-light);
+        padding-left: 0;
+        padding-top: var(--space-lg);
+    }
+}
+
+/* ========================================
    RESPONSIVE
    ======================================== */
 /* ========================================
