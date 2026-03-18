@@ -1373,14 +1373,17 @@ body {
    ======================================== */
 .apple-field-with-button {
     position: relative;
+}
+
+.apple-input-button-row {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: var(--space-sm);
 }
 
-.apple-field-with-button .apple-input-wrapper {
-    flex: 1;
+.apple-input-wrapper {
     position: relative;
+    flex: 1;
 }
 
 .apple-btn-icon-circle {
@@ -1389,6 +1392,39 @@ body {
     height: 2.6rem;
     padding: 0;
     font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+/* Autocomplete positioning - IMPORTANTE: relativo al input */
+.apple-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--apple-white);
+    border: 1px solid var(--apple-gray-light);
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    margin-top: 0.25rem;
+}
+
+.apple-autocomplete-item {
+    padding: var(--space-md);
+    cursor: pointer;
+    border-bottom: 1px solid var(--apple-gray-lightest);
+    transition: background-color 0.2s;
+}
+
+.apple-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.apple-autocomplete-item:hover {
+    background-color: var(--apple-gray-lightest);
 }
 
 /* ========================================

@@ -3,17 +3,7 @@
 <div class="apple-container">
     <h2 class="apple-title">Editar Turno</h2>
 
-    <form method="post" class="apple-card">
-        {% csrf_token %}
-        
-        {% include "turnos/_formulario_turno.html" with mode='edit' show_dni_search=False show_agenda_field=True show_fecha_field=True readonly_fields='dni,apellido,nombre' turno=turno paciente=paciente agendas=agendas fecha=turno.fecha agenda_id=turno.agenda.id %}
-
-        <div class="apple-flex apple-flex-buttons">
-            <button type="submit" class="apple-btn apple-btn-primary">Guardar cambios</button>
-            <a href="{% url 'turnos:eliminar_turno' turno.id %}" class="apple-btn apple-btn-danger">Eliminar Turno</a>
-            <a href="{% url 'turnos:dia' turno.fecha %}?agenda={{ turno.agenda.id }}" class="apple-btn apple-btn-light">Cancelar</a>
-        </div>
-    </form>
+    {% include "turnos/_formulario_turno.html" with mode='edit' show_dni_search=False show_agenda_field=True show_fecha_field=True readonly_fields='dni,apellido,nombre' turno=turno paciente=paciente agendas=agendas fecha=turno.fecha agenda_id=turno.agenda.id %}
 
     <div class="apple-margin-top-xl">
         <a href="{% url 'turnos:calendario' %}" class="apple-nav-link">← Volver al calendario</a>
