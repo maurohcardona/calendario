@@ -1,39 +1,119 @@
 /* ========================================
-   APPLE DESIGN SYSTEM - Sistema de diseño minimalista
+   SISTEMA DE DISENO MINIMALISTA
+   Paleta unificada: Crema, Menta, Teal, Purpura-Gris
    ======================================== */
 
 /* ========================================
-   VARIABLES CSS
+   VARIABLES CSS - PALETA PRINCIPAL
    ======================================== */
 :root {
-    /* Colores principales */
-    --apple-blue: #007aff;
-    --apple-blue-light: #e3f2fd;
-    --apple-blue-hover: #0056b3;
+    /* ===== PALETA DE COLORES PRINCIPAL ===== */
+    /* Crema - Fondos claros, highlights */
+    --color-cream: #eff3cd;
+    --color-cream-dark: #e5ebba;
     
-    --apple-green: #34c759;
-    --apple-green-light: #e8f5e9;
-    --apple-green-hover: #2da44e;
+    /* Menta - Exito, estados positivos */
+    --color-mint: #b2d5ba;
+    --color-mint-light: #d4e8d8;
+    --color-mint-dark: #8fc49a;
     
-    --apple-red: #ff3b30;
-    --apple-red-light: #ffebee;
-    --apple-red-hover: #d32f2f;
+    /* Teal - Color intermedio, hover, secundario */
+    --color-teal: #61ada0;
+    --color-teal-light: #8fc4ba;
+    --color-teal-dark: #248f8d;
     
-    --apple-orange: #ff9500;
-    --apple-orange-light: #fff3e0;
+    /* Teal Oscuro - Acento principal, botones, links */
+    --color-primary: #248f8d;
+    --color-primary-light: #3aa8a5;
+    --color-primary-dark: #1a7270;
     
-    --apple-purple: #9c27b0;
-    --apple-purple-light: #f3e5f5;
+    /* Purpura Gris - Texto, elementos oscuros */
+    --color-text: #605063;
+    --color-text-light: #7a6b7d;
+    --color-text-lighter: #958897;
     
-    /* Grises */
-    --apple-gray-darkest: #1d1d1f;
-    --apple-gray-dark: #424245;
-    --apple-gray: #86868b;
-    --apple-gray-light: #d2d2d7;
-    --apple-gray-lightest: #f5f5f7;
-    --apple-white: #ffffff;
+    /* ===== COLORES SEMANTICOS ===== */
+    /* Exito - Basado en menta */
+    --color-success: #b2d5ba;
+    --color-success-light: #d4e8d8;
+    --color-success-dark: #8fc49a;
+    --color-success-text: #4a7c54;
     
-    /* Espaciado */
+    /* Advertencia - Teal mas calido */
+    --color-warning: #7ab8a8;
+    --color-warning-light: #c5e0d8;
+    --color-warning-dark: #5a9e8d;
+    --color-warning-text: #4a7c6d;
+    
+    /* Peligro/Error - Purpura rojizo */
+    --color-danger: #8a5c6d;
+    --color-danger-light: #d4b8c2;
+    --color-danger-dark: #6d4857;
+    --color-danger-text: #6d4857;
+    
+    /* Info - Teal principal */
+    --color-info: #61ada0;
+    --color-info-light: #c5e0db;
+    --color-info-dark: #4a9488;
+    
+    /* Acento secundario - Para badges especiales */
+    --color-accent: #605063;
+    --color-accent-light: #a89aab;
+    --color-accent-dark: #4a3d4d;
+    
+    /* ===== ESCALA DE GRISES (derivada de la paleta) ===== */
+    --color-gray-darkest: #605063;
+    --color-gray-dark: #7a6b7d;
+    --color-gray: #958897;
+    --color-gray-light: #c4bec6;
+    --color-gray-lighter: #e0dce1;
+    --color-gray-lightest: #f5f3f6;
+    --color-white: #ffffff;
+    
+    /* ===== FONDOS ===== */
+    --color-bg: #f5f3f6;
+    --color-bg-alt: #eff3cd;
+    --color-bg-card: #ffffff;
+    
+    /* ===== ALIASES PARA COMPATIBILIDAD ===== */
+    /* Mantener nombres anteriores mapeados a nuevos colores */
+    --apple-blue: var(--color-primary);
+    --apple-blue-light: var(--color-primary-light);
+    --apple-blue-hover: var(--color-primary-dark);
+    
+    --apple-green: var(--color-success);
+    --apple-green-light: var(--color-success-light);
+    --apple-green-hover: var(--color-success-dark);
+    
+    --apple-red: var(--color-danger);
+    --apple-red-light: var(--color-danger-light);
+    --apple-red-hover: var(--color-danger-dark);
+    
+    --apple-orange: var(--color-warning);
+    --apple-orange-light: var(--color-warning-light);
+    
+    --apple-purple: var(--color-accent);
+    --apple-purple-light: var(--color-accent-light);
+    
+    --apple-gray-darkest: var(--color-gray-darkest);
+    --apple-gray-dark: var(--color-gray-dark);
+    --apple-gray: var(--color-gray);
+    --apple-gray-light: var(--color-gray-light);
+    --apple-gray-lightest: var(--color-gray-lightest);
+    --apple-white: var(--color-white);
+    
+    /* ===== VARIABLES PARA CONTROL DE ORDENES ===== */
+    --control-success: var(--color-mint);
+    --control-warning: var(--color-warning);
+    --control-danger: var(--color-danger);
+    --control-primary: var(--color-primary);
+    --control-accent: var(--color-accent);
+    --control-text: var(--color-text);
+    --control-text-light: var(--color-text-light);
+    --control-bg: var(--color-bg-card);
+    --control-bg-alt: var(--color-cream);
+    
+    /* ===== ESPACIADO ===== */
     --space-xs: 0.25rem;
     --space-sm: 0.5rem;
     --space-md: 1rem;
@@ -41,23 +121,23 @@
     --space-xl: 2rem;
     --space-2xl: 3rem;
     
-    /* Bordes */
+    /* ===== BORDES ===== */
     --border-radius-sm: 6px;
     --border-radius-md: 12px;
     --border-radius-lg: 16px;
     --border-radius-xl: 24px;
     
-    /* Sombras */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
-    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+    /* ===== SOMBRAS (ajustadas a la paleta) ===== */
+    --shadow-sm: 0 1px 2px rgba(96, 80, 99, 0.08);
+    --shadow-md: 0 4px 6px rgba(96, 80, 99, 0.1);
+    --shadow-lg: 0 10px 25px rgba(96, 80, 99, 0.12);
+    --shadow-xl: 0 20px 40px rgba(96, 80, 99, 0.15);
     
-    /* Transiciones */
+    /* ===== TRANSICIONES ===== */
     --transition-fast: 0.15s ease;
     --transition-normal: 0.3s ease;
     
-    /* Z-index */
+    /* ===== Z-INDEX ===== */
     --z-dropdown: 1000;
     --z-modal: 1050;
     --z-tooltip: 1100;
@@ -72,8 +152,8 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    color: var(--apple-gray-darkest);
-    background-color: var(--apple-gray-lightest);
+    color: var(--color-text);
+    background-color: var(--color-bg);
     line-height: 1.5;
     margin: 0;
     padding: 0;
@@ -118,11 +198,16 @@ body {
 .text-light { font-weight: 300; }
 .text-medium { font-weight: 500; }
 
-.text-gray { color: var(--apple-gray); }
-.text-blue { color: var(--apple-blue); }
-.text-green { color: var(--apple-green); }
-.text-red { color: var(--apple-red); }
-.text-purple { color: var(--apple-purple); }
+.text-gray { color: var(--color-gray); }
+.text-blue { color: var(--color-primary); }
+.text-green { color: var(--color-success-dark); }
+.text-red { color: var(--color-danger); }
+.text-purple { color: var(--color-accent); }
+.text-primary { color: var(--color-primary); }
+.text-success { color: var(--color-success-dark); }
+.text-warning { color: var(--color-warning-dark); }
+.text-danger { color: var(--color-danger); }
+.text-muted { color: var(--color-gray); }
 
 /* ========================================
    TARJETAS (CARDS)
@@ -572,6 +657,7 @@ body {
     color: var(--apple-blue);
     text-decoration: none;
     font-weight: 600;
+    font-size: 1.25rem;
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--border-radius-sm);
     transition: background var(--transition-fast);
@@ -1334,9 +1420,9 @@ body {
    WARNING BANNER (turno pendiente)
    ======================================== */
 .apple-warning-banner {
-    background: var(--apple-orange-light);
-    color: #856404;
-    border: 2px solid #ffeeba;
+    background: var(--color-warning-light);
+    color: var(--color-warning-text);
+    border: 2px solid var(--color-warning);
     border-radius: var(--border-radius-md);
     padding: var(--space-md);
     margin: var(--space-md) 0;

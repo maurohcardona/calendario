@@ -8,7 +8,7 @@
   <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'css/apple-design.css' %}" rel="stylesheet">
   <style>
-    /* Estilos específicos del menú de usuario y etiquetadoras */
+    /* Estilos especificos del menu de usuario y etiquetadoras */
     body {
       min-height: 100vh;
       display: flex;
@@ -23,31 +23,31 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      background: var(--apple-blue-light);
+      background: var(--color-cream);
       border-radius: var(--border-radius-sm);
-      border: 1px solid var(--apple-blue);
+      border: 1px solid var(--color-teal);
     }
     .user-info .username {
-      color: var(--apple-blue);
-      font-weight: var(--font-weight-semibold);
+      color: var(--color-primary);
+      font-weight: 600;
     }
     .user-menu {
       position: relative;
       display: inline-block;
     }
     .user-menu-btn {
-      background: var(--apple-blue-light);
-      border: 1px solid var(--apple-blue);
-      color: var(--apple-blue);
+      background: var(--color-cream);
+      border: 1px solid var(--color-teal);
+      color: var(--color-primary);
       padding: var(--space-sm) var(--space-md);
       border-radius: var(--border-radius-sm);
       cursor: pointer;
-      font-weight: var(--font-weight-medium);
-      transition: all var(--transition-base);
+      font-weight: 500;
+      transition: all var(--transition-normal);
     }
     .user-menu-btn:hover {
-      background: var(--apple-blue);
-      color: var(--apple-white);
+      background: var(--color-primary);
+      color: var(--color-white);
     }
     .user-menu-content {
       display: none;
@@ -55,8 +55,8 @@
       right: 0;
       top: 100%;
       margin-top: var(--space-sm);
-      background: var(--apple-white);
-      border: 1px solid var(--apple-gray-light);
+      background: var(--color-white);
+      border: 1px solid var(--color-gray-light);
       border-radius: var(--border-radius-md);
       box-shadow: var(--shadow-lg);
       min-width: 200px;
@@ -69,27 +69,27 @@
     .user-menu-content button {
       display: block;
       padding: var(--space-md) var(--space-lg);
-      color: var(--apple-gray-dark);
+      color: var(--color-text);
       text-decoration: none;
       border: none;
       background: none;
       width: 100%;
       text-align: left;
       cursor: pointer;
-      transition: all var(--transition-base);
-      font-weight: var(--font-weight-medium);
+      transition: all var(--transition-normal);
+      font-weight: 500;
     }
     .user-menu-content a:hover {
-      background: var(--apple-gray-lightest);
-      color: var(--apple-blue);
+      background: var(--color-gray-lightest);
+      color: var(--color-primary);
     }
     .user-menu-content button {
-      color: var(--apple-red);
-      border-top: 1px solid var(--apple-gray-light);
+      color: var(--color-danger);
+      border-top: 1px solid var(--color-gray-light);
     }
     .user-menu-content button:hover {
-      background: var(--apple-red-light);
-      color: var(--apple-red);
+      background: var(--color-danger-light);
+      color: var(--color-danger);
     }
     #etiquetadoras-menu {
       margin-left: 1.5em;

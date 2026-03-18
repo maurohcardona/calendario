@@ -78,7 +78,7 @@ function limpiarOtrosCampos(campoActivo) {
                     <a href="{% url 'turnos:ver_coordinacion' turno.id %}" class="apple-btn apple-btn-primary apple-btn-sm">
                       Ver Coordinación
                     </a>
-                    <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: #9C27B0; color: white; border-color: #9C27B0;">
+                    <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: var(--color-accent); color: white; border-color: var(--color-accent);">
                       Generar Ticket
                     </a>
                     <a href="{% url 'turnos:generar_ticket_retiro' turno.id %}" target="_blank" class="apple-btn apple-btn-success apple-btn-sm">
@@ -89,7 +89,7 @@ function limpiarOtrosCampos(campoActivo) {
                     <a href="{% url 'turnos:editar_turno' turno.id %}" class="apple-btn apple-btn-primary apple-btn-sm">
                       Editar Turno
                     </a>
-                    <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: #9C27B0; color: white; border-color: #9C27B0;">
+                    <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: var(--color-accent); color: white; border-color: var(--color-accent);">
                       Generar Ticket
                     </a>
                     {% if turno.fecha == hoy %}
@@ -143,7 +143,7 @@ function limpiarOtrosCampos(campoActivo) {
                       Editar
                     </a>
                   {% endif %}
-                  <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: #9C27B0; color: white; border-color: #9C27B0;">
+                  <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" target="_blank" class="apple-btn apple-btn-secondary apple-btn-sm" style="background: var(--color-accent); color: white; border-color: var(--color-accent);">
                     Ticket
                   </a>
                 </div>
@@ -223,12 +223,12 @@ document.getElementById('btnConfirmarCoordinar').addEventListener('click', funct
         modal.id = 'modalCoordinacionExitosa';
         modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;';
         modal.innerHTML = `
-          <div style="background: linear-gradient(135deg, #e0f7fa 0%, #b2dfdb 100%); border: 2px solid #4caf50; border-radius: 12px; padding: 2rem; max-width: 400px; box-shadow: 0 8px 32px rgba(76, 175, 80, 0.2); text-align: center;">
-            <h3 style="color: #388e3c; margin-bottom: 1rem; font-size: 1.5rem;">Turno coordinado exitosamente</h3>
-            <p style="color: #333; margin-bottom: 1.2rem; font-size: 1.1rem;">Mensaje generado y enviado.<br>Puede imprimir el ticket de retiro:</p>
-            <a href="${data.ticket_retiro_url}" target="_blank" style="background: #4caf50; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1rem; display: inline-block; margin-bottom: 1rem;">Ticket de retiro</a>
+          <div style="background: linear-gradient(135deg, var(--color-cream) 0%, var(--color-mint) 100%); border: 2px solid var(--color-primary); border-radius: 12px; padding: 2rem; max-width: 400px; box-shadow: 0 8px 32px rgba(36, 143, 141, 0.2); text-align: center;">
+            <h3 style="color: var(--color-primary); margin-bottom: 1rem; font-size: 1.5rem;">Turno coordinado exitosamente</h3>
+            <p style="color: var(--color-text); margin-bottom: 1.2rem; font-size: 1.1rem;">Mensaje generado y enviado.<br>Puede imprimir el ticket de retiro:</p>
+            <a href="${data.ticket_retiro_url}" target="_blank" style="background: var(--color-primary); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1rem; display: inline-block; margin-bottom: 1rem;">Ticket de retiro</a>
             <br>
-            <button onclick="document.getElementById('modalCoordinacionExitosa').remove(); location.reload();" style="background: rgba(255,255,255,0.1); border: 1px solid #4caf50; color: #388e3c; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Cerrar</button>
+            <button onclick="document.getElementById('modalCoordinacionExitosa').remove(); location.reload();" style="background: rgba(255,255,255,0.1); border: 1px solid var(--color-primary); color: var(--color-primary); padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">Cerrar</button>
           </div>
         `;
         document.body.appendChild(modal);

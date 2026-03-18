@@ -237,16 +237,16 @@
         }
         lista.innerHTML = coincidencias.map(medico => {
             return `
-                <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
-                    <span style="color: #c89b8f; font-weight: 600;">${medico.nombre_apellido}</span>
-                    <span style="color: rgba(100, 100, 100, 0.7); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
+                <div class="autocomplete-medico" data-nombre="${medico.nombre_apellido}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(36, 143, 141, 0.2); transition: background 0.2s;">
+                    <span style="color: var(--color-primary); font-weight: 600;">${medico.nombre_apellido}</span>
+                    <span style="color: var(--color-text-light); font-size: 0.85rem; margin-left: 0.5rem;">MP: ${medico.matricula_provincial}</span>
                 </div>
             `;
         }).join('');
         lista.style.display = 'block';
         lista.querySelectorAll('.autocomplete-medico').forEach(item => {
             item.addEventListener('mouseenter', function() {
-                this.style.background = 'rgba(200, 155, 143, 0.2)';
+                this.style.background = 'rgba(36, 143, 141, 0.15)';
             });
             item.addEventListener('mouseleave', function() {
                 this.style.background = 'transparent';
@@ -313,8 +313,8 @@
             }
             
             return `
-                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.1); transition: background 0.2s; ${estiloGris}">
-                    <span style="color: var(--accent); font-weight: bold;">${item.codigo}</span> - <span style="color: var(--text-light); font-weight: 600;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
+                <div class="autocomplete-item" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(36, 143, 141, 0.1); transition: background 0.2s; ${estiloGris}">
+                    <span style="color: var(--color-primary); font-weight: bold;">${item.codigo}</span> - <span style="color: var(--color-text); font-weight: 600;">${item.nombre}</span>${tipoBadge}${sinStockBadge}
                 </div>
             `;
         }).join('');
@@ -323,7 +323,7 @@
         
         lista.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('mouseenter', function() {
-                this.style.background = 'rgba(200, 155, 143, 0.2)';
+                this.style.background = 'rgba(36, 143, 141, 0.15)';
             });
             item.addEventListener('mouseleave', function() {
                 this.style.background = 'transparent';
@@ -550,7 +550,7 @@
 <div id="modalNuevoMedico" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:#fff; border-radius:12px; padding:2rem; max-width:400px; margin:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3); position:relative;">
         <button id="cerrarModalMedico" style="position:absolute; top:0.5rem; right:0.5rem; background:none; border:none; font-size:1.5rem; color:#888; cursor:pointer;">&times;</button>
-        <h3 style="margin-top:0; color:#4caf50;">Agregar nuevo médico</h3>
+        <h3 style="margin-top:0; color:var(--color-primary);">Agregar nuevo médico</h3>
         <form id="formNuevoMedico">
             <div style="margin-bottom:1rem;">
                 <label for="nombreMedico" style="font-weight:600;">Apellido y Nombre</label>
@@ -560,7 +560,7 @@
                 <label for="matriculaMedico" style="font-weight:600;">Matrícula Provincial</label>
                 <input type="text" id="matriculaMedico" name="matriculaMedico" required style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc;" />
             </div>
-            <button type="submit" style="background:#4caf50; color:#fff; border:none; border-radius:8px; padding:0.7rem 1.5rem; font-weight:700; font-size:1rem; cursor:pointer; width:100%;">Guardar médico</button>
+            <button type="submit" style="background:var(--color-primary); color:#fff; border:none; border-radius:8px; padding:0.7rem 1.5rem; font-weight:700; font-size:1rem; cursor:pointer; width:100%;">Guardar médico</button>
             <div id="estadoNuevoMedico" style="margin-top:1rem; font-size:0.95rem;"></div>
         </form>
     </div>
@@ -605,11 +605,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const matricula = document.getElementById('matriculaMedico').value.trim();
         if (!nombre || !matricula) {
             estadoNuevoMedico.textContent = 'Complete ambos campos.';
-            estadoNuevoMedico.style.color = '#d32f2f';
+            estadoNuevoMedico.style.color = 'var(--color-danger)';
             return;
         }
         estadoNuevoMedico.textContent = 'Guardando...';
-        estadoNuevoMedico.style.color = '#333';
+        estadoNuevoMedico.style.color = 'var(--color-text)';
         try {
             const response = await fetch('/turnos/api/crear-medico/', {
                 method: 'POST',
@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             if (data.success) {
                 estadoNuevoMedico.textContent = 'Médico guardado correctamente.';
-                estadoNuevoMedico.style.color = '#388e3c';
+                estadoNuevoMedico.style.color = 'var(--color-success-text)';
                 // Actualizar cache y autocompletado
                 if (typeof medicosCache !== 'undefined') medicosCache = null;
                 if (typeof cargarMedicos === 'function') await cargarMedicos();
@@ -630,11 +630,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => { modalNuevoMedico.style.display = 'none'; }, 1000);
             } else {
                 estadoNuevoMedico.textContent = data.error || 'Error al guardar.';
-                estadoNuevoMedico.style.color = '#d32f2f';
+                estadoNuevoMedico.style.color = 'var(--color-danger)';
             }
         } catch (err) {
             estadoNuevoMedico.textContent = 'Error de red.';
-            estadoNuevoMedico.style.color = '#d32f2f';
+            estadoNuevoMedico.style.color = 'var(--color-danger)';
         }
     });
 });

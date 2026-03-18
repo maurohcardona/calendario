@@ -54,7 +54,7 @@
                     <div class="det-info">
                         <span class="det-codigo">{{ det.codigo }}</span> - <span class="det-nombre">{{ det.nombre }}</span>
                         {% if det.tipo == 'perfil' and det.determinaciones %}
-                         <div style="margin-top: 0.25rem; font-size: 0.85rem; color: rgba(200, 155, 143, 0.8);">
+                         <div style="margin-top: 0.25rem; font-size: 0.85rem; color: var(--control-text-light);">
                             {{ det.determinaciones|slice:":100" }}{% if det.determinaciones|length > 100 %}...{% endif %}
                         </div>
                         {% endif %}
@@ -338,7 +338,7 @@ function mostrarResumen() {
             }
         }).join('');
     } else {
-        ordenesDiv.innerHTML = '<p style="color: var(--text-medium); font-style: italic; text-align: center; padding: 2rem; background: rgba(76, 175, 80, 0.1); border-radius: 8px;">No se encontraron diferencias. Todas las órdenes están correctas.</p>';
+        ordenesDiv.innerHTML = '<p style="color: var(--control-text-light); font-style: italic; text-align: center; padding: 2rem; background: rgba(178, 213, 186, 0.15); border-radius: 8px;">No se encontraron diferencias. Todas las órdenes están correctas.</p>';
     }
     
     // Scroll al inicio
@@ -461,18 +461,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 let estiloGris = '';
                 
                 if (item.tipo === 'perfil') {
-                    tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL<\/span>';
+                    tipoBadge = '<span style="background: var(--control-success); color: var(--color-text); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL<\/span>';
                 } else if (item.tipo === 'compleja') {
-                    tipoBadge = '<span style="background: #9c27b0; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">COMPLEJA<\/span>';
+                    tipoBadge = '<span style="background: var(--control-accent); color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">COMPLEJA<\/span>';
                 }
                 
                 if (item.stock === false) {
-                    sinStockBadge = '<span style="background: #888; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">SIN STOCK<\/span>';
+                    sinStockBadge = '<span style="background: var(--color-gray); color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">SIN STOCK<\/span>';
                     estiloGris = 'opacity: 0.5;';
                 }
                 
-                return '<div class="autocomplete-item" data-codigo="' + item.codigo + '" data-nombre="' + item.nombre + '" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(33, 150, 243, 0.1); transition: background 0.2s; ' + estiloGris + '">' +
-                    '<span style="color: #2196f3; font-weight: bold;">' + item.codigo + '<\/span> - <span style="color: #000; font-weight: 600;">' + item.nombre + '<\/span>' + tipoBadge + sinStockBadge +
+                return '<div class="autocomplete-item" data-codigo="' + item.codigo + '" data-nombre="' + item.nombre + '" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(36, 143, 141, 0.1); transition: background 0.2s; ' + estiloGris + '">' +
+                    '<span style="color: var(--control-primary); font-weight: bold;">' + item.codigo + '<\/span> - <span style="color: var(--control-text); font-weight: 600;">' + item.nombre + '<\/span>' + tipoBadge + sinStockBadge +
                     '<\/div>';
             }).join('');
             
@@ -480,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             lista.querySelectorAll('.autocomplete-item').forEach(item => {
                 item.addEventListener('mouseenter', function() {
-                    this.style.background = 'rgba(33, 150, 243, 0.1)';
+                    this.style.background = 'rgba(36, 143, 141, 0.1)';
                 });
                 item.addEventListener('mouseleave', function() {
                     this.style.background = 'transparent';

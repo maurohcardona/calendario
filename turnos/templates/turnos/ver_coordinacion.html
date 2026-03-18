@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ver Coordinación - Turno #{{ turno.id }}{% endblock %}
+{% block title %}Ver Coordinacion - Turno #{{ turno.id }}{% endblock %}
 
 {% block content %}
 <style>
@@ -10,12 +10,12 @@
     }
     
     .header-ver {
-        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-        color: white;
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-teal) 100%);
+        color: var(--color-white);
         padding: 25px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md);
         margin-bottom: 30px;
-        box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        box-shadow: var(--shadow-lg);
     }
     
     .header-ver h1 {
@@ -30,21 +30,21 @@
     }
     
     .seccion {
-        background: white;
-        border-radius: 12px;
+        background: var(--color-white);
+        border-radius: var(--border-radius-md);
         padding: 25px;
         margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e0e0e0;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--color-gray-light);
     }
     
     .seccion-titulo {
         font-size: 20px;
         font-weight: 600;
-        color: #1976D2;
+        color: var(--color-primary);
         margin-bottom: 20px;
         padding-bottom: 10px;
-        border-bottom: 2px solid #E3F2FD;
+        border-bottom: 2px solid var(--color-cream);
         display: flex;
         align-items: center;
         gap: 10px;
@@ -56,17 +56,17 @@
         gap: 15px;
         margin-bottom: 15px;
         padding: 12px;
-        background: #f8f9fa;
-        border-radius: 8px;
+        background: var(--color-gray-lightest);
+        border-radius: var(--border-radius-sm);
     }
     
     .campo-label {
         font-weight: 600;
-        color: #555;
+        color: var(--color-text);
     }
     
     .campo-valor {
-        color: #333;
+        color: var(--color-text);
         word-break: break-word;
     }
     
@@ -77,15 +77,15 @@
     }
     
     .determinacion-item {
-        background: white;
+        background: var(--color-white);
         padding: 10px 15px;
-        border-radius: 6px;
-        border-left: 3px solid #2196F3;
+        border-radius: var(--border-radius-sm);
+        border-left: 3px solid var(--color-primary);
     }
     
     .badge-coordinado {
-        background: #4CAF50;
-        color: white;
+        background: var(--color-success-dark);
+        color: var(--color-white);
         padding: 6px 12px;
         border-radius: 20px;
         font-size: 12px;
@@ -94,8 +94,8 @@
     }
     
     .badge-no-coordinado {
-        background: #FF9800;
-        color: white;
+        background: var(--color-warning-dark);
+        color: var(--color-white);
         padding: 6px 12px;
         border-radius: 20px;
         font-size: 12px;
@@ -111,51 +111,51 @@
     
     .btn {
         padding: 12px 24px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm);
         font-weight: 500;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        transition: all 0.3s ease;
+        transition: all var(--transition-normal);
         border: none;
         cursor: pointer;
         font-size: 15px;
     }
     
     .btn-primary {
-        background: #2196F3;
-        color: white;
+        background: var(--color-primary);
+        color: var(--color-white);
     }
     
     .btn-primary:hover {
-        background: #1976D2;
+        background: var(--color-primary-dark);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        box-shadow: var(--shadow-lg);
     }
     
     .btn-secondary {
-        background: #757575;
-        color: white;
+        background: var(--color-gray);
+        color: var(--color-white);
     }
     
     .btn-secondary:hover {
-        background: #616161;
+        background: var(--color-gray-dark);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: var(--shadow-md);
     }
 </style>
 
 <div class="ver-coordinacion-container">
     <div class="header-ver">
-        <h1>👁️ Visualización de Turno Coordinado</h1>
+        <h1>Visualizacion de Turno Coordinado</h1>
         <div class="subtitle">Turno #{{ turno.id }} - Modo solo lectura</div>
     </div>
     
-    <!-- Información del Turno -->
+    <!-- Informacion del Turno -->
     <div class="seccion">
         <div class="seccion-titulo">
-            📋 Información del Turno
+            Informacion del Turno
         </div>
         
         <div class="campo">
@@ -177,19 +177,19 @@
             <div class="campo-label">Estado:</div>
             <div class="campo-valor">
                 {% if coordinacion %}
-                    <span class="badge-coordinado">✓ Coordinado</span>
+                    <span class="badge-coordinado">Coordinado</span>
                 {% else %}
-                    <span class="badge-no-coordinado">⚠ No Coordinado</span>
+                    <span class="badge-no-coordinado">No Coordinado</span>
                 {% endif %}
             </div>
         </div>
     </div>
     
-    <!-- Información del Paciente -->
+    <!-- Informacion del Paciente -->
     {% if paciente %}
     <div class="seccion">
         <div class="seccion-titulo">
-            👤 Datos del Paciente
+            Datos del Paciente
         </div>
         
         <div class="campo">
@@ -226,22 +226,22 @@
         
         {% if paciente.telefono %}
         <div class="campo">
-            <div class="campo-label">Teléfono:</div>
+            <div class="campo-label">Telefono:</div>
             <div class="campo-valor">{{ paciente.telefono }}</div>
         </div>
         {% endif %}
     </div>
     {% endif %}
     
-    <!-- Información del Médico -->
+    <!-- Informacion del Medico -->
     {% if medico %}
     <div class="seccion">
         <div class="seccion-titulo">
-            🩺 Médico Solicitante
+            Medico Solicitante
         </div>
         
         <div class="campo">
-            <div class="campo-label">Matrícula Provincial:</div>
+            <div class="campo-label">Matricula Provincial:</div>
             <div class="campo-valor">{{ medico.matricula }}</div>
         </div>
         
@@ -255,7 +255,7 @@
     <!-- Determinaciones Solicitadas -->
     <div class="seccion">
         <div class="seccion-titulo">
-            🔬 Determinaciones Solicitadas
+            Determinaciones Solicitadas
         </div>
         
         {% if determinaciones_nombres %}
@@ -265,7 +265,7 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="campo-valor" style="color: #999;">No hay determinaciones registradas</div>
+        <div class="campo-valor" style="color: var(--color-gray);">No hay determinaciones registradas</div>
         {% endif %}
     </div>
     
@@ -273,7 +273,7 @@
     {% if turno.nota_interna %}
     <div class="seccion">
         <div class="seccion-titulo">
-            📝 Nota Interna
+            Nota Interna
         </div>
         
         <div class="campo">
@@ -283,21 +283,21 @@
     </div>
     {% endif %}
     
-    <!-- Información de Coordinación -->
+    <!-- Informacion de Coordinacion -->
     {% if coordinacion %}
-    <div class="seccion" style="border-left: 4px solid #4CAF50;">
+    <div class="seccion" style="border-left: 4px solid var(--color-success);">
         <div class="seccion-titulo">
-            ✅ Detalles de la Coordinación
+            Detalles de la Coordinacion
         </div>
         
         <div class="campo">
-            <div class="campo-label">Fecha de Coordinación:</div>
+            <div class="campo-label">Fecha de Coordinacion:</div>
             <div class="campo-valor">{{ coordinacion.fecha_creacion|date:"d/m/Y H:i:s" }}</div>
         </div>
         
         {% if coordinacion.usuario %}
         <div class="campo">
-            <div class="campo-label">Usuario que Coordinó:</div>
+            <div class="campo-label">Usuario que Coordino:</div>
             <div class="campo-valor">{{ coordinacion.usuario }}</div>
         </div>
         {% endif %}
@@ -311,15 +311,15 @@
     </div>
     {% endif %}
     
-    <!-- Botones de Acción -->
+    <!-- Botones de Accion -->
     <div class="botones-accion">
         <a href="{% url 'turnos:buscar' %}" class="btn btn-secondary">
-            ← Volver a Búsqueda
+            Volver a Busqueda
         </a>
         
         {% if turno.fecha >= hoy %}
         <a href="{% url 'turnos:generar_ticket_turno' turno.id %}" class="btn btn-primary" target="_blank">
-            🎫 Generar Ticket
+            Generar Ticket
         </a>
         {% endif %}
     </div>
