@@ -1652,7 +1652,7 @@ body {
    BACK LINK
    ======================================== */
 .apple-back-link {
-    color: var(--apple-blue);
+    color: var(--apple-white);
     text-decoration: none;
     font-weight: 600;
     font-size: 1rem;
@@ -1660,11 +1660,11 @@ body {
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--border-radius-sm);
     display: inline-block;
-    background: var(--apple-blue-light);
+    background: var(--apple-blue);
 }
 
 .apple-back-link:hover {
-    background: var(--apple-blue);
+    background: var(--apple-blue-hover);
     color: var(--apple-white);
 }
 
@@ -1710,7 +1710,8 @@ body {
 }
 
 .apple-status-found {
-    color: var(--apple-green);
+    color: var(--color-success-text);
+    font-weight: 700;
 }
 
 .apple-status-not-found {
@@ -1747,14 +1748,16 @@ body {
 
 .apple-modal-success-title {
     margin: 0 0 var(--space-md) 0;
-    color: var(--apple-green);
+    color: var(--color-success-dark);
     font-size: 1.8rem;
+    font-weight: 700;
 }
 
 .apple-modal-success-text {
-    color: var(--apple-gray);
+    color: var(--apple-gray-darkest);
     margin-bottom: var(--space-lg);
     font-size: 1.1rem;
+    font-weight: 600;
 }
 
 .apple-modal-success-actions {
