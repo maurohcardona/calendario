@@ -190,37 +190,44 @@ Contextos de uso:
              =================================================================== -->
         <div class="apple-turno-form-col-right">
             
-            <!-- Agenda (condicional) -->
-            {% if show_agenda_field %}
-                <div class="apple-form-group">
-                    <label class="apple-label">Agenda</label>
-                    <select name="agenda" 
-                            id="id_agenda" 
-                            required 
-                            class="apple-select">
-                        {% for agenda in agendas %}
-                            <option value="{{ agenda.id }}" 
-                                    {% if turno and agenda.id == turno.agenda.id %}selected{% endif %}>
-                                {{ agenda.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            {% endif %}
+            <!-- Agenda y Fecha en la misma fila -->
+            <div class="apple-form-grid-2">
+                <!-- Agenda (condicional) -->
+                {% if show_agenda_field %}
+                    <div>
+                        <label class="apple-label">Agenda</label>
+                        <select name="agenda" 
+                                id="id_agenda" 
+                                required 
+                                class="apple-select">
+                            {% for agenda in agendas %}
+                                <option value="{{ agenda.id }}" 
+                                        {% if turno and agenda.id == turno.agenda.id %}
+                                        selected
+                                        {% elif agenda_id and agenda.id == agenda_id %}
+                                        selected
+                                        {% endif %}>
+                                    {{ agenda.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
 
-            <!-- Fecha (condicional) -->
-            {% if show_fecha_field %}
-                <div class="apple-form-group">
-                    <label class="apple-label">Fecha del Turno</label>
-                    <input type="date" 
-                           name="fecha" 
-                           id="id_fecha" 
-                           value="{% if turno %}{{ turno.fecha|date:'Y-m-d' }}{% elif fecha %}{{ fecha|date:'Y-m-d' }}{% endif %}"
-                           required 
-                           {% if 'fecha' in readonly_fields %}readonly{% endif %}
-                           class="apple-input {% if 'fecha' in readonly_fields %}apple-input-readonly{% endif %}" />
-                </div>
-            {% endif %}
+                <!-- Fecha (condicional) -->
+                {% if show_fecha_field %}
+                    <div>
+                        <label class="apple-label">Fecha del Turno</label>
+                        <input type="date" 
+                               name="fecha" 
+                               id="id_fecha" 
+                               value="{% if turno %}{{ turno.fecha|date:'Y-m-d' }}{% elif fecha %}{{ fecha|date:'Y-m-d' }}{% endif %}"
+                               required 
+                               {% if 'fecha' in readonly_fields %}readonly{% endif %}
+                               class="apple-input {% if 'fecha' in readonly_fields %}apple-input-readonly{% endif %}" />
+                    </div>
+                {% endif %}
+            </div>
 
             <!-- Determinaciones -->
             <div class="apple-form-group">

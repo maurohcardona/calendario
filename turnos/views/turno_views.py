@@ -345,6 +345,8 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
         ),
         "es_feriado": es_feriado,
         "descripcion_feriado": descripcion_feriado,
+        "agendas": Agenda.objects.all(),
+        "agenda_obj": agenda_obj,
     }
     return render(request, "turnos/dia.html", context)
 

@@ -42,7 +42,7 @@
     {% if modo_vista == 'agenda_seleccionada' and show_form %}
         <h3 class="apple-section-title">Agendar turno</h3>
         
-        {% include "turnos/_formulario_turno.html" with mode='create' show_dni_search=True show_agenda_field=False show_fecha_field=False fecha=fecha agenda_id=form.agenda.value readonly_fields=empty_list %}
+        {% include "turnos/_formulario_turno.html" with mode='create' show_dni_search=True show_agenda_field=True show_fecha_field=True fecha=fecha agenda_id=agenda_obj.id agendas=agendas readonly_fields=empty_list %}
     {% endif %}
 
     {% if modo_vista != 'agenda_seleccionada' or not show_form %}
