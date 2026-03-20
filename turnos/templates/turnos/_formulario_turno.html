@@ -379,15 +379,8 @@ document.getElementById('inputNombre').addEventListener('input', async function(
     }
     
     lista.innerHTML = coincidencias.map(item => {
-        let tipoBadge = '';
         let sinStockBadge = '';
         let disabledClass = '';
-        
-        if (item.tipo === 'perfil') {
-            tipoBadge = '<span class="apple-det-badge apple-det-badge-perfil">PERFIL</span>';
-        } else if (item.tipo === 'compleja') {
-            tipoBadge = '<span class="apple-det-badge apple-det-badge-compleja">COMPLEJA</span>';
-        }
         
         if (item.stock === false) {
             sinStockBadge = '<span class="apple-det-badge apple-det-badge-sin-stock">SIN STOCK</span>';
@@ -396,7 +389,7 @@ document.getElementById('inputNombre').addEventListener('input', async function(
         
         return `
             <div class="apple-autocomplete-item${disabledClass}" data-codigo="${item.codigo}" data-nombre="${item.nombre}" data-tipo="${item.tipo}">
-                <span class="apple-autocomplete-codigo">${item.codigo}</span> - <span class="apple-autocomplete-nombre">${item.nombre}</span>${tipoBadge}${sinStockBadge}
+                <span class="apple-autocomplete-codigo">${item.codigo}</span> - <span class="apple-autocomplete-nombre">${item.nombre}</span>${sinStockBadge}
             </div>
         `;
     }).join('');
@@ -573,10 +566,9 @@ function actualizarListaDeterminaciones() {
         lista.innerHTML = determinaciones.map((item, index) => {
             if (item.tipo === 'perfil') {
                 return `
-                    <div class="apple-det-item apple-det-item-perfil">
+                    <div class="apple-det-item apple-det-item-compleja">
                         <div>
-                            <span class="apple-det-badge apple-det-badge-perfil">PERFIL</span>
-                            <strong class="apple-det-codigo apple-det-codigo-perfil">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>
+                            <strong class="apple-det-codigo apple-det-codigo-compleja">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre.toUpperCase()}</span>
                             <div class="apple-det-count">${item.determinaciones ? item.determinaciones.split(',').filter(d => d.trim()).length : 0} determinaciones</div>
                         </div>
                         <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
@@ -588,8 +580,7 @@ function actualizarListaDeterminaciones() {
                 return `
                     <div class="apple-det-item apple-det-item-compleja${disabledClass}">
                         <div>
-                            <span class="apple-det-badge apple-det-badge-compleja">COMPLEJA</span>
-                            <strong class="apple-det-codigo apple-det-codigo-compleja">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>${sinStockBadge}
+                            <strong class="apple-det-codigo apple-det-codigo-compleja">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre.toUpperCase()}</span>${sinStockBadge}
                         </div>
                         <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
                     </div>
@@ -598,9 +589,9 @@ function actualizarListaDeterminaciones() {
                 const sinStockBadge = item.stock === false ? '<span class="apple-det-badge apple-det-badge-sin-stock">SIN STOCK</span>' : '';
                 const disabledClass = item.stock === false ? ' apple-det-item-disabled' : '';
                 return `
-                    <div class="apple-det-item apple-det-item-simple${disabledClass}">
+                    <div class="apple-det-item apple-det-item-compleja${disabledClass}">
                         <div>
-                            <strong class="apple-det-codigo apple-det-codigo-simple">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre}</span>${sinStockBadge}
+                            <strong class="apple-det-codigo apple-det-codigo-compleja">${item.codigo}</strong> - <span class="apple-det-nombre">${item.nombre.toUpperCase()}</span>${sinStockBadge}
                         </div>
                         <button type="button" class="btn-eliminar apple-det-btn-eliminar" data-index="${index}">Eliminar</button>
                     </div>
