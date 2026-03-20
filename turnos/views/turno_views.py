@@ -296,6 +296,12 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
             ).values_list("id_turno", flat=True)
         )
 
+        # Agregar atributo esta_coordinado a cada turno y crear lista plana
+        turnos_lista = []
+        for turno in turnos_all:
+            turno.esta_coordinado = turno.id in turnos_coordinados_ids
+            turnos_lista.append(turno)
+
         # Agrupar turnos por agenda y por coordinación
         for turno in turnos_all:
             if turno.agenda.id not in turnos_por_agenda:
@@ -325,10 +331,21 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                 }
     else:
         turnos_por_agenda = None
+        # Crear turnos_lista también para modo agenda específica
+        turnos_coordinados_ids = set(
+            Coordinados.objects.filter(
+                id_turno__in=turnos.values_list("id", flat=True)
+            ).values_list("id_turno", flat=True)
+        )
+        turnos_lista = []
+        for turno in turnos:
+            turno.esta_coordinado = turno.id in turnos_coordinados_ids
+            turnos_lista.append(turno)
 
     context = {
         "fecha": fecha,
         "turnos": turnos,
+        "turnos_lista": turnos_lista,  # Lista plana con atributo esta_coordinado
         "turnos_por_agenda": turnos_por_agenda,
         "modo_vista": modo_vista,
         "form": form,

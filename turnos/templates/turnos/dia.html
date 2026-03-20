@@ -46,90 +46,79 @@
     {% endif %}
 
     {% if modo_vista != 'agenda_seleccionada' or not show_form %}
-        <!-- Lista de turnos -->
+        <!-- Lista de turnos en formato card -->
         <h3 class="apple-turnos-list-title">Turnos agendados</h3>
-        {% if modo_vista == 'todas_agendas' and turnos_por_agenda %}
-            <!-- Vista agrupada por agenda y coordinación -->
-            {% for agenda_id, info in turnos_por_agenda.items %}
-                <div class="apple-agenda-card">
-                    <div class="apple-agenda-card-header" style="border-bottom-color: {{ info.agenda.color }}; color: {{ info.agenda.color }};">
-                        <h4 class="apple-agenda-card-title">{{ info.agenda.name }}</h4>
-                        <div class="apple-agenda-card-stats">
-                            <span class="apple-agenda-card-stats-label">Cupo:</span>
-                            <span class="apple-agenda-card-stats-value">{{ info.usados }}/{{ info.capacidad }}</span>
-                            <span class="apple-agenda-card-stats-label"> | Disponibles:</span>
-                            <span class="apple-agenda-card-stats-value {% if info.disponibles > 0 %}text-green{% else %}text-red{% endif %}">{{ info.disponibles }}</span>
+        
+        <!-- Filtro de turnos -->
+        {% if turnos_lista %}
+        <div class="apple-turnos-filter">
+            <button class="apple-filter-btn active" data-filter="todos">
+                Todos <span class="apple-filter-count" id="count-todos">0</span>
+            </button>
+            <button class="apple-filter-btn" data-filter="coordinados">
+                Coordinados <span class="apple-filter-count" id="count-coordinados">0</span>
+            </button>
+            <button class="apple-filter-btn" data-filter="pendientes">
+                Pendientes <span class="apple-filter-count" id="count-pendientes">0</span>
+            </button>
+        </div>
+        {% endif %}
+        
+        {% if turnos_lista %}
+            <div style="display: grid; gap: 1rem;" id="turnosContainer">
+                {% for t in turnos_lista %}
+                    <a href="{% if t.esta_coordinado %}{% url 'turnos:ver_coordinacion' t.id %}{% else %}{% url 'turnos:editar_turno' t.id %}{% endif %}" 
+                       class="apple-turno-card"
+                       data-estado="{% if t.esta_coordinado %}coordinado{% else %}pendiente{% endif %}"
+                       style="{% if t.esta_coordinado %}background: var(--apple-blue-light);{% endif %}">
+                        
+                        <!-- Badge de estado -->
+                        <div class="apple-turno-card-badge">
+                            {% if t.esta_coordinado %}
+                                <span class="apple-badge apple-badge-green">COORDINADO</span>
+                            {% else %}
+                                <span class="apple-badge" style="background: var(--apple-orange); color: white;">PENDIENTE</span>
+                            {% endif %}
                         </div>
-                    </div>
-                    <!-- Turnos coordinados -->
-                    <div class="apple-turnos-section">
-                        <span class="apple-turnos-section-title apple-turnos-section-title-coordinados">Turnos coordinados</span>
-                        {% if info.coordinados %}
-                            <ul class="apple-turnos-ul">
-                                {% for t in info.coordinados %}
-                                    <li class="apple-turno-item apple-turno-item-coordinado">
-                                        <div class="apple-turno-item-info">
-                                            <strong class="apple-turno-item-nombre">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                            <span class="apple-turno-item-dni">DNI: {{ t.paciente_dni }}</span>
-                                        </div>
-                                        <div class="apple-turno-item-actions">
-                                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" class="apple-action-btn apple-action-btn-print">Ticket</a>
-                                            <a href="{% url 'turnos:generar_ticket_retiro' t.id %}" target="_blank" class="apple-action-btn apple-action-btn-print-retiro">Ticket de retiro</a>
-                                        </div>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p class="apple-empty-message apple-empty-message-success">No hay turnos coordinados para esta agenda.</p>
-                        {% endif %}
-                    </div>
-                    <!-- Turnos NO coordinados -->
-                    <div class="apple-turnos-section">
-                        <span class="apple-turnos-section-title apple-turnos-section-title-no-coordinados">Turnos no coordinados</span>
-                        {% if info.no_coordinados %}
-                            <ul class="apple-turnos-ul">
-                                {% for t in info.no_coordinados %}
-                                    <li class="apple-turno-item apple-turno-item-no-coordinado">
-                                        <div class="apple-turno-item-info">
-                                            <strong class="apple-turno-item-nombre">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                            <span class="apple-turno-item-dni">DNI: {{ t.paciente_dni }}</span>
-                                        </div>
-                                        <div class="apple-turno-item-actions">
-                                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" class="apple-action-btn apple-action-btn-print">Ticket</a>
-                                            <a href="{% url 'turnos:editar_turno' t.id %}" class="apple-action-btn apple-action-btn-edit">Editar</a>
-                                            <a href="{% url 'turnos:eliminar_turno' t.id %}" class="apple-action-btn apple-action-btn-delete">Eliminar</a>
-                                        </div>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p class="apple-empty-message apple-empty-message-warning">No hay turnos no coordinados para esta agenda.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
+                        
+                        <div class="apple-flex-between" style="align-items: start;">
+                            <!-- Información del turno (izquierda) -->
+                            <div style="flex: 1;">
+                                <div class="text-lg text-bold mb-sm">
+                                    {{ t.apellido }} {{ t.nombre }}
+                                </div>
+                                <div class="text-sm mb-xs">
+                                    <strong>DNI:</strong> {{ t.paciente_dni }}
+                                </div>
+                                <div class="text-sm">
+                                    <strong>Agenda:</strong> {{ t.agenda.name }}
+                                </div>
+                            </div>
+                            
+                            <!-- Botones de acción (derecha) -->
+                            <div class="apple-turno-card-actions">
+                                <a href="{% url 'turnos:generar_ticket_turno' t.id %}" 
+                                   target="_blank" 
+                                   class="apple-btn apple-btn-secondary apple-btn-sm"
+                                   onclick="event.stopPropagation();">
+                                    Generar Ticket
+                                </a>
+                                {% if t.esta_coordinado %}
+                                    <a href="{% url 'turnos:generar_ticket_retiro' t.id %}" 
+                                       target="_blank" 
+                                       class="apple-btn apple-btn-success apple-btn-sm"
+                                       onclick="event.stopPropagation();">
+                                        Ticket de retiro
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
         {% else %}
-            <!-- Vista simple cuando se selecciona una agenda específica -->
-            <div class="apple-agenda-card">
-                {% if turnos %}
-                    <ul class="apple-turnos-ul">
-                        {% for t in turnos %}
-                            <li class="apple-turno-item">
-                                <div class="apple-turno-item-info">
-                                    <strong class="apple-turno-item-nombre">{{ t.apellido }} {{ t.nombre }}</strong><br>
-                                    <span class="apple-turno-item-dni">DNI: {{ t.paciente_dni }}</span>
-                                </div>
-                                <div class="apple-turno-item-actions">
-                                    <a href="{% url 'turnos:generar_ticket_turno' t.id %}" target="_blank" class="apple-action-btn apple-action-btn-print">Ticket</a>
-                                    <a href="{% url 'turnos:editar_turno' t.id %}" class="apple-action-btn apple-action-btn-edit">Editar</a>
-                                    <a href="{% url 'turnos:eliminar_turno' t.id %}" class="apple-action-btn apple-action-btn-delete">Eliminar</a>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="apple-no-turnos">No hay turnos agendados para esta fecha.</p>
-                {% endif %}
+            <div class="apple-card text-center text-gray">
+                No hay turnos agendados para esta fecha.
             </div>
         {% endif %}
     {% endif %}
@@ -462,6 +451,63 @@ document.addEventListener('DOMContentLoaded', function() {
             estadoNuevoMedico.className = 'apple-status apple-status-error';
         }
     });
+
+    // ===================================================================
+    // FILTRO DE TURNOS
+    // ===================================================================
+    const filterButtons = document.querySelectorAll('.apple-filter-btn');
+    const turnoCards = document.querySelectorAll('.apple-turno-card[data-estado]');
+    
+    if (filterButtons.length > 0 && turnoCards.length > 0) {
+        // Contar turnos por estado
+        let countTodos = 0;
+        let countCoordinados = 0;
+        let countPendientes = 0;
+        
+        turnoCards.forEach(card => {
+            countTodos++;
+            if (card.dataset.estado === 'coordinado') {
+                countCoordinados++;
+            } else if (card.dataset.estado === 'pendiente') {
+                countPendientes++;
+            }
+        });
+        
+        // Actualizar contadores en los botones
+        const countTodosEl = document.getElementById('count-todos');
+        const countCoordinadosEl = document.getElementById('count-coordinados');
+        const countPendientesEl = document.getElementById('count-pendientes');
+        
+        if (countTodosEl) countTodosEl.textContent = countTodos;
+        if (countCoordinadosEl) countCoordinadosEl.textContent = countCoordinados;
+        if (countPendientesEl) countPendientesEl.textContent = countPendientes;
+        
+        // Manejar click en botones de filtro
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const filter = this.dataset.filter;
+                
+                // Actualizar botón activo
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Filtrar cards
+                turnoCards.forEach(card => {
+                    const estado = card.dataset.estado;
+                    
+                    if (filter === 'todos') {
+                        card.classList.remove('filter-hidden');
+                    } else if (filter === 'coordinados' && estado === 'coordinado') {
+                        card.classList.remove('filter-hidden');
+                    } else if (filter === 'pendientes' && estado === 'pendiente') {
+                        card.classList.remove('filter-hidden');
+                    } else {
+                        card.classList.add('filter-hidden');
+                    }
+                });
+            });
+        });
+    }
 });
 </script>
 
