@@ -153,7 +153,7 @@ window.addEventListener('DOMContentLoaded', async function() {
 
 // Lógica específica del botón "Coordinar Turno"
 document.getElementById('btnCoordinarTurno').addEventListener('click', async function() {
-    const form = this.closest('form');
+    const form = document.getElementById('turnoForm');
     const formData = new FormData(form);
     formData.append('accion', 'coordinar');
     
@@ -185,12 +185,18 @@ document.getElementById('btnCoordinarTurno').addEventListener('click', async fun
         modal.id = 'modalCoordinacionExitosa';
         modal.className = 'apple-modal';
         modal.innerHTML = `
-          <div class="apple-modal-content">
-            <h3 class="apple-modal-title" style="color: var(--apple-green);">Turno coordinado exitosamente</h3>
-            <p class="apple-modal-body">Mensaje generado y enviado.<br>Puede imprimir el ticket de retiro:</p>
-            <a href="/turnos/turno/${turnoId}/retiro/" target="_blank" class="apple-btn apple-btn-success" style="margin-bottom: 1rem;">Ticket de retiro</a>
-            <br>
-            <button onclick="window.location.href='{% url 'turnos:buscar' %}';" class="apple-btn apple-btn-secondary">Cerrar</button>
+          <div class="apple-modal-success">
+            <h3 class="apple-modal-success-title">Turno coordinado exitosamente</h3>
+            <p class="apple-modal-success-text">Mensaje generado y enviado. Puede imprimir el ticket de retiro.</p>
+            
+            <div class="apple-modal-success-actions">
+              <a href="/turnos/turno/${turnoId}/retiro/" target="_blank" class="apple-btn apple-btn-primary">
+                Ticket de retiro
+              </a>
+              <button onclick="window.location.href='{% url 'turnos:buscar' %}';" class="apple-btn apple-btn-light">
+                Cerrar
+              </button>
+            </div>
           </div>
         `;
         document.body.appendChild(modal);
