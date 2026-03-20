@@ -46,7 +46,7 @@ Contextos de uso:
 
     <div class="apple-turno-form-grid-2col">
         <!-- ===================================================================
-             COLUMNA IZQUIERDA: DATOS DEL PACIENTE Y TURNO
+             COLUMNA IZQUIERDA: DATOS DEL PACIENTE, AGENDA Y FECHA
              =================================================================== -->
         <div class="apple-turno-form-col-left">
             
@@ -183,13 +183,7 @@ Contextos de uso:
                           {% if mode == 'create' %}disabled{% endif %}
                           class="apple-form-textarea {% if mode == 'create' %}apple-input-disabled{% endif %}">{% if turno %}{{ turno.nota_interna|default:"" }}{% endif %}</textarea>
             </div>
-        </div>
 
-        <!-- ===================================================================
-             COLUMNA DERECHA: AGENDA, FECHA, BOTONES Y DETERMINACIONES
-             =================================================================== -->
-        <div class="apple-turno-form-col-right">
-            
             <!-- Agenda y Fecha en la misma fila -->
             <div class="apple-form-grid-2">
                 <!-- Agenda (condicional) -->
@@ -223,12 +217,18 @@ Contextos de uso:
                                id="id_fecha" 
                                value="{% if turno %}{{ turno.fecha|date:'Y-m-d' }}{% elif fecha %}{{ fecha|date:'Y-m-d' }}{% endif %}"
                                required 
-                               {% if 'fecha' in readonly_fields %}readonly{% endif %}
+                                {% if 'fecha' in readonly_fields %}readonly{% endif %}
                                class="apple-input {% if 'fecha' in readonly_fields %}apple-input-readonly{% endif %}" />
                     </div>
                 {% endif %}
             </div>
+        </div>
 
+        <!-- ===================================================================
+             COLUMNA DERECHA: DETERMINACIONES
+             =================================================================== -->
+        <div class="apple-turno-form-col-right">
+            
             <!-- Determinaciones -->
             <div class="apple-form-group">
                 <label class="apple-label">Determinaciones</label>
