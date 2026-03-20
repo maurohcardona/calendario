@@ -1481,7 +1481,7 @@ body {
     border-radius: var(--border-radius-md);
     padding: var(--space-md);
     min-height: 100px;
-    max-height: 700px;
+    max-height: 800px;
     overflow-y: auto;
 }
 
