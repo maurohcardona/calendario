@@ -49,7 +49,7 @@
       <div class="user-menu-content">
         <a href="{% url 'password_change' %}">Cambiar contraseña</a>
         <button type="button" id="etiquetadoras-btn" class="dropdown-item">Etiquetadoras ▼</button>
-        <div id="etiquetadoras-menu" style="display:none;">
+        <div id="etiquetadoras-menu">
           <div>
             <input type="radio" name="etiquetadora" id="etq-adm1" value="ADM1">
             <label for="etq-adm1">ADM1</label>
@@ -101,15 +101,17 @@
         document.addEventListener('click', function(e) {
           if (!userMenu.contains(e.target)) {
             userMenu.classList.remove('active');
-            etiquetadorasMenu.style.display = 'none';
+            etiquetadorasMenu.classList.remove('active');
+            etiquetadorasBtn.textContent = 'Etiquetadoras ▼';
           }
         });
       }
-      // Mostrar/ocultar submenú de etiquetadoras
+      // Mostrar/ocultar submenú de etiquetadoras con animación
       if (etiquetadorasBtn) {
         etiquetadorasBtn.addEventListener('click', function(e) {
           e.stopPropagation();
-          etiquetadorasMenu.style.display = etiquetadorasMenu.style.display === 'block' ? 'none' : 'block';
+          const isOpen = etiquetadorasMenu.classList.toggle('active');
+          etiquetadorasBtn.textContent = isOpen ? 'Etiquetadoras ▲' : 'Etiquetadoras ▼';
         });
       }
       // Guardar selección en localStorage y reflejar selección

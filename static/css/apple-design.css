@@ -964,28 +964,82 @@ body {
     font-weight: 500;
 }
 
+/* Hover de items normales - usar crema de la paleta */
 .user-menu-content a:hover {
-    background: var(--color-gray-lightest);
+    background: var(--color-cream);
     color: var(--color-primary);
 }
 
-.user-menu-content button {
+/* Botón Etiquetadoras - distinguir del botón cerrar sesión */
+.user-menu-content .dropdown-item {
+    color: var(--color-text);
+    border: none;
+    border-top: none;
+}
+
+.user-menu-content .dropdown-item:hover {
+    background: var(--color-cream);
+    color: var(--color-primary);
+}
+
+/* Botón cerrar sesión - mantener danger */
+.user-menu-content button[type="submit"] {
     color: var(--color-danger);
     border-top: 1px solid var(--color-gray-light);
 }
 
-.user-menu-content button:hover {
+.user-menu-content button[type="submit"]:hover {
     background: var(--color-danger-light);
-    color: var(--color-danger);
+    color: var(--color-danger-dark);
 }
 
+/* Submenú de etiquetadoras */
 #etiquetadoras-menu {
-    margin-left: 1.5em;
-    margin-top: 0.5em;
+    margin: 0.5rem 0 0.5rem 0;
+    padding: 0.75rem;
+    background: var(--color-cream);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-gray-light);
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
+    padding: 0 0.75rem;
+}
+
+#etiquetadoras-menu.active {
+    max-height: 200px;
+    opacity: 1;
+    padding: 0.75rem;
 }
 
 #etiquetadoras-menu div {
-    padding: 0.25rem 0;
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem 0;
+    border-radius: var(--border-radius-sm);
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#etiquetadoras-menu div:hover {
+    background: var(--color-mint-light);
+}
+
+#etiquetadoras-menu input[type="radio"] {
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    width: 1rem;
+    height: 1rem;
+}
+
+#etiquetadoras-menu label {
+    cursor: pointer;
+    color: var(--color-text);
+    font-weight: 500;
+    user-select: none;
+    flex: 1;
 }
 
 /* ========================================
