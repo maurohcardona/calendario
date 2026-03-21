@@ -49,76 +49,83 @@
         <!-- Lista de turnos en formato card -->
         <h3 class="apple-turnos-list-title">Turnos agendados</h3>
         
-        <!-- Filtro de turnos -->
-        {% if turnos_lista %}
+        <!-- Filtro de turnos (enlaces del servidor) -->
+        {% if total_todos > 0 %}
         <div class="apple-turnos-filter">
-            <button class="apple-filter-btn active" data-filter="todos">
-                Todos <span class="apple-filter-count" id="count-todos">0</span>
-            </button>
-            <button class="apple-filter-btn" data-filter="coordinados">
-                Coordinados <span class="apple-filter-count" id="count-coordinados">0</span>
-            </button>
-            <button class="apple-filter-btn" data-filter="pendientes">
-                Pendientes <span class="apple-filter-count" id="count-pendientes">0</span>
-            </button>
+            <a href="?filtro=todos{% if agenda_obj %}&agenda={{ agenda_obj.id }}{% endif %}" 
+               class="apple-filter-btn {% if filtro_activo == 'todos' %}active{% endif %}">
+                Todos <span class="apple-filter-count">{{ total_todos }}</span>
+            </a>
+            <a href="?filtro=coordinados{% if agenda_obj %}&agenda={{ agenda_obj.id }}{% endif %}" 
+               class="apple-filter-btn {% if filtro_activo == 'coordinados' %}active{% endif %}">
+                Coordinados <span class="apple-filter-count">{{ total_coordinados }}</span>
+            </a>
+            <a href="?filtro=pendientes{% if agenda_obj %}&agenda={{ agenda_obj.id }}{% endif %}" 
+               class="apple-filter-btn {% if filtro_activo == 'pendientes' %}active{% endif %}">
+                Pendientes <span class="apple-filter-count">{{ total_pendientes }}</span>
+            </a>
         </div>
         {% endif %}
         
-        {% if turnos_lista %}
+        {% if page_obj %}
+            <!-- Paginación superior -->
+            {% include 'turnos/components/pagination.html' with page_obj=page_obj filtro=filtro_activo agenda=agenda_obj.id %}
+            
             <div style="display: grid; gap: 1rem;" id="turnosContainer">
-                {% for t in turnos_lista %}
-                    <a href="{% if t.esta_coordinado %}{% url 'turnos:ver_coordinacion' t.id %}{% else %}{% url 'turnos:editar_turno' t.id %}{% endif %}" 
-                       class="apple-turno-card"
-                       data-estado="{% if t.esta_coordinado %}coordinado{% else %}pendiente{% endif %}"
-                       style="{% if t.esta_coordinado %}background: var(--apple-blue-light);{% endif %}">
+                {% for t in page_obj %}
+                    <div class="apple-turno-card{% if t.esta_coordinado %} coordinado{% endif %}"
+                         data-estado="{% if t.esta_coordinado %}coordinado{% else %}pendiente{% endif %}"
+                         data-href="{% if t.esta_coordinado %}{% url 'turnos:ver_coordinacion' t.id %}{% else %}{% url 'turnos:editar_turno' t.id %}{% endif %}">
                         
-                        <!-- Badge de estado -->
-                        <div class="apple-turno-card-badge">
-                            {% if t.esta_coordinado %}
-                                <span class="apple-badge apple-badge-green">COORDINADO</span>
-                            {% else %}
-                                <span class="apple-badge" style="background: var(--apple-orange); color: white;">PENDIENTE</span>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="apple-flex-between" style="align-items: start;">
-                            <!-- Información del turno (izquierda) -->
-                            <div style="flex: 1;">
-                                <div class="text-lg text-bold mb-sm">
+                        <!-- Header: Info del paciente + Badge de estado -->
+                        <div class="apple-turno-card-header">
+                            <div>
+                                <div class="text-lg text-bold">
                                     {{ t.apellido }} {{ t.nombre }}
                                 </div>
-                                <div class="text-sm mb-xs">
-                                    <strong>DNI:</strong> {{ t.paciente_dni }}
-                                </div>
-                                <div class="text-sm">
-                                    <strong>Agenda:</strong> {{ t.agenda.name }}
+                                <div class="text-sm text-gray">
+                                    <strong>DNI:</strong> {{ t.paciente_dni }} &nbsp;|&nbsp; <strong>Agenda:</strong> {{ t.agenda.name }}
                                 </div>
                             </div>
-                            
-                            <!-- Botones de acción (derecha) -->
-                            <div class="apple-turno-card-actions">
-                                <a href="{% url 'turnos:generar_ticket_turno' t.id %}" 
-                                   target="_blank" 
-                                   class="apple-btn apple-btn-secondary apple-btn-sm"
-                                   onclick="event.stopPropagation();">
-                                    Generar Ticket
-                                </a>
+                            <div class="apple-turno-card-badge">
                                 {% if t.esta_coordinado %}
-                                    <a href="{% url 'turnos:generar_ticket_retiro' t.id %}" 
-                                       target="_blank" 
-                                       class="apple-btn apple-btn-success apple-btn-sm"
-                                       onclick="event.stopPropagation();">
-                                        Ticket de retiro
-                                    </a>
+                                    <span class="apple-badge apple-badge-green">COORDINADO</span>
+                                {% else %}
+                                    <span class="apple-badge" style="background: var(--apple-orange); color: white;">PENDIENTE</span>
                                 {% endif %}
                             </div>
                         </div>
-                    </a>
+                        
+                        <!-- Botones de acción -->
+                        <div class="apple-turno-card-actions">
+                            <a href="{% url 'turnos:generar_ticket_turno' t.id %}" 
+                               target="_blank" 
+                               class="apple-btn apple-btn-secondary apple-btn-sm">
+                                Generar Ticket
+                            </a>
+                            {% if t.esta_coordinado %}
+                            <a href="{% url 'turnos:generar_ticket_retiro' t.id %}" 
+                               target="_blank" 
+                               class="apple-btn apple-btn-success apple-btn-sm">
+                                Ticket de retiro
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 {% endfor %}
             </div>
+            
+            <!-- Paginación inferior -->
+            {% include 'turnos/components/pagination.html' with page_obj=page_obj filtro=filtro_activo agenda=agenda_obj.id %}
         {% else %}
             <div class="apple-card text-center text-gray">
-                No hay turnos agendados para esta fecha.
+                {% if filtro_activo == 'coordinados' %}
+                    No hay turnos coordinados para esta fecha.
+                {% elif filtro_activo == 'pendientes' %}
+                    No hay turnos pendientes para esta fecha.
+                {% else %}
+                    No hay turnos agendados para esta fecha.
+                {% endif %}
             </div>
         {% endif %}
     {% endif %}
@@ -294,30 +301,53 @@ function habilitarTodosCampos() {
 
 // Auto-refresh: Recargar listado de turnos cada 15 segundos
 setInterval(function() {
-    // Obtener la URL actual con el parámetro agenda
+    // Obtener todos los parámetros de la URL actual (filtro, page, agenda)
     const urlParams = new URLSearchParams(window.location.search);
-    const agendaParam = urlParams.get('agenda') ? '?agenda=' + urlParams.get('agenda') : '';
+    const queryString = urlParams.toString() ? '?' + urlParams.toString() : '';
     
     // Recargar solo la sección de turnos sin afectar el formulario
-    fetch(window.location.pathname + agendaParam)
+    fetch(window.location.pathname + queryString)
         .then(response => response.text())
         .then(html => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const nuevoListado = doc.querySelector('h3 + .div, h3'); // Buscar listado de turnos
             
             // Buscar el elemento h3 "Turnos agendados" y su contenedor
             const currentH3 = Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent.includes('Turnos agendados'));
             const newH3 = Array.from(doc.querySelectorAll('h3')).find(h3 => h3.textContent.includes('Turnos agendados'));
             
             if (currentH3 && newH3) {
-                // Reemplazar el h3 y el div siguiente (el listado)
-                const currentDiv = currentH3.nextElementSibling;
-                const newDiv = newH3.nextElementSibling;
-                if (currentDiv && newDiv) {
-                    currentDiv.innerHTML = newDiv.innerHTML;
-                    console.log('Listado de turnos actualizado automáticamente');
+                // Reemplazar toda la sección desde el filtro hasta la paginación inferior
+                // Estructura: h3 > filtro > paginación-top > cards > paginación-bottom
+                let currentEl = currentH3.nextElementSibling;
+                let newEl = newH3.nextElementSibling;
+                
+                // Actualizar cada elemento mientras existan en ambos documentos
+                while (currentEl && newEl) {
+                    // Parar si llegamos a otra sección (ej: div con clase diferente)
+                    if (currentEl.tagName === 'H3' || currentEl.classList.contains('apple-actions-row') || 
+                        currentEl.classList.contains('apple-margin-top-xl')) {
+                        break;
+                    }
+                    
+                    // Reemplazar el contenido
+                    if (currentEl.outerHTML !== newEl.outerHTML) {
+                        currentEl.outerHTML = newEl.outerHTML;
+                        // Necesitamos obtener el elemento actualizado
+                        currentEl = currentH3.nextElementSibling;
+                        for (let i = 0; i < Array.from(newH3.parentElement.children).indexOf(newEl) - Array.from(newH3.parentElement.children).indexOf(newH3); i++) {
+                            if (currentEl) currentEl = currentEl.nextElementSibling;
+                        }
+                    }
+                    
+                    currentEl = currentEl ? currentEl.nextElementSibling : null;
+                    newEl = newEl.nextElementSibling;
                 }
+                
+                console.log('Listado de turnos actualizado automáticamente (página actual mantenida)');
+                
+                // Re-inicializar clicks en las cards
+                inicializarClickCards();
             }
         })
         .catch(error => console.error('Error actualizando turnos:', error));
@@ -451,64 +481,37 @@ document.addEventListener('DOMContentLoaded', function() {
             estadoNuevoMedico.className = 'apple-status apple-status-error';
         }
     });
-
-    // ===================================================================
-    // FILTRO DE TURNOS
-    // ===================================================================
-    const filterButtons = document.querySelectorAll('.apple-filter-btn');
-    const turnoCards = document.querySelectorAll('.apple-turno-card[data-estado]');
-    
-    if (filterButtons.length > 0 && turnoCards.length > 0) {
-        // Contar turnos por estado
-        let countTodos = 0;
-        let countCoordinados = 0;
-        let countPendientes = 0;
-        
-        turnoCards.forEach(card => {
-            countTodos++;
-            if (card.dataset.estado === 'coordinado') {
-                countCoordinados++;
-            } else if (card.dataset.estado === 'pendiente') {
-                countPendientes++;
-            }
-        });
-        
-        // Actualizar contadores en los botones
-        const countTodosEl = document.getElementById('count-todos');
-        const countCoordinadosEl = document.getElementById('count-coordinados');
-        const countPendientesEl = document.getElementById('count-pendientes');
-        
-        if (countTodosEl) countTodosEl.textContent = countTodos;
-        if (countCoordinadosEl) countCoordinadosEl.textContent = countCoordinados;
-        if (countPendientesEl) countPendientesEl.textContent = countPendientes;
-        
-        // Manejar click en botones de filtro
-        filterButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const filter = this.dataset.filter;
-                
-                // Actualizar botón activo
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Filtrar cards
-                turnoCards.forEach(card => {
-                    const estado = card.dataset.estado;
-                    
-                    if (filter === 'todos') {
-                        card.classList.remove('filter-hidden');
-                    } else if (filter === 'coordinados' && estado === 'coordinado') {
-                        card.classList.remove('filter-hidden');
-                    } else if (filter === 'pendientes' && estado === 'pendiente') {
-                        card.classList.remove('filter-hidden');
-                    } else {
-                        card.classList.add('filter-hidden');
-                    }
-                });
-            });
-        });
-    }
 });
+
+// ===================================================================
+// CLICK EN CARDS DE TURNOS - Navegación al hacer click en la card
+// ===================================================================
+function inicializarClickCards() {
+    const turnoCards = document.querySelectorAll('.apple-turno-card[data-href]');
+    
+    turnoCards.forEach(card => {
+        // Remover listener previo si existe (para evitar duplicados en auto-refresh)
+        card.removeEventListener('click', cardClickHandler);
+        card.addEventListener('click', cardClickHandler);
+    });
+    
+    console.log('Cards de turnos: inicializados', turnoCards.length, 'cards clickeables');
+}
+
+function cardClickHandler(e) {
+    // Si el click fue en un botón o link, no navegar
+    if (e.target.closest('a')) {
+        return;
+    }
+    // Navegar a la URL de la card
+    const href = this.dataset.href;
+    if (href) {
+        window.location.href = href;
+    }
+}
+
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', inicializarClickCards);
 </script>
 
 {% endblock %}

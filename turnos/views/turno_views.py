@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.contrib import messages
+from django.core.paginator import Paginator
 from turnos.models import Turno, Cupo, Agenda, Coordinados, Feriados
 from pacientes.models import Paciente
 from medicos.models import Medico
@@ -342,6 +343,37 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
             turno.esta_coordinado = turno.id in turnos_coordinados_ids
             turnos_lista.append(turno)
 
+    # =====================================================================
+    # FILTRADO Y PAGINACIÓN DE TURNOS
+    # =====================================================================
+
+    # Obtener parámetros de filtro y página
+    filtro_estado = request.GET.get("filtro", "todos")
+    page_number = request.GET.get("page", 1)
+
+    # Calcular totales para los contadores (siempre mostrar totales globales)
+    total_todos = len(turnos_lista) if turnos_lista else 0
+    total_coordinados = (
+        sum(1 for t in turnos_lista if t.esta_coordinado) if turnos_lista else 0
+    )
+    total_pendientes = total_todos - total_coordinados
+
+    # Aplicar filtro según parámetro
+    if turnos_lista:
+        if filtro_estado == "coordinados":
+            turnos_filtrados = [t for t in turnos_lista if t.esta_coordinado]
+        elif filtro_estado == "pendientes":
+            turnos_filtrados = [t for t in turnos_lista if not t.esta_coordinado]
+        else:
+            turnos_filtrados = turnos_lista
+            filtro_estado = "todos"  # Normalizar valor
+    else:
+        turnos_filtrados = []
+
+    # Paginar los resultados filtrados (10 cards por página)
+    paginator = Paginator(turnos_filtrados, 10)
+    page_obj = paginator.get_page(page_number)
+
     context = {
         "fecha": fecha,
         "turnos": turnos,
@@ -364,6 +396,12 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
         "descripcion_feriado": descripcion_feriado,
         "agendas": Agenda.objects.all(),
         "agenda_obj": agenda_obj,
+        # Paginación y filtrado
+        "page_obj": page_obj,
+        "filtro_activo": filtro_estado,
+        "total_todos": total_todos,
+        "total_coordinados": total_coordinados,
+        "total_pendientes": total_pendientes,
     }
     return render(request, "turnos/dia.html", context)
 

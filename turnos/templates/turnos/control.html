@@ -39,8 +39,8 @@
             </div>
         </div>
         
-        <div style="margin-bottom: 1rem;">
-            <h3 style="color: var(--text-light); font-size: 1.2rem; font-weight: 700; margin-bottom: 0.75rem;">Determinaciones</h3>
+        <div class="determinaciones-section">
+            <h3 class="determinaciones-title">Determinaciones</h3>
             <div class="determinaciones-list">
                 {% for det in orden.determinaciones %}
                 <div class="determinacion-item" data-codigo="{{ det.codigo }}" onclick="toggleDeterminacion(this)">
@@ -54,7 +54,7 @@
                     <div class="det-info">
                         <span class="det-codigo">{{ det.codigo }}</span> - <span class="det-nombre">{{ det.nombre }}</span>
                         {% if det.tipo == 'perfil' and det.determinaciones %}
-                         <div style="margin-top: 0.25rem; font-size: 0.85rem; color: var(--control-text-light);">
+                        <div class="det-subdets">
                             {{ det.determinaciones|slice:":100" }}{% if det.determinaciones|length > 100 %}...{% endif %}
                         </div>
                         {% endif %}
@@ -67,9 +67,9 @@
         
         <div class="agregar-faltante">
             <h4 class="faltante-title">Agregar determinación faltante</h4>
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: flex-start;">
+            <div class="faltante-form">
                 <input type="text" class="input-codigo-faltante" placeholder="Código">
-                <div style="position: relative; flex: 1;">
+                <div class="faltante-field">
                     <input type="text" class="input-nombre-faltante" placeholder="Buscar por nombre...">
                     <div class="autocomplete-lista-faltante"></div>
                 </div>
@@ -157,7 +157,7 @@ function marcarExtra(event, btn) {
         item.classList.add('extra');
         item.classList.remove('checked');
         btn.textContent = 'Marcado de más';
-        btn.style.background = 'var(--control-success)';
+        btn.classList.add('marcado');
         
         // Agregar al resumen
         resultados.extras.push({
@@ -169,7 +169,7 @@ function marcarExtra(event, btn) {
     } else {
         item.classList.remove('extra');
         btn.textContent = 'Está de más';
-        btn.style.background = 'var(--control-warning)';
+        btn.classList.remove('marcado');
         
         // Quitar del resumen
         resultados.extras = resultados.extras.filter(e => !(e.codigo === codigo && e.orden === parseInt(ordenIndex) + 1));
@@ -222,7 +222,8 @@ function agregarFaltante(btn) {
             // Crear elemento visual con código y nombre
             const div = document.createElement('div');
             div.className = 'resumen-item resumen-faltante';
-            div.innerHTML = '<strong>' + codigo + '</strong> - ' + nombreDet + ' <button onclick="quitarFaltante(this, \'' + codigo + '\')" style="float: right; background: var(--control-danger); color: #fff; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;">Quitar</button>';
+            div.innerHTML = '<strong>' + codigo + '</strong> - ' + nombreDet + 
+                ' <button class="btn-quitar-faltante" onclick="quitarFaltante(this, \'' + codigo + '\')">Quitar</button>';
             lista.appendChild(div);
             
             // Agregar al resumen
@@ -240,7 +241,7 @@ function agregarFaltante(btn) {
         })
         .catch(error => {
             console.error('Error buscando código:', error);
-             mensajeError.textContent = 'Error al buscar determinación';
+            mensajeError.textContent = 'Error al buscar determinación';
         });
 }
 
@@ -259,7 +260,7 @@ function siguienteOrden() {
     ordenes[ordenActual].style.display = 'none';
     
     // Si hay filtro activo, avanzar solo entre las órdenes filtradas
-        if (ordenesFiltradas.length > 0) {
+    if (ordenesFiltradas.length > 0) {
         const posicionActual = ordenesFiltradas.indexOf(ordenActual);
         const siguientePosicion = posicionActual + 1;
         
@@ -328,17 +329,17 @@ function mostrarResumen() {
             if (item.tipo === 'extra') {
                 return '<div class="resumen-item resumen-extra">' +
                     '<strong>Orden ' + item.orden + ' (DNI: ' + item.dni + '):</strong> ' +
-                    '<span style="color: var(--control-warning);">DE MÁS:</span> ' + item.texto +
+                    '<span class="resumen-tipo-extra">DE MÁS:</span> ' + item.texto +
                     '</div>';
             } else {
                 return '<div class="resumen-item resumen-faltante">' +
                     '<strong>Orden ' + item.orden + ' (DNI: ' + item.dni + '):</strong> ' +
-                    '<span style="color: var(--control-danger);">FALTANTE:</span> <strong>' + item.codigo + '</strong> - ' + item.nombre +
+                    '<span class="resumen-tipo-faltante">FALTANTE:</span> <strong>' + item.codigo + '</strong> - ' + item.nombre +
                     '</div>';
             }
         }).join('');
     } else {
-        ordenesDiv.innerHTML = '<p style="color: var(--control-text-light); font-style: italic; text-align: center; padding: 2rem; background: rgba(178, 213, 186, 0.15); border-radius: 8px;">No se encontraron diferencias. Todas las órdenes están correctas.</p>';
+        ordenesDiv.innerHTML = '<p class="resumen-sin-diferencias">No se encontraron diferencias. Todas las órdenes están correctas.</p>';
     }
     
     // Scroll al inicio
@@ -457,34 +458,28 @@ document.addEventListener('DOMContentLoaded', function() {
             
             lista.innerHTML = coincidencias.map(item => {
                 let tipoBadge = '';
-                let sinStockBadge = '';
-                let estiloGris = '';
+                let sinStockClass = '';
                 
                 if (item.tipo === 'perfil') {
-                    tipoBadge = '<span style="background: var(--control-success); color: var(--color-text); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">PERFIL<\/span>';
+                    tipoBadge = '<span class="det-badge badge-perfil">PERFIL</span>';
                 } else if (item.tipo === 'compleja') {
-                    tipoBadge = '<span style="background: var(--control-accent); color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">COMPLEJA<\/span>';
+                    tipoBadge = '<span class="det-badge badge-compleja">COMPLEJA</span>';
                 }
                 
                 if (item.stock === false) {
-                    sinStockBadge = '<span style="background: var(--color-gray); color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">SIN STOCK<\/span>';
-                    estiloGris = 'opacity: 0.5;';
+                    tipoBadge += '<span class="det-badge badge-simple">SIN STOCK</span>';
+                    sinStockClass = ' sin-stock';
                 }
                 
-                return '<div class="autocomplete-item" data-codigo="' + item.codigo + '" data-nombre="' + item.nombre + '" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(36, 143, 141, 0.1); transition: background 0.2s; ' + estiloGris + '">' +
-                    '<span style="color: var(--control-primary); font-weight: bold;">' + item.codigo + '<\/span> - <span style="color: var(--control-text); font-weight: 600;">' + item.nombre + '<\/span>' + tipoBadge + sinStockBadge +
-                    '<\/div>';
+                return '<div class="autocomplete-item' + sinStockClass + '" data-codigo="' + item.codigo + '" data-nombre="' + item.nombre + '">' +
+                    '<span class="autocomplete-codigo">' + item.codigo + '</span> - ' +
+                    '<span class="autocomplete-nombre">' + item.nombre + '</span> ' + tipoBadge +
+                    '</div>';
             }).join('');
             
             lista.style.display = 'block';
             
             lista.querySelectorAll('.autocomplete-item').forEach(item => {
-                item.addEventListener('mouseenter', function() {
-                    this.style.background = 'rgba(36, 143, 141, 0.1)';
-                });
-                item.addEventListener('mouseleave', function() {
-                    this.style.background = 'transparent';
-                });
                 item.addEventListener('click', function() {
                     inputCodigo.value = this.dataset.codigo;
                     inputNombre.value = this.dataset.nombre;
