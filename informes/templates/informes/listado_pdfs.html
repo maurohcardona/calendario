@@ -1,209 +1,436 @@
 {% extends 'base.html' %}
-{% load informes_extras %}
 
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-  <h2 style="margin:0; font-size:2rem; font-weight:700; color:#000;">📄 Informes PDF</h2>
-</div>
+<div class="informes-container">
+  
+  <!-- Header -->
+  <div class="informes-header">
+    <h2 class="informes-title">Informes PDF</h2>
+  </div>
 
-<form method="get" style="display:flex; gap:0.75rem; margin-bottom:1.5rem; align-items:center;">
-  <input
-    type="text"
-    name="q"
-    value="{{ termino_busqueda }}"
-    placeholder="Buscar por nombre de PDF..."
-    style="flex:1; max-width:420px; padding:0.6rem 0.8rem; border:1px solid #ccc; border-radius:8px;"
-  >
-  <button type="submit" style="background:#c89b8f; color:#fff; border:none; padding:0.6rem 1rem; border-radius:8px; font-weight:600;">Buscar</button>
-  {% if termino_busqueda %}
-    <a href="{% url 'informes:listado' %}" style="text-decoration:none; color:#555; font-weight:600;">Limpiar</a>
+  <!-- Buscador -->
+  <form method="get" class="informes-search-container">
+    <div class="informes-search-wrapper">
+      <span class="informes-search-icon">&#128269;</span>
+      <input
+        type="text"
+        name="q"
+        value="{{ termino_busqueda }}"
+        placeholder="Buscar por DNI, N° de Orden o N° de Protocolo (búsqueda exacta)..."
+        class="informes-search-input"
+        autofocus
+      >
+    </div>
+    <button type="submit" class="informes-search-button">Buscar</button>
+    {% if termino_busqueda %}
+      <a href="{% url 'informes:listado' %}" class="informes-clear-link">Limpiar</a>
+    {% endif %}
+  </form>
+
+  <!-- Banner de procesamiento -->
+  <div id="mail-processing-banner" class="informes-processing-banner">
+    Procesando, por favor espere...
+  </div>
+
+  {% if tiene_busqueda %}
+    {% if resultados %}
+      <!-- Contador de resultados -->
+      <div class="informes-results-count">
+        Se encontraron <strong>{{ total_resultados }}</strong> resultado{{ total_resultados|pluralize:"s" }} para "{{ termino_busqueda }}"
+      </div>
+
+      <!-- Lista de resultados (horizontal cards stacked) -->
+      <div class="informes-results-list">
+        {% for item in resultados %}
+          <article class="informe-card informe-card--{{ item.estado }}">
+            
+            <!-- Badge de estado -->
+            {% if item.estado == 'enviados' %}
+              <span class="informe-badge informe-badge--success">&#10003; Enviado</span>
+            {% elif item.estado == 'pendientes' %}
+              <span class="informe-badge informe-badge--warning">&#9202; Pendiente</span>
+            {% else %}
+              <span class="informe-badge informe-badge--danger">&#128234; Sin email</span>
+            {% endif %}
+
+            <!-- Contenido horizontal -->
+            <div class="informe-content">
+              <div class="informe-data-row">
+                <span class="informe-data-label">DNI:</span>
+                <span class="informe-data-value informe-data-value--highlight">{{ item.dni }}</span>
+              </div>
+              <div class="informe-data-row">
+                <span class="informe-data-label">N° Orden:</span>
+                <span class="informe-data-value">{{ item.numero_orden }}</span>
+              </div>
+              {% if item.numero_protocolo %}
+              <div class="informe-data-row">
+                <span class="informe-data-label">N° Protocolo:</span>
+                <span class="informe-data-value">{{ item.numero_protocolo }}</span>
+              </div>
+              {% endif %}
+              
+              <!-- Estado de email -->
+              <div class="informe-status-row">
+                {% if item.estado == 'enviados' %}
+                  <span class="informe-status-icon">&#9989;</span>
+                  <span class="informe-status-text informe-status-text--success">Enviado</span>
+                {% elif item.estado == 'pendientes' %}
+                  <span class="informe-status-icon">&#9203;</span>
+                  <span class="informe-status-text informe-status-text--warning">Pendiente</span>
+                {% else %}
+                  <span class="informe-status-icon">&#128233;</span>
+                  <span class="informe-status-text informe-status-text--danger">Sin email</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="informe-actions">
+              {% if item.estado == 'sin_email' %}
+                <!-- Formulario para cargar email (solo guardar, sin botón enviar) -->
+                <form method="post" action="{% url 'informes:actualizar_email' item.dni %}" class="informe-email-form" data-email-submit="true" data-dni="{{ item.dni }}">
+                  {% csrf_token %}
+                  <input type="hidden" name="q" value="{{ termino_busqueda }}">
+                  <input type="hidden" name="page" value="{{ resultados.number }}">
+                  <input 
+                    type="email" 
+                    name="email" 
+                    placeholder="Ingresar email..." 
+                    class="informe-email-input"
+                    required
+                  >
+                  <button type="submit" class="informe-btn-save-email" data-loading-text="Guardando...">
+                    Guardar
+                  </button>
+                </form>
+              {% elif item.estado == 'enviados' %}
+                <form method="post" action="{% url 'informes:enviar_informe' item.carpeta item.archivo %}" class="informe-send-form" data-mail-submit="true" data-dni="{{ item.dni }}" data-orden="{{ item.numero_orden }}" data-confirm-message="¿Confirmas volver a enviar este informe?">
+                  {% csrf_token %}
+                  <input type="hidden" name="q" value="{{ termino_busqueda }}">
+                  <input type="hidden" name="page" value="{{ resultados.number }}">
+                  <button type="submit" class="informe-btn-send informe-btn-send--secondary" data-loading-text="Reenviando...">
+                    Reenviar
+                  </button>
+                </form>
+              {% else %}
+                <form method="post" action="{% url 'informes:enviar_informe' item.carpeta item.archivo %}" class="informe-send-form" data-mail-submit="true" data-dni="{{ item.dni }}" data-orden="{{ item.numero_orden }}" data-confirm-message="¿Confirmas enviar este informe?">
+                  {% csrf_token %}
+                  <input type="hidden" name="q" value="{{ termino_busqueda }}">
+                  <input type="hidden" name="page" value="{{ resultados.number }}">
+                  <button type="submit" class="informe-btn-send informe-btn-send--primary" data-loading-text="Enviando...">
+                    Enviar
+                  </button>
+                </form>
+              {% endif %}
+              
+              <a href="{% url 'informes:ver_pdf' item.carpeta item.archivo %}" target="_blank" class="informe-btn-view" title="Ver PDF">
+                &#128065;
+              </a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+      <!-- Paginación -->
+      {% if resultados.paginator.num_pages > 1 %}
+        <nav class="informes-pagination">
+          {% if resultados.has_previous %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page={{ resultados.previous_page_number }}" class="informes-pagination-link">
+              &#8592; Anterior
+            </a>
+          {% endif %}
+          
+          <span class="informes-pagination-current">
+            Página {{ resultados.number }} de {{ resultados.paginator.num_pages }}
+          </span>
+          
+          {% if resultados.has_next %}
+            <a href="?q={{ termino_busqueda|urlencode }}&page={{ resultados.next_page_number }}" class="informes-pagination-link">
+              Siguiente &#8594;
+            </a>
+          {% endif %}
+        </nav>
+      {% endif %}
+
+    {% else %}
+      <!-- Sin resultados para la búsqueda -->
+      <div class="informes-empty-state">
+        <span class="informes-empty-icon">&#128269;</span>
+        <h3 class="informes-empty-title">Sin resultados</h3>
+        <p class="informes-empty-description">
+          No se encontraron informes PDF con DNI, número de orden o protocolo exacto "{{ termino_busqueda }}".
+          Verifica el término de búsqueda e intenta nuevamente.
+        </p>
+      </div>
+    {% endif %}
+    
+  {% else %}
+    <!-- Estado inicial - sin búsqueda -->
+    <div class="informes-empty-state">
+      <span class="informes-empty-icon">&#128196;</span>
+      <h3 class="informes-empty-title">Buscar informes PDF</h3>
+      <p class="informes-empty-description">
+        Ingresa un número de DNI, número de orden o número de protocolo exacto para buscar informes PDF en las carpetas de pendientes, enviados y sin email.
+      </p>
+    </div>
   {% endif %}
-</form>
 
-<div id="mail-processing-banner" style="display:none; margin-bottom:1rem; padding:0.75rem 1rem; border-radius:8px; background:rgba(200,155,143,0.2); border:1px solid rgba(200,155,143,0.5); color:#6a3f32; font-weight:600;">
-  ⏳ Procesando envío de correo, por favor espere...
 </div>
 
-<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:1.5rem; align-items:start;">
+<!-- Modal de confirmación para envío de email -->
+<div id="modal-envio" class="informe-modal">
+  <div class="informe-modal-backdrop"></div>
+  <div class="informe-modal-content">
+    <button type="button" class="informe-modal-close" aria-label="Cerrar">&times;</button>
+    <div class="informe-modal-icon">&#9993;</div>
+    <h3 class="informe-modal-title">Confirmar Envío</h3>
+    <p class="informe-modal-message" id="modal-envio-mensaje"></p>
+    <div class="informe-modal-detalles">
+      <div class="informe-modal-detalle">
+        <span class="informe-modal-label">DNI:</span>
+        <span class="informe-modal-value" id="modal-envio-dni"></span>
+      </div>
+      <div class="informe-modal-detalle">
+        <span class="informe-modal-label">N° Orden:</span>
+        <span class="informe-modal-value" id="modal-envio-orden"></span>
+      </div>
+    </div>
+    <div class="informe-modal-actions">
+      <button type="button" class="informe-modal-btn informe-modal-btn--cancel">
+        Cancelar
+      </button>
+      <button type="button" class="informe-modal-btn informe-modal-btn--confirm">
+        Confirmar Envío
+      </button>
+    </div>
+  </div>
+</div>
 
-  <!-- ENVIADOS -->
-  <section style="background:#fff; border:2px solid rgba(143, 184, 143, 0.4); border-radius:10px; padding:1rem;">
-    <h3 style="margin-bottom:1rem; color:#2f6b2f;">✅ Enviados ({{ total_enviados }})</h3>
-    {% if pdfs_enviados %}
-      <ul style="padding-left:1rem; margin:0; display:grid; gap:0.5rem;">
-        {% for archivo in pdfs_enviados %}
-          <li style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-            <a href="{% url 'informes:ver_pdf' 'enviados' archivo %}" target="_blank" style="text-decoration:none; color:#0d6efd; font-size:0.85rem;">
-              {{ archivo|pdf_label }}
-            </a>
-            <form method="post" action="{% url 'informes:enviar_informe' 'enviados' archivo %}" style="margin:0;" data-mail-submit="true" data-confirm-message="¿Confirmas volver a enviar este informe?">
-              {% csrf_token %}
-              <input type="hidden" name="q" value="{{ termino_busqueda }}">
-              <input type="hidden" name="page_enviados" value="{{ page_enviados_actual }}">
-              <input type="hidden" name="page_pendientes" value="{{ page_pendientes_actual }}">
-              <input type="hidden" name="page_sin_email" value="{{ page_sin_email_actual }}">
-              <input type="hidden" name="page_otros" value="{{ page_otros_actual }}">
-              <button type="submit" data-loading-text="Reenviando..." style="background:#2f6b2f; color:#fff; border:none; border-radius:6px; padding:0.35rem 0.65rem; font-size:0.8rem; font-weight:600; cursor:pointer; white-space:nowrap;">Reenviar</button>
-            </form>
-          </li>
-        {% endfor %}
-      </ul>
-      {% if pdfs_enviados.paginator.num_pages > 1 %}
-        <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
-          {% if pdfs_enviados.has_previous %}
-            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ pdfs_enviados.previous_page_number }}&page_pendientes={{ page_pendientes_actual }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">← Ant</a>
-          {% endif %}
-          <span style="color:#666; font-size:0.8rem;">{{ pdfs_enviados.number }}/{{ pdfs_enviados.paginator.num_pages }}</span>
-          {% if pdfs_enviados.has_next %}
-            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ pdfs_enviados.next_page_number }}&page_pendientes={{ page_pendientes_actual }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">Sig →</a>
-          {% endif %}
-        </div>
-      {% endif %}
-    {% else %}
-      <p style="margin:0; color:#666; font-size:0.85rem;">{% if termino_busqueda %}Sin resultados para "{{ termino_busqueda }}".{% else %}No hay PDFs enviados.{% endif %}</p>
-    {% endif %}
-  </section>
-
-  <!-- PENDIENTES -->
-  <section style="background:#fff; border:2px solid rgba(232, 184, 143, 0.5); border-radius:10px; padding:1rem;">
-    <h3 style="margin-bottom:1rem; color:#a25f24;">⏳ Pendientes ({{ total_pendientes }})</h3>
-    {% if pdfs_pendientes %}
-      <ul style="padding-left:1rem; margin:0; display:grid; gap:0.5rem;">
-        {% for archivo in pdfs_pendientes %}
-          <li style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-            <a href="{% url 'informes:ver_pdf' 'pendientes' archivo %}" target="_blank" style="text-decoration:none; color:#0d6efd; font-size:0.85rem;">
-              {{ archivo|pdf_label }}
-            </a>
-            <form method="post" action="{% url 'informes:enviar_informe' 'pendientes' archivo %}" style="margin:0;" data-mail-submit="true" data-confirm-message="¿Confirmas enviar este informe?">
-              {% csrf_token %}
-              <input type="hidden" name="q" value="{{ termino_busqueda }}">
-              <input type="hidden" name="page_enviados" value="{{ page_enviados_actual }}">
-              <input type="hidden" name="page_pendientes" value="{{ page_pendientes_actual }}">
-              <input type="hidden" name="page_sin_email" value="{{ page_sin_email_actual }}">
-              <input type="hidden" name="page_otros" value="{{ page_otros_actual }}">
-              <button type="submit" data-loading-text="Enviando..." style="background:#a25f24; color:#fff; border:none; border-radius:6px; padding:0.35rem 0.65rem; font-size:0.8rem; font-weight:600; cursor:pointer;">Enviar</button>
-            </form>
-          </li>
-        {% endfor %}
-      </ul>
-      {% if pdfs_pendientes.paginator.num_pages > 1 %}
-        <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
-          {% if pdfs_pendientes.has_previous %}
-            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ pdfs_pendientes.previous_page_number }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">← Ant</a>
-          {% endif %}
-          <span style="color:#666; font-size:0.8rem;">{{ pdfs_pendientes.number }}/{{ pdfs_pendientes.paginator.num_pages }}</span>
-          {% if pdfs_pendientes.has_next %}
-            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ pdfs_pendientes.next_page_number }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">Sig →</a>
-          {% endif %}
-        </div>
-      {% endif %}
-    {% else %}
-      <p style="margin:0; color:#666; font-size:0.85rem;">{% if termino_busqueda %}Sin resultados para "{{ termino_busqueda }}".{% else %}No hay PDFs pendientes.{% endif %}</p>
-    {% endif %}
-  </section>
-
-  <!-- SIN EMAIL -->
-  <section style="background:#fff; border:2px solid rgba(180, 143, 184, 0.5); border-radius:10px; padding:1rem;">
-    <h3 style="margin-bottom:1rem; color:#6b2f6b;">📭 Sin email ({{ total_sin_email }})</h3>
-    {% if pdfs_sin_email %}
-      <ul style="padding-left:1rem; margin:0; display:grid; gap:0.5rem;">
-        {% for archivo in pdfs_sin_email %}
-          <li style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-            <a href="{% url 'informes:ver_pdf' 'sin_email' archivo %}" target="_blank" style="text-decoration:none; color:#0d6efd; font-size:0.85rem;">
-              {{ archivo|pdf_label }}
-            </a>
-            <form method="post" action="{% url 'informes:enviar_informe' 'sin_email' archivo %}" style="margin:0;" data-mail-submit="true" data-confirm-message="¿El paciente ya tiene email registrado? ¿Confirmas enviar este informe?">
-              {% csrf_token %}
-              <input type="hidden" name="q" value="{{ termino_busqueda }}">
-              <input type="hidden" name="page_enviados" value="{{ page_enviados_actual }}">
-              <input type="hidden" name="page_pendientes" value="{{ page_pendientes_actual }}">
-              <input type="hidden" name="page_sin_email" value="{{ page_sin_email_actual }}">
-              <input type="hidden" name="page_otros" value="{{ page_otros_actual }}">
-              <button type="submit" data-loading-text="Enviando..." style="background:#6b2f6b; color:#fff; border:none; border-radius:6px; padding:0.35rem 0.65rem; font-size:0.8rem; font-weight:600; cursor:pointer;">Enviar</button>
-            </form>
-          </li>
-        {% endfor %}
-      </ul>
-      {% if pdfs_sin_email.paginator.num_pages > 1 %}
-        <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
-          {% if pdfs_sin_email.has_previous %}
-            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ page_pendientes_actual }}&page_sin_email={{ pdfs_sin_email.previous_page_number }}&page_otros={{ page_otros_actual }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">← Ant</a>
-          {% endif %}
-          <span style="color:#666; font-size:0.8rem;">{{ pdfs_sin_email.number }}/{{ pdfs_sin_email.paginator.num_pages }}</span>
-          {% if pdfs_sin_email.has_next %}
-            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ page_pendientes_actual }}&page_sin_email={{ pdfs_sin_email.next_page_number }}&page_otros={{ page_otros_actual }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">Sig →</a>
-          {% endif %}
-        </div>
-      {% endif %}
-    {% else %}
-      <p style="margin:0; color:#666; font-size:0.85rem;">{% if termino_busqueda %}Sin resultados para "{{ termino_busqueda }}".{% else %}No hay PDFs sin email.{% endif %}</p>
-    {% endif %}
-  </section>
-
-  <!-- INTERNACION / GUARDIA -->
-  <section style="background:#fff; border:2px solid rgba(143, 163, 184, 0.5); border-radius:10px; padding:1rem;">
-    <h3 style="margin-bottom:0.5rem; color:#2f4a6b;">🏥 Internación / Guardia ({{ total_otros }})</h3>
-    <p style="margin:0 0 0.75rem; font-size:0.8rem; color:#666;">No se envían automáticamente por email.</p>
-    {% if pdfs_otros %}
-      <ul style="padding-left:1rem; margin:0; display:grid; gap:0.5rem;">
-        {% for archivo in pdfs_otros %}
-          <li>
-            <a href="{% url 'informes:ver_pdf' 'otros_origenes' archivo %}" target="_blank" style="text-decoration:none; color:#0d6efd; font-size:0.85rem;">
-              {{ archivo|pdf_label }}
-            </a>
-          </li>
-        {% endfor %}
-      </ul>
-      {% if pdfs_otros.paginator.num_pages > 1 %}
-        <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem; flex-wrap:wrap;">
-          {% if pdfs_otros.has_previous %}
-            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ page_pendientes_actual }}&page_sin_email={{ page_sin_email_actual }}&page_otros={{ pdfs_otros.previous_page_number }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">← Ant</a>
-          {% endif %}
-          <span style="color:#666; font-size:0.8rem;">{{ pdfs_otros.number }}/{{ pdfs_otros.paginator.num_pages }}</span>
-          {% if pdfs_otros.has_next %}
-            <a href="?q={{ termino_busqueda|urlencode }}&page_enviados={{ page_enviados_actual }}&page_pendientes={{ page_pendientes_actual }}&page_sin_email={{ page_sin_email_actual }}&page_otros={{ pdfs_otros.next_page_number }}" style="text-decoration:none; color:#0d6efd; font-weight:600;">Sig →</a>
-          {% endif %}
-        </div>
-      {% endif %}
-    {% else %}
-      <p style="margin:0; color:#666; font-size:0.85rem;">{% if termino_busqueda %}Sin resultados para "{{ termino_busqueda }}".{% else %}No hay PDFs de Internación o Guardia.{% endif %}</p>
-    {% endif %}
-  </section>
-
+<!-- Modal de confirmación para guardar email -->
+<div id="modal-guardar-email" class="informe-modal">
+  <div class="informe-modal-backdrop"></div>
+  <div class="informe-modal-content">
+    <button type="button" class="informe-modal-close" aria-label="Cerrar">&times;</button>
+    <div class="informe-modal-icon">&#128231;</div>
+    <h3 class="informe-modal-title">Guardar Email</h3>
+    <p class="informe-modal-message">¿Confirmas guardar este email para el paciente?</p>
+    <div class="informe-modal-detalles">
+      <div class="informe-modal-detalle">
+        <span class="informe-modal-label">DNI:</span>
+        <span class="informe-modal-value" id="modal-guardar-dni"></span>
+      </div>
+      <div class="informe-modal-detalle">
+        <span class="informe-modal-label">Email:</span>
+        <span class="informe-modal-value" id="modal-guardar-email-value"></span>
+      </div>
+    </div>
+    <div class="informe-modal-actions">
+      <button type="button" class="informe-modal-btn informe-modal-btn--cancel">
+        Cancelar
+      </button>
+      <button type="button" class="informe-modal-btn informe-modal-btn--confirm">
+        Guardar Email
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const formularios = document.querySelectorAll('form[data-mail-submit="true"]');
+    // Referencias a los modales y banner
+    const modalEnvio = document.getElementById('modal-envio');
+    const modalGuardarEmail = document.getElementById('modal-guardar-email');
+    const banner = document.getElementById('mail-processing-banner');
+    
+    // Variables para guardar el formulario activo y timeout
+    let formularioActivo = null;
+    let timeoutId = null;
 
-    formularios.forEach(function (formulario) {
+    // ==========================================
+    // OCULTAR BANNER SI HAY MENSAJES DE DJANGO
+    // ==========================================
+    
+    const hayMensajes = document.querySelector('.apple-alert');
+    if (hayMensajes && banner) {
+      banner.style.display = 'none';
+    }
+
+    // ==========================================
+    // FUNCIONES PARA MANEJO DE MODALES
+    // ==========================================
+    
+    function abrirModal(modal) {
+      modal.classList.add('informe-modal--visible');
+      document.body.style.overflow = 'hidden';
+      // Foco en botón confirmar
+      const btnConfirmar = modal.querySelector('.informe-modal-btn--confirm');
+      if (btnConfirmar) btnConfirmar.focus();
+    }
+
+    function cerrarModal(modal) {
+      modal.classList.remove('informe-modal--visible');
+      document.body.style.overflow = '';
+      formularioActivo = null;
+    }
+
+    function cerrarTodosLosModales() {
+      cerrarModal(modalEnvio);
+      cerrarModal(modalGuardarEmail);
+    }
+
+    // ==========================================
+    // MODAL DE ENVÍO DE EMAIL
+    // ==========================================
+    
+    const formulariosEnvio = document.querySelectorAll('form[data-mail-submit="true"]');
+    formulariosEnvio.forEach(function (formulario) {
       formulario.addEventListener('submit', function (event) {
+        event.preventDefault();
+        
+        // Obtener datos del formulario
+        const dni = formulario.getAttribute('data-dni');
+        const orden = formulario.getAttribute('data-orden');
         const mensaje = formulario.getAttribute('data-confirm-message');
-        if (mensaje && !window.confirm(mensaje)) {
-          event.preventDefault();
-          return;
-        }
-
-        const boton = formulario.querySelector('button[type="submit"]');
-        if (!boton) {
-          return;
-        }
-
-        if (boton.disabled) {
-          event.preventDefault();
-          return;
-        }
-
-        const textoCarga = boton.getAttribute('data-loading-text') || 'Enviando...';
-        const banner = document.getElementById('mail-processing-banner');
-        if (banner) {
-          banner.style.display = 'block';
-        }
-        boton.disabled = true;
-        boton.textContent = '⏳ ' + textoCarga;
-        boton.style.opacity = '0.8';
-        boton.style.cursor = 'not-allowed';
+        
+        // Llenar el modal con los datos
+        document.getElementById('modal-envio-mensaje').textContent = mensaje;
+        document.getElementById('modal-envio-dni').textContent = dni;
+        document.getElementById('modal-envio-orden').textContent = orden;
+        
+        // Guardar referencia al formulario
+        formularioActivo = formulario;
+        
+        // Abrir modal
+        abrirModal(modalEnvio);
       });
+    });
+
+    // Botón confirmar envío
+    modalEnvio.querySelector('.informe-modal-btn--confirm').addEventListener('click', function () {
+      if (formularioActivo) {
+        // Deshabilitar botón del formulario original
+        const boton = formularioActivo.querySelector('button[type="submit"]');
+        if (boton) {
+          const textoCarga = boton.getAttribute('data-loading-text') || 'Enviando...';
+          boton.disabled = true;
+          boton.textContent = textoCarga;
+          boton.style.opacity = '0.7';
+          boton.style.cursor = 'not-allowed';
+        }
+        
+        // Mostrar banner de procesamiento
+        if (banner) banner.style.display = 'block';
+        
+        // Timeout de seguridad (30 segundos)
+        timeoutId = setTimeout(function() {
+          if (banner) banner.style.display = 'none';
+        }, 30000);
+        
+        // Guardar referencia antes de cerrar (cerrarModal setea formularioActivo = null)
+        const formularioAEnviar = formularioActivo;
+        
+        // Cerrar modal y enviar formulario
+        cerrarModal(modalEnvio);
+        formularioAEnviar.submit();
+      }
+    });
+
+    // ==========================================
+    // MODAL DE GUARDAR EMAIL
+    // ==========================================
+    
+    const formulariosGuardarEmail = document.querySelectorAll('form[data-email-submit="true"]');
+    formulariosGuardarEmail.forEach(function (formulario) {
+      formulario.addEventListener('submit', function (event) {
+        event.preventDefault();
+        
+        const inputEmail = formulario.querySelector('input[name="email"]');
+        const emailValue = inputEmail ? inputEmail.value.trim() : '';
+        
+        // Validar email
+        if (!emailValue) {
+          inputEmail.focus();
+          return;
+        }
+        
+        // Validar formato de email básico
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailValue)) {
+          inputEmail.focus();
+          return;
+        }
+        
+        // Obtener DNI del formulario
+        const dni = formulario.getAttribute('data-dni');
+        
+        // Llenar el modal con los datos
+        document.getElementById('modal-guardar-dni').textContent = dni;
+        document.getElementById('modal-guardar-email-value').textContent = emailValue;
+        
+        // Guardar referencia al formulario
+        formularioActivo = formulario;
+        
+        // Abrir modal
+        abrirModal(modalGuardarEmail);
+      });
+    });
+
+    // Botón confirmar guardar email
+    modalGuardarEmail.querySelector('.informe-modal-btn--confirm').addEventListener('click', function () {
+      if (formularioActivo) {
+        // Deshabilitar botón del formulario original
+        const boton = formularioActivo.querySelector('button[type="submit"]');
+        if (boton) {
+          const textoCarga = boton.getAttribute('data-loading-text') || 'Guardando...';
+          boton.disabled = true;
+          boton.textContent = textoCarga;
+          boton.style.opacity = '0.7';
+          boton.style.cursor = 'not-allowed';
+        }
+        
+        // Mostrar banner de procesamiento
+        if (banner) banner.style.display = 'block';
+        
+        // Timeout de seguridad (30 segundos)
+        timeoutId = setTimeout(function() {
+          if (banner) banner.style.display = 'none';
+        }, 30000);
+        
+        // Guardar referencia antes de cerrar (cerrarModal setea formularioActivo = null)
+        const formularioAEnviar = formularioActivo;
+        
+        // Cerrar modal y enviar formulario
+        cerrarModal(modalGuardarEmail);
+        formularioAEnviar.submit();
+      }
+    });
+
+    // ==========================================
+    // EVENTOS PARA CERRAR MODALES
+    // ==========================================
+    
+    // Cerrar con botón X o Cancelar
+    document.querySelectorAll('.informe-modal-close, .informe-modal-btn--cancel').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const modal = btn.closest('.informe-modal');
+        if (modal) cerrarModal(modal);
+      });
+    });
+
+    // Cerrar al hacer clic en el backdrop
+    document.querySelectorAll('.informe-modal-backdrop').forEach(function (backdrop) {
+      backdrop.addEventListener('click', function () {
+        const modal = backdrop.closest('.informe-modal');
+        if (modal) cerrarModal(modal);
+      });
+    });
+
+    // Cerrar con tecla ESC
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        cerrarTodosLosModales();
+      }
     });
   });
 </script>
