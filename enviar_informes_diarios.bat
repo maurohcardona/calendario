@@ -134,26 +134,18 @@ echo Enviando notificacion de error por email...
 REM Crear script PowerShell temporal para enviar email
 set "PS_SCRIPT=%TEMP%\send_email.ps1"
 
-echo $smtpServer = "%SMTP_SERVER%" > "%PS_SCRIPT%"
-echo $smtpPort = %SMTP_PORT% >> "%PS_SCRIPT%"
-echo $smtpUser = "%SMTP_EMAIL%" >> "%PS_SCRIPT%"
-echo $smtpPass = "%SMTP_PASSWORD%" >> "%PS_SCRIPT%"
-echo $to = "%NOTIFY_EMAIL%" >> "%PS_SCRIPT%"
-echo $subject = "[ALERTA] Fallo en backup PostgreSQL - %BACKUP_DATE%" >> "%PS_SCRIPT%"
-echo $body = @" >> "%PS_SCRIPT%"
-echo Se produjo un error durante el backup automatico de PostgreSQL. >> "%PS_SCRIPT%"
-echo. >> "%PS_SCRIPT%"
-echo Fecha: %date% %time% >> "%PS_SCRIPT%"
-echo Error: !MENSAJE_ERROR! >> "%PS_SCRIPT%"
-echo Servidor: %COMPUTERNAME% >> "%PS_SCRIPT%"
-echo Base de datos: %DB_NAME% >> "%PS_SCRIPT%"
-echo. >> "%PS_SCRIPT%"
-echo Por favor, revisa el log en: %LOG_FILE% >> "%PS_SCRIPT%"
-echo "@ >> "%PS_SCRIPT%"
-echo. >> "%PS_SCRIPT%"
-echo $securePass = ConvertTo-SecureString $smtpPass -AsPlainText -Force >> "%PS_SCRIPT%"
-echo $cred = New-Object System.Management.Automation.PSCredential($smtpUser, $securePass) >> "%PS_SCRIPT%"
-echo Send-MailMessage -From $smtpUser -To $to -Subject $subject -Body $body -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $cred >> "%PS_SCRIPT%"
+(
+echo $smtpServer = "%SMTP_SERVER%"
+echo $smtpPort = %SMTP_PORT%
+echo $smtpUser = "%SMTP_EMAIL%"
+echo $smtpPass = "%SMTP_PASSWORD%"
+echo $to = "%NOTIFY_EMAIL%"
+echo $subject = "[ALERTA] Fallo en backup PostgreSQL - %BACKUP_DATE%"
+echo $body = "Se produjo un error durante el backup automatico de PostgreSQL.`n`nFecha: %date% %time%`nError: !MENSAJE_ERROR!`nServidor: %COMPUTERNAME%`nBase de datos: %DB_NAME%`n`nPor favor, revisa el log en: %LOG_FILE%"
+echo $securePass = ConvertTo-SecureString $smtpPass -AsPlainText -Force
+echo $cred = New-Object System.Management.Automation.PSCredential^($smtpUser, $securePass^)
+echo Send-MailMessage -From $smtpUser -To $to -Subject $subject -Body $body -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $cred
+) > "%PS_SCRIPT%"
 
 powershell -ExecutionPolicy Bypass -File "%PS_SCRIPT%" 2>> "%LOG_FILE%"
 
