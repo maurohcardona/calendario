@@ -19,6 +19,12 @@ set "PROYECTO_DIR=C:\Users\Admin\Documents\Agenda\calendario"
 set "ENV_FILE=%PROYECTO_DIR%\.env"
 
 REM ==========================================
+REM LEER CONTRASEÑA DE POSTGRESQL DESDE .env
+REM ==========================================
+for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /i "DB_PASSWORD"') do set "PGPASSWORD=%%b"
+set "PGPASSWORD=%PGPASSWORD: =%"
+
+REM ==========================================
 REM LEER CREDENCIALES SMTP DESDE .env
 REM ==========================================
 for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /i "SMTP_HOST"') do set "SMTP_SERVER=%%b"
