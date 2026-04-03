@@ -22,7 +22,9 @@ REM ==========================================
 REM LEER CONTRASEÑA DE POSTGRESQL DESDE .env
 REM ==========================================
 for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /i "DB_PASSWORD"') do set "PGPASSWORD=%%b"
+REM Limpiar espacios y comillas
 set "PGPASSWORD=%PGPASSWORD: =%"
+set "PGPASSWORD=%PGPASSWORD:"=%"
 
 REM ==========================================
 REM LEER CREDENCIALES SMTP DESDE .env
@@ -32,11 +34,14 @@ for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /i "SMTP_PORT
 for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /i "SENDER_EMAIL"') do set "SMTP_EMAIL=%%b"
 for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /i "SENDER_PASSWORD"') do set "SMTP_PASSWORD=%%b"
 
-REM Limpiar espacios en blanco
+REM Limpiar espacios y comillas
 set "SMTP_SERVER=%SMTP_SERVER: =%"
 set "SMTP_PORT=%SMTP_PORT: =%"
 set "SMTP_EMAIL=%SMTP_EMAIL: =%"
 set "SMTP_PASSWORD=%SMTP_PASSWORD: =%"
+set "SMTP_SERVER=%SMTP_SERVER:"=%"
+set "SMTP_EMAIL=%SMTP_EMAIL:"=%"
+set "SMTP_PASSWORD=%SMTP_PASSWORD:"=%"
 
 REM ==========================================
 REM GENERAR NOMBRE DE ARCHIVO CON FECHA
