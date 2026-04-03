@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Registro de Auditoría{% endblock %}
+{% block title %}Registro de Auditoria{% endblock %}
 
 {% block content %}
 <style>
@@ -10,20 +10,20 @@
     }
     
     .audit-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-teal) 100%);
+        color: var(--color-white);
         padding: 25px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md);
         margin-bottom: 30px;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        box-shadow: var(--shadow-lg);
     }
     
     .audit-filters {
-        background: white;
+        background: var(--color-white);
         padding: 20px;
-        border-radius: 12px;
+        border-radius: var(--border-radius-md);
         margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--shadow-md);
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 15px;
@@ -36,7 +36,7 @@
     
     .filter-group label {
         font-weight: 600;
-        color: #555;
+        color: var(--color-text);
         margin-bottom: 5px;
         font-size: 14px;
     }
@@ -44,34 +44,34 @@
     .filter-group select,
     .filter-group input {
         padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
+        border: 1px solid var(--color-gray-light);
+        border-radius: var(--border-radius-sm);
         font-size: 14px;
     }
     
     .audit-entry {
-        background: white;
-        border-radius: 12px;
+        background: var(--color-white);
+        border-radius: var(--border-radius-md);
         padding: 20px;
         margin-bottom: 15px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--shadow-md);
         border-left: 4px solid;
     }
     
     .audit-entry.create {
-        border-left-color: #4caf50;
+        border-left-color: var(--color-success);
     }
     
     .audit-entry.update {
-        border-left-color: #2196F3;
+        border-left-color: var(--color-primary);
     }
     
     .audit-entry.delete {
-        border-left-color: #f44336;
+        border-left-color: var(--color-danger);
     }
     
     .audit-entry.access {
-        border-left-color: #FF9800;
+        border-left-color: var(--color-warning);
     }
     
     .entry-header {
@@ -87,28 +87,28 @@
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-        color: white;
+        color: var(--color-white);
         text-transform: uppercase;
     }
     
-    .action-badge.create { background: #4caf50; }
-    .action-badge.update { background: #2196F3; }
-    .action-badge.delete { background: #f44336; }
-    .action-badge.access { background: #FF9800; }
+    .action-badge.create { background: var(--color-success-dark); }
+    .action-badge.update { background: var(--color-primary); }
+    .action-badge.delete { background: var(--color-danger); }
+    .action-badge.access { background: var(--color-warning-dark); }
     
     .object-info {
         font-size: 16px;
         font-weight: 600;
-        color: #333;
+        color: var(--color-text);
     }
     
     .timestamp {
-        color: #999;
+        color: var(--color-gray);
         font-size: 14px;
     }
     
-    .user-info {
-        color: #667eea;
+    .user-info-audit {
+        color: var(--color-primary);
         font-weight: 600;
         font-size: 14px;
     }
@@ -120,15 +120,15 @@
     }
     
     .change-item {
-        background: #f8f9fa;
+        background: var(--color-gray-lightest);
         padding: 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm);
         font-size: 14px;
     }
     
     .change-field {
         font-weight: 600;
-        color: #555;
+        color: var(--color-text);
         margin-bottom: 5px;
     }
     
@@ -139,12 +139,12 @@
     }
     
     .old-value {
-        color: #f44336;
+        color: var(--color-danger);
         text-decoration: line-through;
     }
     
     .new-value {
-        color: #4caf50;
+        color: var(--color-success-dark);
         font-weight: 600;
     }
     
@@ -157,34 +157,34 @@
     
     .page-link {
         padding: 8px 16px;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        color: #667eea;
+        background: var(--color-white);
+        border: 1px solid var(--color-gray-light);
+        border-radius: var(--border-radius-sm);
+        color: var(--color-primary);
         text-decoration: none;
         font-weight: 500;
     }
     
     .page-link:hover {
-        background: #667eea;
-        color: white;
+        background: var(--color-primary);
+        color: var(--color-white);
     }
     
     .page-link.active {
-        background: #667eea;
-        color: white;
+        background: var(--color-primary);
+        color: var(--color-white);
     }
 </style>
 
 <div class="audit-container">
     <div class="audit-header">
-        <h1 style="margin: 0 0 10px 0;">📋 Registro de Auditoría</h1>
+        <h1 style="margin: 0 0 10px 0;">Registro de Auditoria</h1>
         <p style="margin: 0; opacity: 0.9;">Historial completo de todas las acciones realizadas en el sistema</p>
     </div>
     
     <form method="get" class="audit-filters">
         <div class="filter-group">
-            <label>Tipo de acción</label>
+            <label>Tipo de accion</label>
             <select name="action">
                 <option value="">Todas</option>
                 <option value="0" {% if action == '0' %}selected{% endif %}>Crear</option>
@@ -216,14 +216,14 @@
         </div>
         
         <div class="filter-group">
-            <label>N° Turno</label>
-            <input type="text" name="turno_id" value="{{ turno_id }}" placeholder="Número de turno">
+            <label>N Turno</label>
+            <input type="text" name="turno_id" value="{{ turno_id }}" placeholder="Numero de turno">
         </div>
         
         <div class="filter-group">
             <label>&nbsp;</label>
-            <button type="submit" style="padding: 8px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                🔍 Filtrar
+            <button type="submit" style="padding: 8px 16px; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-teal) 100%); color: var(--color-white); border: none; border-radius: var(--border-radius-sm); font-weight: 600; cursor: pointer;">
+                Filtrar
             </button>
         </div>
     </form>
@@ -232,10 +232,10 @@
     <div class="audit-entry {{ log.get_action_display|lower }}">
         <div class="entry-header">
             <span class="action-badge {{ log.get_action_display|lower }}">
-                {% if log.action == 0 %}✨ Crear
-                {% elif log.action == 1 %}✏️ Modificar
-                {% elif log.action == 2 %}🗑️ Eliminar
-                {% else %}👁️ Acceso{% endif %}
+                {% if log.action == 0 %}Crear
+                {% elif log.action == 1 %}Modificar
+                {% elif log.action == 2 %}Eliminar
+                {% else %}Acceso{% endif %}
             </span>
             
             <span class="object-info">
@@ -246,8 +246,8 @@
                 {{ log.timestamp|date:"d/m/Y H:i:s" }}
             </span>
             
-            <span class="user-info">
-                👤 {{ log.actor|default:"Sistema" }}
+            <span class="user-info-audit">
+                {{ log.actor|default:"Sistema" }}
             </span>
         </div>
         
@@ -258,9 +258,9 @@
                 <div class="change-field">{{ field|title }}</div>
                 <div class="change-values">
                     {% if values|length == 2 %}
-                        <span class="old-value">{{ values.0|default:"(vacío)" }}</span>
-                        <span>→</span>
-                        <span class="new-value">{{ values.1|default:"(vacío)" }}</span>
+                        <span class="old-value">{{ values.0|default:"(vacio)" }}</span>
+                        <span>-></span>
+                        <span class="new-value">{{ values.1|default:"(vacio)" }}</span>
                     {% else %}
                         <span>{{ values }}</span>
                     {% endif %}
@@ -271,28 +271,28 @@
         {% endif %}
     </div>
     {% empty %}
-    <div style="background: white; padding: 40px; text-align: center; border-radius: 12px; color: #999;">
-        No se encontraron registros de auditoría
+    <div style="background: var(--color-white); padding: 40px; text-align: center; border-radius: var(--border-radius-md); color: var(--color-gray);">
+        No se encontraron registros de auditoria
     </div>
     {% endfor %}
     
     {% if logs.has_other_pages %}
     <div class="pagination">
         {% if logs.has_previous %}
-            <a href="?page={{ logs.previous_page_number }}{% if action %}&action={{ action }}{% endif %}{% if model %}&model={{ model }}{% endif %}{% if user %}&user={{ user }}{% endif %}" class="page-link">← Anterior</a>
+            <a href="?page={{ logs.previous_page_number }}{% if action %}&action={{ action }}{% endif %}{% if model %}&model={{ model }}{% endif %}{% if user %}&user={{ user }}{% endif %}" class="page-link">Anterior</a>
         {% endif %}
         
-        <span class="page-link active">Página {{ logs.number }} de {{ logs.paginator.num_pages }}</span>
+        <span class="page-link active">Pagina {{ logs.number }} de {{ logs.paginator.num_pages }}</span>
         
         {% if logs.has_next %}
-            <a href="?page={{ logs.next_page_number }}{% if action %}&action={{ action }}{% endif %}{% if model %}&model={{ model }}{% endif %}{% if user %}&user={{ user }}{% endif %}" class="page-link">Siguiente →</a>
+            <a href="?page={{ logs.next_page_number }}{% if action %}&action={{ action }}{% endif %}{% if model %}&model={{ model }}{% endif %}{% if user %}&user={{ user }}{% endif %}" class="page-link">Siguiente</a>
         {% endif %}
     </div>
     {% endif %}
     
     <div style="margin-top: 30px; text-align: center;">
-        <a href="{% url 'turnos:calendario' %}" style="color: #667eea; text-decoration: none; font-weight: 500;">
-            ← Volver al calendario
+        <a href="{% url 'turnos:calendario' %}" style="color: var(--color-primary); text-decoration: none; font-weight: 500;">
+            Volver al calendario
         </a>
     </div>
 </div>

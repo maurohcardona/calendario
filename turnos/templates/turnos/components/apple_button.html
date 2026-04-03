@@ -1,0 +1,38 @@
+{# Componente de botón estilo Apple #}
+{# 
+  Uso:
+    {% include "turnos/components/apple_button.html" with 
+       text="Mi Botón" 
+       type="primary" 
+       size="md"
+       icon="✓"
+       href="/ruta/"
+       onclick="alert('click')"
+    %}
+  
+  Parámetros:
+    - text: Texto del botón (requerido)
+    - type: primary|secondary|success|danger|warning|light (default: primary)
+    - size: sm|md|lg (default: md)
+    - icon: Emoji o icono opcional (default: ninguno)
+    - href: URL si es un enlace (default: ninguno)
+    - onclick: Función JavaScript opcional (default: ninguno)
+    - extra_classes: Clases CSS adicionales (default: ninguno)
+    - block: Si es True, ocupa todo el ancho (default: False)
+#}
+
+{% if href %}
+    <a href="{{ href }}" 
+       class="apple-btn apple-btn-{{ type|default:'primary' }} {% if size %}apple-btn-{{ size }}{% endif %} {% if block %}apple-btn-block{% endif %} {{ extra_classes|default:'' }}"
+       {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+        {% if icon %}<span>{{ icon }}</span>{% endif %}
+        <span>{{ text }}</span>
+    </a>
+{% else %}
+    <button type="button"
+            class="apple-btn apple-btn-{{ type|default:'primary' }} {% if size %}apple-btn-{{ size }}{% endif %} {% if block %}apple-btn-block{% endif %} {{ extra_classes|default:'' }}"
+            {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+        {% if icon %}<span>{{ icon }}</span>{% endif %}
+        <span>{{ text }}</span>
+    </button>
+{% endif %}

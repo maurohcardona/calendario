@@ -1,6 +1,7 @@
 """
 Servicios para el procesamiento y envío de informes médicos por email
 """
+
 import os
 import shutil
 from pathlib import Path
@@ -16,11 +17,11 @@ class InformesService:
     """Servicio para gestionar el envío de informes médicos"""
 
     def __init__(self):
-        self.base_dir = Path(settings.BASE_DIR) / 'informes'
+        self.base_dir = Path(settings.BASE_DIR) / "informes"
         self.pendientes_dir = Path(settings.INFORMES_PENDIENTES_DIR)
-        self.enviados_dir = self.base_dir / 'enviados'
-        self.sin_email_dir = self.base_dir / 'sin_email'
-        self.otros_origenes_dir = self.base_dir / 'otros_origenes'
+        self.enviados_dir = self.base_dir / "enviados"
+        self.sin_email_dir = self.base_dir / "sin_email"
+        self.otros_origenes_dir = self.base_dir / "otros_origenes"
 
         # Crear directorios si no existen
         self.pendientes_dir.mkdir(parents=True, exist_ok=True)
@@ -30,13 +31,15 @@ class InformesService:
 
     def mover_archivo_guardia(self, archivo_path):
         import shutil
-        destino = self.base_dir / 'Guardia'
+
+        destino = self.base_dir / "Guardia"
         destino.mkdir(parents=True, exist_ok=True)
         shutil.move(str(archivo_path), str(destino / archivo_path.name))
 
     def mover_archivo_internacion(self, archivo_path):
         import shutil
-        destino = self.base_dir / 'Internación'
+
+        destino = self.base_dir / "Internación"
         destino.mkdir(parents=True, exist_ok=True)
         shutil.move(str(archivo_path), str(destino / archivo_path.name))
 
@@ -44,133 +47,125 @@ class InformesService:
         """
         Procesa todos los archivos PDF en la carpeta pendientes que tengan
         al menos 'horas_espera' horas de antigüedad
-        
+
         Args:
             horas_espera: Horas que deben pasar desde la creación del archivo
-        
+
         Retorna un dict con estadísticas del procesamiento
         """
         stats = {
-            'procesados': 0,
-            'enviados': 0,
-            'errores': 0,
-            'omitidos': 0,
-            'sin_email': 0,
-            'otros_origenes': 0,
-            'detalles': []
+            "procesados": 0,
+            "enviados": 0,
+            "errores": 0,
+            "omitidos": 0,
+            "sin_email": 0,
+            "otros_origenes": 0,
+            "detalles": [],
         }
-        
+
         # Buscar todos los PDFs en la carpeta pendientes
-        archivos_pdf = list(self.pendientes_dir.glob('*.pdf'))
-        
+        archivos_pdf = list(self.pendientes_dir.glob("*.pdf"))
+
         for archivo_path in archivos_pdf:
             # Verificar antigüedad del archivo
             if not self._archivo_cumple_tiempo_espera(archivo_path, horas_espera):
-                stats['omitidos'] += 1
+                stats["omitidos"] += 1
                 continue
-            stats['procesados'] += 1
+            stats["procesados"] += 1
             try:
                 resultado = self.procesar_archivo(archivo_path)
-                if resultado['exito']:
-                    stats['enviados'] += 1
-                elif resultado.get('sin_email'):
-                    stats['sin_email'] += 1
-                elif resultado.get('otro_origen'):
-                    stats['otros_origenes'] += 1
+                if resultado["exito"]:
+                    stats["enviados"] += 1
+                elif resultado.get("sin_email"):
+                    stats["sin_email"] += 1
+                elif resultado.get("otro_origen"):
+                    stats["otros_origenes"] += 1
                 else:
-                    stats['errores'] += 1
-                stats['detalles'].append(resultado)
+                    stats["errores"] += 1
+                stats["detalles"].append(resultado)
             except Exception as e:
-                stats['errores'] += 1
-                stats['detalles'].append({
-                    'archivo': archivo_path.name,
-                    'exito': False,
-                    'error': str(e)
-                })
-        
+                stats["errores"] += 1
+                stats["detalles"].append(
+                    {"archivo": archivo_path.name, "exito": False, "error": str(e)}
+                )
+
         return stats
-    
+
     def procesar_archivo(self, archivo_path):
         """
         Procesa un archivo individual: parsea el nombre, busca/crea el registro,
         envía el email y mueve el archivo
         """
-        resultado = {
-            'archivo': archivo_path.name,
-            'exito': False,
-            'error': None
-        }
-        
+        resultado = {"archivo": archivo_path.name, "exito": False, "error": None}
+
         try:
             # Parsear el nombre del archivo: [Origen]_[DNI]_[N Peticion]_[Turno].pdf
             datos = self.parsear_nombre_archivo(archivo_path.name)
             if not datos:
-                resultado['error'] = 'Formato de nombre de archivo inválido'
+                resultado["error"] = "Formato de nombre de archivo inválido"
                 return resultado
-            
-            # Solo los archivos de origen Ambulatorio se envían por mail
-                if datos['origen'] != 'Ambulatorio':
-                    resultado['error'] = f"Origen '{datos['origen']}' movido a carpeta otros_origenes (no se envía por mail)"
-                    resultado['otro_origen'] = True
-                    self.mover_archivo_otro_origen(archivo_path)
-                    return resultado
-                def mover_archivo_internacion(self, archivo_path):
-                    destino = self.base_dir / 'Internación'
-                    destino.mkdir(parents=True, exist_ok=True)
-                    archivo_path.rename(destino / archivo_path.name)
 
-                def mover_archivo_guardia(self, archivo_path):
-                    destino = self.base_dir / 'Guardia'
-                    destino.mkdir(parents=True, exist_ok=True)
-                    archivo_path.rename(destino / archivo_path.name)
-            
+            # Solo los archivos de origen Ambulatorio se envían por mail
+            # Los archivos de Internación o Guardia se eliminan directamente
+            if datos["origen"] != "Ambulatorio":
+                resultado["error"] = (
+                    f"Origen '{datos['origen']}' eliminado (no se envía por mail)"
+                )
+                resultado["otro_origen"] = True
+                archivo_path.unlink()  # Eliminar archivo directamente
+                return resultado
+
             # Buscar o crear el paciente
-            paciente = self.buscar_paciente(datos['iden'])
+            paciente = self.buscar_paciente(datos["iden"])
             if not paciente:
-                resultado['error'] = f"Paciente con identificación {datos['iden']} no encontrado"
+                resultado["error"] = (
+                    f"Paciente con identificación {datos['iden']} no encontrado"
+                )
                 self.mover_archivo_sin_email(archivo_path)
                 return resultado
-            
+
             # Validar que el paciente tenga email
             if not paciente.email:
-                resultado['error'] = f"Paciente {datos['iden']} no tiene email registrado"
-                resultado['sin_email'] = True
+                resultado["error"] = (
+                    f"Paciente {datos['iden']} no tiene email registrado"
+                )
+                resultado["sin_email"] = True
                 self.mover_archivo_sin_email(archivo_path)
                 return resultado
-            
+
             # Buscar o crear el registro del informe
             with transaction.atomic():
                 informe, created = Informes.objects.get_or_create(
                     paciente=paciente,
-                    numero_orden=datos['orden'],
-                    numero_protocolo=datos['protocolo'],
+                    numero_orden=datos["orden"],
+                    numero_protocolo=datos["protocolo"],
                     defaults={
-                        'nombre_archivo': archivo_path.name,
-                        'email_destino': paciente.email,
-                        'estado': 'PENDIENTE'
-                    }
+                        "nombre_archivo": archivo_path.name,
+                        "email_destino": paciente.email,
+                        "estado": "PENDIENTE",
+                    },
                 )
-                
+
                 # Si el informe ya fue enviado, no lo procesamos de nuevo
-                if informe.estado == 'ENVIADO' and not created:
-                    resultado['error'] = 'El informe ya fue enviado anteriormente'
+                if informe.estado == "ENVIADO" and not created:
+                    resultado["error"] = "El informe ya fue enviado anteriormente"
                     return resultado
-                
+
                 # Intentar enviar el email
                 exito_envio = self.enviar_email(informe, archivo_path)
-                
+
                 if exito_envio:
                     # Marcar como enviado
-                    informe.estado = 'ENVIADO'
+                    informe.estado = "ENVIADO"
                     informe.fecha_envio = timezone.now()
-                    informe.mensaje_error = ''
+                    informe.mensaje_error = ""
                     informe.save()
-                    
+
                     # Mover el archivo a enviados
                     self.mover_archivo_enviado(archivo_path)
-                    
-                    resultado['exito'] = True
-                    resultado['mensaje'] = f'Informe enviado a {paciente.email}'
+
+                    resultado["exito"] = True
+                    resultado["mensaje"] = f"Informe enviado a {paciente.email}"
 
                     # Envío por WhatsApp desactivado temporalmente
                     # if paciente.telefono:
@@ -181,16 +176,16 @@ class InformesService:
                     #         resultado['whatsapp_error'] = informe.whatsapp_error
                 else:
                     # Marcar como error
-                    informe.estado = 'ERROR'
+                    informe.estado = "ERROR"
                     informe.intentos_envio += 1
                     informe.save()
-                    resultado['error'] = informe.mensaje_error
-                    
+                    resultado["error"] = informe.mensaje_error
+
         except Exception as e:
-            resultado['error'] = f'Error al procesar: {str(e)}'
-        
+            resultado["error"] = f"Error al procesar: {str(e)}"
+
         return resultado
-    
+
     def parsear_nombre_archivo(self, nombre_archivo):
         """
         Parsea el nombre del archivo en formato:
@@ -203,8 +198,8 @@ class InformesService:
         """
         try:
             nombre_sin_ext = Path(nombre_archivo).stem
-            partes = [p.strip() for p in nombre_sin_ext.split('_') if p.strip()]
-            origenes_validos = ('Internacion', 'Internación', 'Guardia', 'Ambulatorio')
+            partes = [p.strip() for p in nombre_sin_ext.split("_") if p.strip()]
+            origenes_validos = ("Internacion", "Internación", "Guardia", "Ambulatorio")
             if len(partes) < 3:
                 return None
             origen = partes[0]
@@ -212,72 +207,78 @@ class InformesService:
                 return None
             iden = partes[1]
             orden = partes[2]
-            protocolo = partes[3] if len(partes) > 3 else ''
+            protocolo = partes[3] if len(partes) > 3 else ""
             return {
-                'origen': origen,
-                'iden': iden,
-                'orden': int(orden) if orden.isdigit() else orden,
-                'protocolo': protocolo,
+                "origen": origen,
+                "iden": iden,
+                "orden": int(orden) if orden.isdigit() else orden,
+                "protocolo": protocolo,
             }
         except (ValueError, IndexError):
             return None
-    
+
     def buscar_paciente(self, iden):
         """Busca un paciente por su identificación"""
         try:
             return Paciente.objects.get(iden=iden)
         except Paciente.DoesNotExist:
             return None
-    
+
     def _archivo_cumple_tiempo_espera(self, archivo_path, horas_espera):
         """
         Verifica si un archivo tiene la antigüedad mínima requerida
-        
+
         Args:
             archivo_path: Path del archivo a verificar
             horas_espera: Horas que deben haber pasado desde la creación
-        
+
         Returns:
             True si el archivo cumple el tiempo de espera, False en caso contrario
         """
         from datetime import timedelta
-        
+
         # Obtener la fecha de creación del archivo
         timestamp_creacion = archivo_path.stat().st_ctime
-        fecha_creacion = timezone.datetime.fromtimestamp(timestamp_creacion, tz=timezone.get_current_timezone())
-        
+        fecha_creacion = timezone.datetime.fromtimestamp(
+            timestamp_creacion, tz=timezone.get_current_timezone()
+        )
+
         # Calcular el tiempo transcurrido
         tiempo_transcurrido = timezone.now() - fecha_creacion
         tiempo_minimo = timedelta(hours=horas_espera)
-        
+
         return tiempo_transcurrido >= tiempo_minimo
-    
+
     def obtener_archivos_pendientes_info(self, horas_espera=24):
         """
         Retorna información sobre los archivos pendientes y su estado
         """
         from datetime import timedelta
-        
+
         archivos_info = []
-        archivos_pdf = list(self.pendientes_dir.glob('*.pdf'))
-        
+        archivos_pdf = list(self.pendientes_dir.glob("*.pdf"))
+
         for archivo_path in archivos_pdf:
             timestamp_creacion = archivo_path.stat().st_ctime
-            fecha_creacion = timezone.datetime.fromtimestamp(timestamp_creacion, tz=timezone.get_current_timezone())
+            fecha_creacion = timezone.datetime.fromtimestamp(
+                timestamp_creacion, tz=timezone.get_current_timezone()
+            )
             tiempo_transcurrido = timezone.now() - fecha_creacion
             tiempo_minimo = timedelta(hours=horas_espera)
             tiempo_restante = tiempo_minimo - tiempo_transcurrido
-            
-            archivos_info.append({
-                'nombre': archivo_path.name,
-                'fecha_creacion': fecha_creacion,
-                'horas_transcurridas': tiempo_transcurrido.total_seconds() / 3600,
-                'listo_para_enviar': tiempo_transcurrido >= tiempo_minimo,
-                'horas_restantes': max(0, tiempo_restante.total_seconds() / 3600)
-            })
-        
+
+            archivos_info.append(
+                {
+                    "nombre": archivo_path.name,
+                    "fecha_creacion": fecha_creacion,
+                    "horas_transcurridas": tiempo_transcurrido.total_seconds() / 3600,
+                    "listo_para_enviar": tiempo_transcurrido >= tiempo_minimo,
+                    "horas_restantes": max(0, tiempo_restante.total_seconds() / 3600),
+                }
+            )
+
         return archivos_info
-    
+
     def enviar_email(self, informe, archivo_path):
         """
         Envía el email con el PDF adjunto
@@ -285,8 +286,8 @@ class InformesService:
         """
         try:
             # Preparar el email
-            asunto = f'Informe Médico - Petición {informe.numero_orden} - Turno {informe.numero_protocolo}'
-            
+            asunto = f"Informe Médico - Petición {informe.numero_orden} - Turno {informe.numero_protocolo}"
+
             cuerpo = f"""
 Estimado/a {informe.paciente.nombre} {informe.paciente.apellido},
 
@@ -294,7 +295,7 @@ Adjuntamos su informe médico correspondiente a:
 
 - N° de Petición: {informe.numero_orden}
 - N° de Turno: {informe.numero_protocolo}
-- Fecha: {timezone.now().strftime('%d/%m/%Y')}
+- Fecha: {timezone.now().strftime("%d/%m/%Y")}
 
 Por favor, conserve este documento para su historia clínica.
 
@@ -305,7 +306,7 @@ Para cualquier consulta puede contactarnos:
 
 Saludos cordiales.
             """.strip()
-            
+
             # Crear el mensaje de email
             email = EmailMessage(
                 subject=asunto,
@@ -313,26 +314,26 @@ Saludos cordiales.
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 to=[informe.email_destino],
             )
-            
+
             # Adjuntar el PDF
-            with open(archivo_path, 'rb') as pdf_file:
+            with open(archivo_path, "rb") as pdf_file:
                 email.attach(
                     filename=archivo_path.name,
                     content=pdf_file.read(),
-                    mimetype='application/pdf'
+                    mimetype="application/pdf",
                 )
-            
+
             # Enviar el email
             email.send(fail_silently=False)
-            
+
             return True
-            
+
         except Exception as e:
             # Guardar el error en el informe
-            informe.mensaje_error = f'Error al enviar email: {str(e)}'
+            informe.mensaje_error = f"Error al enviar email: {str(e)}"
             informe.save()
             return False
-    
+
     def _formatear_telefono_whatsapp(self, telefono):
         """
         Convierte el teléfono local almacenado en formato Twilio WhatsApp.
@@ -341,10 +342,10 @@ Saludos cordiales.
         El código de país se lee de WHATSAPP_CODIGO_PAIS (default '+549' Argentina móvil).
         """
         numero = str(telefono).strip()
-        if numero.startswith('+'):
-            return f'whatsapp:{numero}'
-        codigo_pais = getattr(settings, 'WHATSAPP_CODIGO_PAIS', '+549')
-        return f'whatsapp:{codigo_pais}{numero}'
+        if numero.startswith("+"):
+            return f"whatsapp:{numero}"
+        codigo_pais = getattr(settings, "WHATSAPP_CODIGO_PAIS", "+549")
+        return f"whatsapp:{codigo_pais}{numero}"
 
     def enviar_whatsapp(self, informe, paciente):
         """
@@ -354,18 +355,20 @@ Saludos cordiales.
         Retorna True si el envío fue exitoso, False en caso contrario.
         """
         try:
-            account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
-            auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+            account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
+            auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
 
             if not account_sid or not auth_token:
-                informe.whatsapp_error = 'Twilio no configurado (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN ausentes)'
+                informe.whatsapp_error = "Twilio no configurado (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN ausentes)"
                 informe.save()
                 return False
 
             from twilio.rest import Client
 
             destino = self._formatear_telefono_whatsapp(paciente.telefono)
-            remitente = getattr(settings, 'TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')
+            remitente = getattr(
+                settings, "TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886"
+            )
 
             mensaje = (
                 f"Estimado/a {paciente.nombre} {paciente.apellido},\n\n"
@@ -385,12 +388,12 @@ Saludos cordiales.
 
             informe.whatsapp_enviado = True
             informe.whatsapp_telefono = destino
-            informe.whatsapp_error = ''
+            informe.whatsapp_error = ""
             informe.save()
             return True
 
         except Exception as e:
-            informe.whatsapp_error = f'Error al enviar WhatsApp: {str(e)}'
+            informe.whatsapp_error = f"Error al enviar WhatsApp: {str(e)}"
             informe.save()
             return False
 
@@ -398,14 +401,14 @@ Saludos cordiales.
         """Mueve archivos de Internacion o Guardia a otros_origenes"""
         try:
             destino = self.otros_origenes_dir / archivo_path.name
-            
+
             if destino.exists():
-                timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+                timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
                 nombre_base = archivo_path.stem
                 destino = self.otros_origenes_dir / f"{nombre_base}_{timestamp}.pdf"
-            
+
             shutil.move(str(archivo_path), str(destino))
-            
+
         except Exception as e:
             print(f"Error al mover archivo de otro origen {archivo_path.name}: {e}")
 
@@ -413,15 +416,15 @@ Saludos cordiales.
         """Mueve el archivo de pendientes a sin_email"""
         try:
             destino = self.sin_email_dir / archivo_path.name
-            
+
             # Si ya existe, agregar timestamp
             if destino.exists():
-                timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+                timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
                 nombre_base = archivo_path.stem
                 destino = self.sin_email_dir / f"{nombre_base}_{timestamp}.pdf"
-            
+
             shutil.move(str(archivo_path), str(destino))
-            
+
         except Exception as e:
             print(f"Error al mover archivo sin email {archivo_path.name}: {e}")
 
@@ -429,27 +432,82 @@ Saludos cordiales.
         """Mueve el archivo de pendientes a enviados"""
         try:
             destino = self.enviados_dir / archivo_path.name
-            
+
             # Si ya existe en enviados, agregar timestamp
             if destino.exists():
-                timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+                timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
                 nombre_base = archivo_path.stem
                 destino = self.enviados_dir / f"{nombre_base}_{timestamp}.pdf"
-            
+
             shutil.move(str(archivo_path), str(destino))
-            
+
         except Exception as e:
             print(f"Error al mover archivo {archivo_path.name}: {e}")
             # No lanzamos la excepción para no bloquear el flujo
-    
+
+    def mover_pdfs_sin_email_a_pendientes(self, dni: str) -> tuple[int, list[str]]:
+        """
+        Mueve todos los PDFs de un DNI desde sin_email/ a pendientes/.
+
+        Args:
+            dni: DNI del paciente cuyos archivos se deben mover.
+
+        Returns:
+            Tupla con (cantidad de archivos movidos, lista de errores si hubo).
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        archivos_movidos = 0
+        errores = []
+
+        if not self.sin_email_dir.exists():
+            return archivos_movidos, errores
+
+        for archivo in self.sin_email_dir.iterdir():
+            if not archivo.is_file() or archivo.suffix.lower() != ".pdf":
+                continue
+
+            # Parsear nombre del archivo
+            datos = self.parsear_nombre_archivo(archivo.name)
+            if not datos:
+                continue
+
+            # Verificar si el DNI coincide
+            if datos["iden"] != dni:
+                continue
+
+            try:
+                destino = self.pendientes_dir / archivo.name
+
+                # Si ya existe en pendientes, agregar timestamp
+                if destino.exists():
+                    timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+                    nombre_base = archivo.stem
+                    destino = self.pendientes_dir / f"{nombre_base}_{timestamp}.pdf"
+
+                shutil.move(str(archivo), str(destino))
+                archivos_movidos += 1
+                logger.info(
+                    f"PDF movido de sin_email a pendientes: {archivo.name} -> {destino.name}"
+                )
+
+            except Exception as e:
+                error_msg = f"Error moviendo {archivo.name}: {str(e)}"
+                errores.append(error_msg)
+                logger.error(error_msg)
+
+        return archivos_movidos, errores
+
     def obtener_estadisticas(self):
         """Retorna estadísticas de los informes"""
         from django.db.models import Count
-        
+
         return {
-            'total': Informes.objects.count(),
-            'pendientes': Informes.objects.filter(estado='PENDIENTE').count(),
-            'enviados': Informes.objects.filter(estado='ENVIADO').count(),
-            'errores': Informes.objects.filter(estado='ERROR').count(),
-            'por_estado': Informes.objects.values('estado').annotate(count=Count('id'))
+            "total": Informes.objects.count(),
+            "pendientes": Informes.objects.filter(estado="PENDIENTE").count(),
+            "enviados": Informes.objects.filter(estado="ENVIADO").count(),
+            "errores": Informes.objects.filter(estado="ERROR").count(),
+            "por_estado": Informes.objects.values("estado").annotate(count=Count("id")),
         }

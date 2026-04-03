@@ -1,0 +1,50 @@
+{% comment %}
+Componente de paginación reutilizable.
+
+Parámetros:
+  - page_obj: Objeto Page de Django Paginator
+  - filtro: Filtro activo actual (todos, coordinados, pendientes)
+  - agenda: (opcional) ID de agenda para preservar en la URL
+{% endcomment %}
+
+{% if page_obj.has_other_pages %}
+<div class="apple-pagination">
+    <div class="apple-pagination-info">
+        Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }} turnos
+    </div>
+    
+    <div class="apple-pagination-controls">
+        {% if page_obj.has_previous %}
+            <a href="?filtro={{ filtro }}&page=1{% if agenda %}&agenda={{ agenda }}{% endif %}" 
+               class="apple-pagination-btn" title="Primera página">
+                &laquo; Primera
+            </a>
+            <a href="?filtro={{ filtro }}&page={{ page_obj.previous_page_number }}{% if agenda %}&agenda={{ agenda }}{% endif %}" 
+               class="apple-pagination-btn" title="Página anterior">
+                &lsaquo; Anterior
+            </a>
+        {% else %}
+            <span class="apple-pagination-btn disabled">&laquo; Primera</span>
+            <span class="apple-pagination-btn disabled">&lsaquo; Anterior</span>
+        {% endif %}
+        
+        <span class="apple-pagination-current">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?filtro={{ filtro }}&page={{ page_obj.next_page_number }}{% if agenda %}&agenda={{ agenda }}{% endif %}" 
+               class="apple-pagination-btn" title="Página siguiente">
+                Siguiente &rsaquo;
+            </a>
+            <a href="?filtro={{ filtro }}&page={{ page_obj.paginator.num_pages }}{% if agenda %}&agenda={{ agenda }}{% endif %}" 
+               class="apple-pagination-btn" title="Última página">
+                Última &raquo;
+            </a>
+        {% else %}
+            <span class="apple-pagination-btn disabled">Siguiente &rsaquo;</span>
+            <span class="apple-pagination-btn disabled">Última &raquo;</span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

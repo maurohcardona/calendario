@@ -1,0 +1,45 @@
+{# Componente de tarjeta estilo Apple #}
+{# 
+  Uso:
+    {% include "turnos/components/apple_card.html" with 
+       title="Título de la Card"
+       content="Contenido aquí"
+       hover=True
+       footer="Contenido del footer"
+    %}
+  
+  O con contenido complejo usando {% block %}:
+    <div class="apple-card">
+      <div class="apple-card-header">
+        <h3 class="apple-card-title">{{ title }}</h3>
+      </div>
+      <div class="apple-card-body">
+        <!-- Tu contenido personalizado aquí -->
+      </div>
+    </div>
+  
+  Parámetros:
+    - title: Título de la tarjeta (opcional)
+    - content: Contenido del cuerpo (opcional, puede usar HTML)
+    - hover: Si True, añade efecto hover (default: False)
+    - footer: Contenido del pie de tarjeta (opcional)
+    - extra_classes: Clases CSS adicionales (default: ninguno)
+#}
+
+<div class="apple-card {% if hover %}apple-card-hover{% endif %} {{ extra_classes|default:'' }}">
+    {% if title %}
+    <div class="apple-card-header">
+        <h3 class="apple-card-title">{{ title }}</h3>
+    </div>
+    {% endif %}
+    
+    <div class="apple-card-body">
+        {{ content|safe }}
+    </div>
+    
+    {% if footer %}
+    <div class="apple-card-footer">
+        {{ footer|safe }}
+    </div>
+    {% endif %}
+</div>

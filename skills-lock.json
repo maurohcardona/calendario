@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "skills": {
+    "django-admin": {
+      "source": "ristemingov/django-claude-setup",
+      "sourceType": "github",
+      "computedHash": "3cb0633da56b744948d61a91f85ddd2f5f10a736f7baca6564f91ce2b34236b4"
+    },
+    "django-application": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "computedHash": "fe37d75854fec0db2574adac465ade46d463a667e098b77d4f9af33accb7ba08"
+    },
+    "django-auth": {
+      "source": "ristemingov/django-claude-setup",
+      "sourceType": "github",
+      "computedHash": "bfebc7e684739f954c091d80bf36cc8e5accdfc5d758345e4313340735a9ce05"
+    },
+    "django-forms": {
+      "source": "kjnez/claude-code-django",
+      "sourceType": "github",
+      "computedHash": "b62a174ab918b81faa442f706881e4cda421f13ce2a73237bff1fadf84dc252a"
+    },
+    "django-models": {
+      "source": "ristemingov/django-claude-setup",
+      "sourceType": "github",
+      "computedHash": "2c816ac158091d75894aa1d1d09f1e91609c2f3df29ecaaf0eed43feff25ce9b"
+    },
+    "django-templates": {
+      "source": "kjnez/claude-code-django",
+      "sourceType": "github",
+      "computedHash": "0f3370f6c42d21746314ecdfa3a56993c02fee6739fcaae8a57670c8ffc33e8a"
+    },
+    "django-views": {
+      "source": "ristemingov/django-claude-setup",
+      "sourceType": "github",
+      "computedHash": "4633e309db3d4e43d8505b0c9d17fced996b7196b6f96bf03760186b86a9f377"
+    },
+    "refactordjango": {
+      "source": "agusabas/django-skills",
+      "sourceType": "github",
+      "computedHash": "31009eeeeed045ee62b663d5c367f912673baa23a4c5a749385f146021086074"
+    }
+  }
+}

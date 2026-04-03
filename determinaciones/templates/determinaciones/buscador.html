@@ -1,39 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="max-width: 1200px; margin: 0 auto;">
-    <h2 style="color: var(--text-light); margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
-        🔍 Buscador de Determinaciones
+<div class="stats-container">
+    <h2 class="stats-title">
+        Buscador de Determinaciones
     </h2>
 
     <!-- Buscador -->
-    <div style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
-        <label style="color: var(--text-light); font-weight: 600; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">
-            Buscar Determinación
-        </label>
-        <div style="position: relative;">
+    <div class="stats-card">
+        <label class="stats-label">Buscar Determinación</label>
+        <div class="stats-relative">
             <input 
                 type="text" 
                 id="inputBuscador" 
+                class="stats-search-input"
                 placeholder="Escriba para buscar determinación simple o compleja..." 
                 autocomplete="off"
-                style="width: 100%; background: #ffffff; border: 2px solid var(--accent); color: var(--text-light); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: 700;"
             />
-            <div 
-                id="resultadosBuscador" 
-                style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; margin-top: 0.25rem; max-height: 400px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.3);">
-            </div>
+            <div id="resultadosBuscador" class="stats-search-results"></div>
         </div>
     </div>
 
     <!-- Resultados -->
-    <div id="seccionResultados" style="display: none;">
+    <div id="seccionResultados" class="stats-hidden">
         <!-- Información de la determinación seleccionada -->
-        <div style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
-            <h3 style="color: var(--accent); margin: 0 0 1rem 0; font-size: 1.3rem;">
-                📊 Determinación Seleccionada
-            </h3>
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.75rem 1.5rem; color: var(--text-light);">
+        <div class="stats-card">
+            <h3 class="stats-section-title">Determinación Seleccionada</h3>
+            <div class="stats-det-grid">
                 <strong>Código:</strong>
                 <span id="detCodigo">-</span>
                 <strong>Nombre:</strong>
@@ -44,73 +37,62 @@
         </div>
 
         <!-- Estadísticas -->
-        <div style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(200, 155, 143, 0.15);">
-            <h3 style="color: var(--accent); margin: 0 0 1rem 0; font-size: 1.3rem;">
-                📈 Estadísticas de Uso
-            </h3>
+        <div class="stats-card">
+            <h3 class="stats-section-title">Estadísticas de Uso</h3>
             
             <!-- Selector de rango de fechas -->
-            <div style="background: rgba(200, 155, 143, 0.08); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(200, 155, 143, 0.2);">
-                <div style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <label for="fechaDesde" style="display: block; color: var(--text-light); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;">
-                            📅 Fecha Desde
+            <div class="stats-date-selector">
+                <div class="stats-date-controls">
+                    <div class="stats-date-field">
+                        <label for="fechaDesde" class="stats-date-label">
+                            Fecha Desde
                         </label>
                         <input 
                             type="date" 
                             id="fechaDesde" 
-                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 6px; font-size: 1rem; font-weight: 500; background: #ffffff; color: var(--text-light);"
+                            class="stats-date-input"
                         />
                     </div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <label for="fechaHasta" style="display: block; color: var(--text-light); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;">
-                            📅 Fecha Hasta
+                    <div class="stats-date-field">
+                        <label for="fechaHasta" class="stats-date-label">
+                            Fecha Hasta
                         </label>
                         <input 
                             type="date" 
                             id="fechaHasta" 
-                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--accent); border-radius: 6px; font-size: 1rem; font-weight: 500; background: #ffffff; color: var(--text-light);"
+                            class="stats-date-input"
                         />
                     </div>
                     <button 
                         id="btnActualizarEstadisticas"
                         onclick="actualizarEstadisticas()"
-                        style="padding: 0.75rem 1.5rem; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 1rem; transition: all 0.3s ease; white-space: nowrap;"
-                        onmouseover="this.style.background='rgba(200, 155, 143, 0.8)'"
-                        onmouseout="this.style.background='var(--accent)'"
+                        class="stats-update-btn"
                     >
-                        🔍 Actualizar
+                        Actualizar
                     </button>
                 </div>
             </div>
             
-            <div style="background: linear-gradient(135deg, rgba(200, 155, 143, 0.1), rgba(200, 155, 143, 0.05)); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
-                <div style="font-size: 0.9rem; color: rgba(200, 155, 143, 0.8); font-weight: 600; margin-bottom: 0.5rem;">
-                    TOTAL DE TURNOS
-                </div>
-                <div id="totalTurnos" style="font-size: 3rem; color: var(--accent); font-weight: 700;">
-                    0
-                </div>
-                <div id="rangoFechas" style="font-size: 0.85rem; color: rgba(200, 155, 143, 0.7); margin-top: 0.5rem; font-weight: 500;">
-                </div>
+            <div class="stats-total-display">
+                <div class="stats-total-label">TOTAL DE TURNOS</div>
+                <div id="totalTurnos" class="stats-total-number">0</div>
+                <div id="rangoFechas" class="stats-total-range"></div>
             </div>
 
-            <div id="loadingEstadisticas" style="text-align: center; color: var(--accent); padding: 2rem; display: none;">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⏳</div>
+            <div id="loadingEstadisticas" class="stats-loading">
+                <div class="stats-loading-icon">⏳</div>
                 <div>Cargando estadísticas...</div>
             </div>
 
             <div id="contenedorPorDia">
-                <h4 style="color: var(--text-light); margin: 0 0 1rem 0; font-size: 1.1rem; font-weight: 600;">
-                    Turnos por Día
-                </h4>
-                <div id="listaPorDia" style="max-height: 400px; overflow-y: auto;">
+                <h4 class="stats-subsection-title">Turnos por Día</h4>
+                <div id="listaPorDia" class="stats-day-list">
                     <!-- Se llenará con JavaScript -->
                 </div>
             </div>
 
-            <div id="sinResultados" style="text-align: center; color: rgba(200, 155, 143, 0.6); padding: 2rem; display: none;">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📭</div>
+            <div id="sinResultados" class="stats-empty">
+                <div class="stats-empty-icon">📭</div>
                 <div>No se encontraron turnos con esta determinación</div>
             </div>
         </div>
@@ -160,25 +142,24 @@ document.getElementById('inputBuscador').addEventListener('input', async functio
         let tipoBadge = '';
         let tipoTexto = '';
         if (item.tipo === 'perfil') {
-            tipoBadge = '<span style="background: #4caf50; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">PERFIL</span>';
+            tipoBadge = '<span class="stats-badge stats-badge-perfil">PERFIL</span>';
             tipoTexto = 'Perfil';
         } else if (item.tipo === 'compleja') {
-            tipoBadge = '<span style="background: #2196f3; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; font-weight: 600;">COMPLEJA</span>';
+            tipoBadge = '<span class="stats-badge stats-badge-compleja">COMPLEJA</span>';
             tipoTexto = 'Determinación Compleja';
         } else {
             tipoTexto = 'Determinación Simple';
         }
         
         return `
-            <div class="resultado-item" 
+            <div class="stats-result-item" 
                  data-codigo="${item.codigo}" 
                  data-nombre="${item.nombre}" 
-                 data-tipo="${tipoTexto}"
-                 style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(200, 155, 143, 0.2); transition: background 0.2s;">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
+                 data-tipo="${tipoTexto}">
+                <div class="stats-flex-between">
                     <div>
-                        <span style="color: var(--accent); font-weight: bold; font-size: 1rem;">${item.codigo}</span> - 
-                        <span style="color: var(--text-light); font-size: 1rem;">${item.nombre}</span>
+                        <span class="stats-result-code">${item.codigo}</span> - 
+                        <span class="stats-result-name">${item.nombre}</span>
                     </div>
                     ${tipoBadge}
                 </div>
@@ -188,14 +169,8 @@ document.getElementById('inputBuscador').addEventListener('input', async functio
     
     resultados.style.display = 'block';
     
-    // Agregar eventos a los resultados
-    resultados.querySelectorAll('.resultado-item').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            this.style.background = 'rgba(200, 155, 143, 0.2)';
-        });
-        item.addEventListener('mouseleave', function() {
-            this.style.background = 'transparent';
-        });
+    // Agregar eventos click a los resultados
+    resultados.querySelectorAll('.stats-result-item').forEach(item => {
         item.addEventListener('click', function() {
             seleccionarDeterminacion({
                 codigo: this.dataset.codigo,
@@ -275,9 +250,9 @@ async function cargarEstadisticas() {
                 const listaPorDia = document.getElementById('listaPorDia');
                 
                 listaPorDia.innerHTML = data.por_dia.map(dia => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(200, 155, 143, 0.05); border-left: 4px solid var(--accent); margin-bottom: 0.5rem; border-radius: 4px;">
-                        <span style="color: var(--text-light); font-weight: 600;">${dia.fecha}</span>
-                        <span style="background: var(--accent); color: #fff; padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 700; font-size: 0.95rem;">${dia.cantidad}</span>
+                    <div class="stats-day-item">
+                        <span class="stats-day-date">${dia.fecha}</span>
+                        <span class="stats-day-count">${dia.cantidad}</span>
                     </div>
                 `).join('');
             } else {
@@ -300,10 +275,4 @@ async function actualizarEstadisticas() {
 // Precargar determinaciones al cargar la página
 cargarDeterminaciones();
 </script>
-
-<style>
-.resultado-item:last-child {
-    border-bottom: none;
-}
-</style>
 {% endblock %}
