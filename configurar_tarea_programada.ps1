@@ -1,4 +1,4 @@
-﻿#Requires -RunAsAdministrator
+﻿﻿#Requires -RunAsAdministrator
 
 <#
 .SYNOPSIS
@@ -163,12 +163,6 @@ if (-not $Credential) {
     exit 1
 }
 
-# 4. Principal (usuario que ejecuta)
-$Principal = New-ScheduledTaskPrincipal `
-    -UserId $Credential.UserName `
-    -LogonType Password `
-    -RunLevel Highest
-
 Write-Host ""
 Write-Host "✓ Credenciales recibidas correctamente" -ForegroundColor Green
 
@@ -185,9 +179,9 @@ try {
         -Action $Action `
         -Trigger $Trigger `
         -Settings $Settings `
-        -Principal $Principal `
         -User $Credential.UserName `
         -Password $Credential.GetNetworkCredential().Password `
+        -RunLevel Highest `
         -Force | Out-Null
     
     Write-Host ""
