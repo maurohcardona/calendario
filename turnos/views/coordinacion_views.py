@@ -101,6 +101,20 @@ def precoordinacion_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
         email = request.POST.get("email", "")
         observaciones_paciente = request.POST.get("observaciones_paciente", "")
 
+        # Validar que el DNI no esté vacío
+        if not dni_nuevo:
+            from django.contrib import messages
+
+            messages.error(request, "El DNI es obligatorio y no puede estar vacío")
+            agendas = Agenda.objects.all()
+            context = {
+                "turno": turno,
+                "paciente": paciente_data,
+                "agendas": agendas,
+                "es_precoordinacion": True,
+            }
+            return render(request, "turnos/precoordinacion_turno.html", context)
+
         # Mapear sexo a opciones del modelo Paciente
         sexo_map = {
             "Hombre": "Masculino",

@@ -67,7 +67,8 @@ Contextos de uso:
                     <div id="pacienteStatus" class="apple-status"></div>
                 {% else %}
                     <input type="text" 
-                           value="{% if paciente %}{{ paciente.dni }}{% elif turno %}{{ turno.paciente_dni }}{% endif %}" 
+                           name="dni"
+                           value="{% if paciente %}{{ paciente.dni }}{% elif turno %}{{ turno.dni.iden }}{% endif %}" 
                            readonly 
                            class="apple-input apple-input-dni" />
                 {% endif %}
