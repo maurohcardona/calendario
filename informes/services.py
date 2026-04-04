@@ -146,6 +146,22 @@ class InformesService:
                     },
                 )
 
+                # Validar que el informe tenga un email_destino válido
+                # (puede ser None/vacío si fue creado cuando el paciente no tenía email)
+                if not informe.email_destino or informe.email_destino == "none":
+                    # Actualizar el email si el paciente ahora lo tiene
+                    if paciente.email:
+                        informe.email_destino = paciente.email
+                        informe.save()
+                    else:
+                        # El paciente sigue sin email, mover a sin_email
+                        resultado["error"] = (
+                            f"Informe existente sin email válido para paciente {datos['iden']}"
+                        )
+                        resultado["sin_email"] = True
+                        self.mover_archivo_sin_email(archivo_path)
+                        return resultado
+
                 # Si el informe ya fue enviado, no lo procesamos de nuevo
                 if informe.estado == "ENVIADO" and not created:
                     resultado["error"] = "El informe ya fue enviado anteriormente"
@@ -284,6 +300,12 @@ class InformesService:
         Envía el email con el PDF adjunto
         Retorna True si el envío fue exitoso, False en caso contrario
         """
+        # Validación de seguridad: email destino debe ser válido
+        if not informe.email_destino or informe.email_destino == "none":
+            informe.mensaje_error = "Email destino inválido o vacío"
+            informe.save()
+            return False
+
         try:
             # Preparar el email
             asunto = f"Informe Médico - Petición {informe.numero_orden} - Turno {informe.numero_protocolo}"
