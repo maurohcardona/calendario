@@ -127,14 +127,25 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo %date% %time% - Procesamiento de informes completado >> "%LOG_FILE%"
 echo %date% %time% - BACKUP COMPLETADO EXITOSAMENTE >> "%LOG_FILE%"
-echo ============================================ >> "%LOG_FILE%"
-goto :fin
+REM Ir a notificar siempre (exito o error)
+goto :notificar
 
 REM ==========================================
-REM NOTIFICACION POR EMAIL (solo si hay error)
+REM NOTIFICACION POR EMAIL (SIEMPRE)
 REM ==========================================
 :notificar
-echo Enviando notificacion de error por email...
+REM Determinar tipo de notificacion
+if "%HAY_ERROR%"=="1" (
+    echo Enviando notificacion de ERROR por email...
+    set "EMAIL_SUBJECT=[ERROR] Backup y Procesamiento de Informes - %BACKUP_DATE%"
+    set "EMAIL_PRIORITY=High"
+    set "EMAIL_BODY=Se produjo un error durante el proceso automatico.`n`nFecha: %date% %time%`nError: !MENSAJE_ERROR!`nServidor: %COMPUTERNAME%`nBase de datos: %DB_NAME%`n`nPor favor, revisa el log en: %LOG_FILE%"
+) else (
+    echo Enviando notificacion de EXITO por email...
+    set "EMAIL_SUBJECT=[EXITO] Backup y Procesamiento de Informes - %BACKUP_DATE%"
+    set "EMAIL_PRIORITY=Normal"
+    set "EMAIL_BODY=El proceso automatico se ejecuto exitosamente:`n`n=== BACKUP POSTGRESQL ===`nBase de datos: %DB_NAME%`nArchivo: %BACKUP_FILE%`nTamano: %BACKUP_SIZE% bytes`nUbicacion local: %BACKUP_DIR%`n`n=== GOOGLE DRIVE ===`nSubido exitosamente a: %GDRIVE_FOLDER%/`nBackups antiguos eliminados (^>%DIAS_RETENCION% dias)`n`n=== PROCESAMIENTO DE INFORMES ===`nInformes procesados correctamente`n`n=== DETALLES ===`nFecha: %date%`nHora: %time%`nServidor: %COMPUTERNAME%`n`n---`nMensaje automatico del sistema de backups"
+)
 
 REM Crear script PowerShell temporal para enviar email
 set "PS_SCRIPT=%TEMP%\send_email.ps1"
@@ -145,17 +156,18 @@ echo $smtpPort = %SMTP_PORT%
 echo $smtpUser = "%SMTP_EMAIL%"
 echo $smtpPass = "%SMTP_PASSWORD%"
 echo $to = "%NOTIFY_EMAIL%"
-echo $subject = "[ALERTA] Fallo en backup PostgreSQL - %BACKUP_DATE%"
-echo $body = "Se produjo un error durante el backup automatico de PostgreSQL.`n`nFecha: %date% %time%`nError: !MENSAJE_ERROR!`nServidor: %COMPUTERNAME%`nBase de datos: %DB_NAME%`n`nPor favor, revisa el log en: %LOG_FILE%"
+echo $subject = "!EMAIL_SUBJECT!"
+echo $priority = "!EMAIL_PRIORITY!"
+echo $body = "!EMAIL_BODY!"
 echo $securePass = ConvertTo-SecureString $smtpPass -AsPlainText -Force
 echo $cred = New-Object System.Management.Automation.PSCredential^($smtpUser, $securePass^)
-echo Send-MailMessage -From $smtpUser -To $to -Subject $subject -Body $body -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $cred
+echo Send-MailMessage -From $smtpUser -To $to -Subject $subject -Body $body -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $cred -Priority $priority -Encoding UTF8
 ) > "%PS_SCRIPT%"
 
 powershell -ExecutionPolicy Bypass -File "%PS_SCRIPT%" 2>> "%LOG_FILE%"
 
 if %ERRORLEVEL% EQU 0 (
-    echo %date% %time% - Notificacion de error enviada a %NOTIFY_EMAIL% >> "%LOG_FILE%"
+    echo %date% %time% - Notificacion enviada a %NOTIFY_EMAIL% >> "%LOG_FILE%"
 ) else (
     echo %date% %time% - ERROR al enviar notificacion por email >> "%LOG_FILE%"
 )
