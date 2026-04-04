@@ -116,7 +116,7 @@ REM ==========================================
 REM PASO 4: PROCESAMIENTO DE INFORMES DJANGO
 REM ==========================================
 cd /d "%PROYECTO_DIR%"
-uv run python manage.py procesar_informes --horas 0 2>> "%LOG_FILE%"
+"C:\Users\Admin\.local\bin\uv.exe" run python manage.py procesar_informes --horas 0 2>> "%LOG_FILE%"
 
 if %ERRORLEVEL% NEQ 0 (
     set "HAY_ERROR=1"
