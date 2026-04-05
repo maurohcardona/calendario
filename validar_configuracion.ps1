@@ -117,18 +117,14 @@ Write-Host ""
 # ==========================================
 Write-Host "5. Diagnóstico de unidad I:\..." -ForegroundColor Yellow
 
-try {
-    $NetUseOutput = net use I: 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "   ℹ Unidad I:\ está mapeada (uso manual OK)" -ForegroundColor Cyan
-        $NetUseOutput | Select-String "Nombre remoto" | ForEach-Object {
-            Write-Host "   → $_" -ForegroundColor Gray
-        }
-    } else {
-        Write-Host "   ℹ Unidad I:\ no está mapeada actualmente" -ForegroundColor Cyan
+$NetUseOutput = net use I: 2>&1
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "   ℹ Unidad I:\ está mapeada (uso manual OK)" -ForegroundColor Cyan
+    $NetUseOutput | Select-String "Nombre remoto" | ForEach-Object {
+        Write-Host "   → $_" -ForegroundColor Gray
     }
-} catch {
-    Write-Host "   ℹ No se pudo verificar estado de I:\" -ForegroundColor Cyan
+} else {
+    Write-Host "   ℹ Unidad I:\ no está mapeada actualmente" -ForegroundColor Cyan
 }
 
 Write-Host ""
