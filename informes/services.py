@@ -197,6 +197,11 @@ class InformesService:
                     informe.save()
                     resultado["error"] = informe.mensaje_error
 
+                    # Si el error es email invalido/vacio, mover a sin_email
+                    if informe.mensaje_error == "Email destino inválido o vacío":
+                        resultado["sin_email"] = True
+                        self.mover_archivo_sin_email(archivo_path)
+
         except Exception as e:
             resultado["error"] = f"Error al procesar: {str(e)}"
 
