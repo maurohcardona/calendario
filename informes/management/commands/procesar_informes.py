@@ -80,6 +80,11 @@ class Command(BaseCommand):
                     )
                 )
 
+            if resultados["sin_email"] > 0:
+                self.stdout.write(
+                    self.style.WARNING(f"  - Sin email: {resultados['sin_email']}")
+                )
+
             # Mostrar detalles
             if resultados["detalles"]:
                 self.stdout.write("")
