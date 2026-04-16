@@ -169,9 +169,21 @@
         </div>
         
         <div class="campo">
-            <div class="campo-label">Hora:</div>
-            <div class="campo-valor">{{ turno.hora }}</div>
+            <div class="campo-label">Fecha de Registro:</div>
+            <div class="campo-valor">{{ turno.creado|date:"d/m/Y" }}</div>
         </div>
+
+        <div class="campo">
+            <div class="campo-label">Hora de Registro:</div>
+            <div class="campo-valor">{{ turno.creado|date:"H:i:s" }}</div>
+        </div>
+
+        {% if turno.usuario %}
+        <div class="campo">
+            <div class="campo-label">Usuario que Genero el Turno:</div>
+            <div class="campo-valor">{{ turno.usuario.username }}</div>
+        </div>
+        {% endif %}
         
         <div class="campo">
             <div class="campo-label">Estado:</div>
@@ -292,20 +304,18 @@
         
         <div class="campo">
             <div class="campo-label">Fecha de Coordinacion:</div>
-            <div class="campo-valor">{{ coordinacion.fecha_creacion|date:"d/m/Y H:i:s" }}</div>
+            <div class="campo-valor">{{ coordinacion.fecha_coordinacion|date:"d/m/Y" }}</div>
+        </div>
+
+        <div class="campo">
+            <div class="campo-label">Hora:</div>
+            <div class="campo-valor">{{ coordinacion.fecha_coordinacion|date:"H:i:s" }}</div>
         </div>
         
         {% if coordinacion.usuario %}
         <div class="campo">
             <div class="campo-label">Usuario que Coordino:</div>
             <div class="campo-valor">{{ coordinacion.usuario }}</div>
-        </div>
-        {% endif %}
-        
-        {% if coordinacion.archivo %}
-        <div class="campo">
-            <div class="campo-label">Archivo Generado:</div>
-            <div class="campo-valor"><code>{{ coordinacion.archivo }}</code></div>
         </div>
         {% endif %}
     </div>
