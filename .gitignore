@@ -36,3 +36,9 @@ turnos/tests/
 # Documentation
 *.md
 !README.md
+
+#Logs de tareas programadas
+logs/
+# Configuración de tareas programadas Windows
+tarea_programada_backup.xml
+*.xml
