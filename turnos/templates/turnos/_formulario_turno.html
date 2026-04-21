@@ -306,6 +306,23 @@ Contextos de uso:
 <!-- ===================================================================
      JAVASCRIPT UNIFICADO
      =================================================================== -->
+
+<!-- Modal Nueva Institución (debe estar antes del <script> para que el JS encuentre los elementos) -->
+<div id="modalNuevaInstitucion" class="apple-modal" style="display:none;">
+    <div class="apple-modal-content apple-modal-content-relative">
+        <button id="cerrarModalInstitucion" type="button" class="apple-modal-close">&times;</button>
+        <h3 class="apple-modal-title apple-modal-title-success">Agregar nueva institución</h3>
+        <form id="formNuevaInstitucion">
+            <div class="apple-form-group">
+                <label for="nombreInstitucion" class="apple-label">Nombre</label>
+                <input type="text" id="nombreInstitucion" required class="apple-input" />
+            </div>
+            <button type="submit" class="apple-btn apple-btn-success apple-btn-block">Guardar institución</button>
+            <div id="estadoNuevaInstitucion" class="apple-status"></div>
+        </form>
+    </div>
+</div>
+
 <script>
 let determinaciones = [];
 let determinacionesCache = null;
@@ -335,7 +352,7 @@ async function cargarInstituciones() {
     try {
         const response = await fetch('/turnos/api/listar-instituciones/');
         const data = await response.json();
-        institucionesCache = data.instituciones || [];
+        institucionesCache = data || [];
         return institucionesCache;
     } catch (error) {
         console.error('Error cargando instituciones:', error);
@@ -522,7 +539,7 @@ document.getElementById('formNuevaInstitucion').addEventListener('submit', async
             body: JSON.stringify({nombre})
         });
         const data = await response.json();
-        if (data.ok) {
+        if (data.success) {
             institucionesCache = null;
             document.getElementById('id_institucion').value = data.nombre;
             document.getElementById('modalNuevaInstitucion').style.display = 'none';
@@ -744,19 +761,3 @@ function eliminarItem(index) {
 // Cargar determinaciones al cargar la página
 cargarDeterminaciones();
 </script>
-
-<!-- Modal Nueva Institución -->
-<div id="modalNuevaInstitucion" class="apple-modal" style="display:none;">
-    <div class="apple-modal-content apple-modal-content-relative">
-        <button id="cerrarModalInstitucion" class="apple-modal-close">&times;</button>
-        <h3 class="apple-modal-title apple-modal-title-success">Agregar nueva institución</h3>
-        <form id="formNuevaInstitucion">
-            <div class="apple-form-group">
-                <label for="nombreInstitucion" class="apple-label">Nombre</label>
-                <input type="text" id="nombreInstitucion" required class="apple-input" />
-            </div>
-            <button type="submit" class="apple-btn apple-btn-success apple-btn-block">Guardar institución</button>
-            <div id="estadoNuevaInstitucion" class="apple-status"></div>
-        </form>
-    </div>
-</div>
