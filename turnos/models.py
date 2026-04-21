@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from instituciones.models import Institucion
 from medicos.models import Medico
 from pacientes.models import Paciente
 from django.contrib.auth.models import User
@@ -140,6 +141,15 @@ class Turno(models.Model):
         verbose_name="Usuario que Creó el Turno",
     )
     creado = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    institucion = models.ForeignKey(
+        Institucion,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="turnos",
+        verbose_name="Institucion",
+        help_text="Institucion de origen de la orden medica",
+    )
 
     class Meta:
         ordering = ["fecha", "creado"]
@@ -262,6 +272,15 @@ class Coordinados(models.Model):
         null=True,
         blank=True,
         verbose_name="Usuario que Coordinó",
+    )
+    institucion = models.ForeignKey(
+        Institucion,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="coordinados",
+        verbose_name="Institucion",
+        help_text="Institucion de origen de la orden medica",
     )
 
     class Meta:

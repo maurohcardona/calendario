@@ -1,0 +1,26 @@
+[
+  {
+    "model": "instituciones.institucion",
+    "pk": 1,
+    "fields": {
+      "nombre": "Hospital Balestrini",
+      "activa": true
+    }
+  },
+  {
+    "model": "instituciones.institucion",
+    "pk": 2,
+    "fields": {
+      "nombre": "Hospital Paroissien",
+      "activa": true
+    }
+  },
+  {
+    "model": "instituciones.institucion",
+    "pk": 3,
+    "fields": {
+      "nombre": "Hospital Germani",
+      "activa": true
+    }
+  }
+]
