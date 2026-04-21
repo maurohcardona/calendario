@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from turnos.models import Turno, Cupo, Agenda, Feriados
 from pacientes.models import Paciente
 from medicos.models import Medico
+from instituciones.models import Institucion
 
 
 class TurnoService:
@@ -67,6 +68,7 @@ class TurnoService:
         email: str = "",
         observaciones_paciente: str = "",
         medico_nombre: str = "",
+        institucion_nombre: str = "",
         nota_interna: str = "",
         determinaciones: str = "",
         usuario: Any = None,
@@ -110,12 +112,21 @@ class TurnoService:
                         if medicos.exists():
                             medico_obj = medicos.first()
 
+                # Obtener institución si se especificó
+                institucion_obj = None
+                if institucion_nombre:
+                    institucion_obj, _ = Institucion.objects.get_or_create(
+                        nombre__iexact=institucion_nombre,
+                        defaults={"nombre": institucion_nombre},
+                    )
+
                 # Crear turno
                 turno = Turno.objects.create(
                     fecha=fecha,
                     agenda=agenda,
                     dni=paciente_obj,
                     medico=medico_obj,
+                    institucion=institucion_obj,
                     nota_interna=nota_interna,
                     determinaciones=determinaciones,
                     usuario=usuario,
@@ -133,6 +144,7 @@ class TurnoService:
         fecha: date = None,
         determinaciones: str = None,
         medico_nombre: str = None,
+        institucion_nombre: str = None,
         nota_interna: str = None,
         telefono: str = None,
         email: str = None,
@@ -168,6 +180,16 @@ class TurnoService:
                             turno.medico = None
                 else:
                     turno.medico = None
+
+            # Actualizar institución
+            if institucion_nombre is not None:
+                if institucion_nombre:
+                    turno.institucion, _ = Institucion.objects.get_or_create(
+                        nombre__iexact=institucion_nombre,
+                        defaults={"nombre": institucion_nombre},
+                    )
+                else:
+                    turno.institucion = None
 
             turno.save()
 

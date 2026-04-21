@@ -35,6 +35,7 @@ from .api_views import (
     eventos_calendario,
     turnos_historicos_api,
     listar_medicos_api,
+    listar_instituciones_api,
 )
 
 # Vistas administrativas
@@ -47,6 +48,7 @@ from .admin_views import (
     aplicar_feriados,
     audit_log,
     crear_medico_api,
+    crear_institucion_api,
 )
 
 # Vista de logout
@@ -54,41 +56,38 @@ from .auth_views import logout_view
 
 __all__ = [
     # Calendario y cupos
-    'calendario',
-    'nuevo_cupo',
-    'generar_cupos_masivo',
-    'borrar_cupos_masivo',
-    'lighten_color',
-    
+    "calendario",
+    "nuevo_cupo",
+    "generar_cupos_masivo",
+    "borrar_cupos_masivo",
+    "lighten_color",
     # Turnos
-    'dia',
-    'buscar',
-    'editar_turno',
-    'eliminar_turno',
-    
+    "dia",
+    "buscar",
+    "editar_turno",
+    "eliminar_turno",
     # Coordinación
-    'precoordinacion_turno',
-    'ver_coordinacion',
-    'coordinar_turno',
-    'generar_ticket_turno',
-    'generar_ticket_retiro',
-    'control_ordenes',
-    
+    "precoordinacion_turno",
+    "ver_coordinacion",
+    "coordinar_turno",
+    "generar_ticket_turno",
+    "generar_ticket_retiro",
+    "control_ordenes",
     # API
-    'eventos_calendario',
-    'turnos_historicos_api',
-    'listar_medicos_api',
-    
+    "eventos_calendario",
+    "turnos_historicos_api",
+    "listar_medicos_api",
+    "listar_instituciones_api",
     # Admin
-    'administrar_tablas',
-    'administrar_tabla_detalle',
-    'crear_registro',
-    'editar_registro',
-    'eliminar_registro',
-    'aplicar_feriados',
-    'audit_log',
-    'crear_medico_api',
-    
+    "administrar_tablas",
+    "administrar_tabla_detalle",
+    "crear_registro",
+    "editar_registro",
+    "eliminar_registro",
+    "aplicar_feriados",
+    "audit_log",
+    "crear_medico_api",
+    "crear_institucion_api",
     # Auth
-    'logout_view',
+    "logout_view",
 ]

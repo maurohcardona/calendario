@@ -76,6 +76,19 @@ class TurnoForm(forms.ModelForm):
         ),
         help_text="Médico que solicita los estudios",
     )
+    institucion = forms.CharField(
+        required=False,
+        max_length=200,
+        label="Institución",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Institución de origen",
+                "autocomplete": "off",
+            }
+        ),
+        help_text="Institución de origen de la orden médica",
+    )
     nota_interna = forms.CharField(
         required=False,
         widget=forms.Textarea(

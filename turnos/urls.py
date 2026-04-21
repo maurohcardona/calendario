@@ -4,30 +4,77 @@ from . import views
 app_name = "turnos"
 
 urlpatterns = [
-    path("turno/<int:turno_id>/precoordinacion/", views.precoordinacion_turno, name="precoordinacion"),
+    path(
+        "turno/<int:turno_id>/precoordinacion/",
+        views.precoordinacion_turno,
+        name="precoordinacion",
+    ),
     path("calendario/", views.calendario, name="calendario"),
     path("control/", views.control_ordenes, name="control"),
     path("cupo/nuevo/", views.nuevo_cupo, name="nuevo_cupo"),
     path("eventos/", views.eventos_calendario, name="eventos"),
     path("dia/<str:fecha>/", views.dia, name="dia"),
     path("buscar/", views.buscar, name="buscar"),
-    path("turno/<int:turno_id>/ver-coordinacion/", views.ver_coordinacion, name="ver_coordinacion"),
+    path(
+        "turno/<int:turno_id>/ver-coordinacion/",
+        views.ver_coordinacion,
+        name="ver_coordinacion",
+    ),
     path("turno/<int:turno_id>/editar/", views.editar_turno, name="editar_turno"),
     path("turno/<int:turno_id>/eliminar/", views.eliminar_turno, name="eliminar_turno"),
     path("generar-cupos/", views.generar_cupos_masivo, name="generar_cupos_masivo"),
     path("borrar-cupos/", views.borrar_cupos_masivo, name="borrar_cupos_masivo"),
     path("api/listar-medicos/", views.listar_medicos_api, name="listar_medicos_api"),
-    path("turno/<int:turno_id>/coordinar/", views.coordinar_turno, name="coordinar_turno"),
-    path("api/turnos-historicos/<str:fecha>/", views.turnos_historicos_api, name="turnos_historicos_api"),
-    path("turno/<int:turno_id>/ticket/", views.generar_ticket_turno, name="generar_ticket_turno"),
-    path("turno/<int:turno_id>/retiro/", views.generar_ticket_retiro, name="generar_ticket_retiro"),
+    path(
+        "turno/<int:turno_id>/coordinar/", views.coordinar_turno, name="coordinar_turno"
+    ),
+    path(
+        "api/turnos-historicos/<str:fecha>/",
+        views.turnos_historicos_api,
+        name="turnos_historicos_api",
+    ),
+    path(
+        "turno/<int:turno_id>/ticket/",
+        views.generar_ticket_turno,
+        name="generar_ticket_turno",
+    ),
+    path(
+        "turno/<int:turno_id>/retiro/",
+        views.generar_ticket_retiro,
+        name="generar_ticket_retiro",
+    ),
     path("administrar-tablas/", views.administrar_tablas, name="administrar_tablas"),
-    path("administrar-tablas/<str:tabla>/", views.administrar_tabla_detalle, name="administrar_tabla_detalle"),
-    path("administrar-tablas/<str:tabla>/crear/", views.crear_registro, name="crear_registro"),
-    path("administrar-tablas/<str:tabla>/editar/<int:id>/", views.editar_registro, name="editar_registro"),
-    path("administrar-tablas/<str:tabla>/eliminar/<int:id>/", views.eliminar_registro, name="eliminar_registro"),
+    path(
+        "administrar-tablas/<str:tabla>/",
+        views.administrar_tabla_detalle,
+        name="administrar_tabla_detalle",
+    ),
+    path(
+        "administrar-tablas/<str:tabla>/crear/",
+        views.crear_registro,
+        name="crear_registro",
+    ),
+    path(
+        "administrar-tablas/<str:tabla>/editar/<int:id>/",
+        views.editar_registro,
+        name="editar_registro",
+    ),
+    path(
+        "administrar-tablas/<str:tabla>/eliminar/<int:id>/",
+        views.eliminar_registro,
+        name="eliminar_registro",
+    ),
     path("feriados/aplicar/", views.aplicar_feriados, name="aplicar_feriados"),
     path("auditoria/", views.audit_log, name="audit_log"),
     path("api/crear-medico/", views.crear_medico_api, name="crear_medico_api"),
+    path(
+        "api/listar-instituciones/",
+        views.listar_instituciones_api,
+        name="listar_instituciones_api",
+    ),
+    path(
+        "api/crear-institucion/",
+        views.crear_institucion_api,
+        name="crear_institucion_api",
+    ),
 ]
-

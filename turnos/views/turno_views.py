@@ -237,6 +237,7 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                             "observaciones_paciente", ""
                         )
                         medico_nombre = form.cleaned_data.get("medico", "")
+                        institucion_nombre = form.cleaned_data.get("institucion", "")
                         nota_interna = form.cleaned_data.get("nota_interna", "")
                         determinaciones = form.cleaned_data.get("determinaciones", "")
 
@@ -253,6 +254,7 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                             email=email,
                             observaciones_paciente=observaciones_paciente,
                             medico_nombre=medico_nombre,
+                            institucion_nombre=institucion_nombre,
                             nota_interna=nota_interna,
                             determinaciones=determinaciones,
                             usuario=request.user,
@@ -572,6 +574,7 @@ def editar_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
             fecha=request.POST.get("fecha"),
             determinaciones=request.POST.get("determinaciones", ""),
             medico_nombre=request.POST.get("medico", ""),
+            institucion_nombre=request.POST.get("institucion", ""),
             nota_interna=request.POST.get("nota_interna", ""),
             telefono=request.POST.get("telefono", ""),
             email=request.POST.get("email", ""),

@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, JsonResponse
 from turnos.models import Turno, Cupo, Agenda, Coordinados, Feriados
 from medicos.models import Medico
+from instituciones.models import Institucion
 from turnos.views.calendar_views import lighten_color
 
 
@@ -228,4 +229,18 @@ def listar_medicos_api(request: HttpRequest) -> JsonResponse:
         return JsonResponse(items, safe=False)
 
     except Exception as e:
+        return JsonResponse([], safe=False)
+
+
+@login_required
+def listar_instituciones_api(request: HttpRequest) -> JsonResponse:
+    """API que lista todas las instituciones activas para autocompletado."""
+    try:
+        instituciones = (
+            Institucion.objects.filter(activa=True)
+            .order_by("nombre")
+            .values("id", "nombre")
+        )
+        return JsonResponse(list(instituciones), safe=False)
+    except Exception:
         return JsonResponse([], safe=False)

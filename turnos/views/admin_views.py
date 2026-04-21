@@ -15,6 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.views.decorators.csrf import csrf_exempt
 from django.db import models
 from medicos.models import Medico
+from instituciones.models import Institucion
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -298,6 +299,44 @@ def crear_medico_api(request: HttpRequest) -> JsonResponse:
             )
         else:
             return JsonResponse({"success": False, "error": "La matrícula ya existe"})
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@csrf_exempt
+@login_required
+def crear_institucion_api(request: HttpRequest) -> JsonResponse:
+    """API para crear una nueva institucion desde el formulario de turno."""
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "error": "Metodo no permitido"}, status=400
+        )
+
+    try:
+        data = json.loads(request.body)
+        nombre = data.get("nombre", "").strip()
+
+        if not nombre:
+            return JsonResponse({"success": False, "error": "El nombre es obligatorio"})
+
+        institucion, created = Institucion.objects.get_or_create(
+            nombre__iexact=nombre, defaults={"nombre": nombre, "activa": True}
+        )
+
+        if created:
+            return JsonResponse(
+                {
+                    "success": True,
+                    "id": institucion.id,
+                    "nombre": institucion.nombre,
+                    "message": "Institucion creada correctamente",
+                }
+            )
+        else:
+            return JsonResponse(
+                {"success": False, "error": "Ya existe una institucion con ese nombre"}
+            )
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)

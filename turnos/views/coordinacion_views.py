@@ -171,6 +171,18 @@ def precoordinacion_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
         else:
             turno.medico = None
 
+        # Manejar la institución
+        institucion_nombre = request.POST.get("institucion", "")
+        if institucion_nombre:
+            from instituciones.models import Institucion
+
+            turno.institucion, _ = Institucion.objects.get_or_create(
+                nombre__iexact=institucion_nombre,
+                defaults={"nombre": institucion_nombre},
+            )
+        else:
+            turno.institucion = None
+
         turno.nota_interna = request.POST.get("nota_interna", "")
         turno.save()
 
