@@ -237,7 +237,8 @@ def ver_coordinacion(request: HttpRequest, turno_id: int) -> HttpResponse:
         Muestra vista de solo lectura del turno coordinado 123
     """
     turno = get_object_or_404(
-        Turno.objects.select_related("dni", "medico", "agenda"), id=turno_id
+        Turno.objects.select_related("dni", "medico", "agenda", "institucion"),
+        id=turno_id,
     )
 
     # Verificar que el turno esté coordinado
@@ -263,6 +264,9 @@ def ver_coordinacion(request: HttpRequest, turno_id: int) -> HttpResponse:
             "matricula": turno.medico.matricula,
             "nombre": turno.medico.nombre,
         }
+
+    # Obtener datos de la institución
+    institucion_nombre = turno.institucion.nombre if turno.institucion else None
 
     # Obtener nombres de determinaciones
     determinaciones_nombres = []
@@ -302,6 +306,7 @@ def ver_coordinacion(request: HttpRequest, turno_id: int) -> HttpResponse:
         "coordinacion": coordinacion,
         "paciente": paciente_data,
         "medico": medico_data,
+        "institucion": institucion_nombre,
         "determinaciones_nombres": determinaciones_nombres,
         "hoy": date.today(),
     }
