@@ -24,7 +24,7 @@ class Paciente(models.Model):
         max_length=15, choices=SEXO_CHOICES, default="Sin asignar", verbose_name="Sexo"
     )
     telefono = models.CharField(
-        max_length=20,
+        max_length=50,
         blank=True,
         default="",
         verbose_name="Teléfono",
