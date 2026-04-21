@@ -34,6 +34,7 @@
         <a href="{% url 'turnos:buscar' %}" class="apple-nav-link">Buscar</a>
         <a href="{% url 'turnos:control' %}" class="apple-nav-link">Control</a>
         <a href="{% url 'determinaciones:buscador' %}" class="apple-nav-link">Estadísticas</a>
+        <a href="{% url 'instituciones:estadisticas' %}" class="apple-nav-link">Instituciones</a>
         {% if user.is_superuser %}
         <a href="{% url 'turnos:audit_log' %}" class="apple-nav-link">Auditoría</a>
         {% endif %}

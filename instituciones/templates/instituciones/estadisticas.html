@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="stats-container">
+    <h2 class="stats-title">Estadísticas por Institución</h2>
+
+    <!-- Filtros -->
+    <div class="stats-card">
+        <form method="get" class="stats-date-selector">
+            <div class="stats-date-controls">
+                <div class="stats-date-field">
+                    <label for="fecha_desde" class="stats-date-label">Fecha Desde</label>
+                    <input type="date"
+                           id="fecha_desde"
+                           name="fecha_desde"
+                           value="{{ fecha_desde|date:'Y-m-d' }}"
+                           class="stats-date-input" />
+                </div>
+                <div class="stats-date-field">
+                    <label for="fecha_hasta" class="stats-date-label">Fecha Hasta</label>
+                    <input type="date"
+                           id="fecha_hasta"
+                           name="fecha_hasta"
+                           value="{{ fecha_hasta|date:'Y-m-d' }}"
+                           class="stats-date-input" />
+                </div>
+                <div class="stats-date-field">
+                    <label for="institucion" class="stats-date-label">Institución</label>
+                    <select id="institucion" name="institucion" class="apple-select">
+                        <option value="">Todas las instituciones</option>
+                        {% for inst in instituciones %}
+                            <option value="{{ inst.id }}"
+                                {% if institucion_id == inst.id|stringformat:"s" %}selected{% endif %}>
+                                {{ inst.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="stats-date-field" style="align-self: flex-end;">
+                    <button type="submit" class="apple-btn apple-btn-primary">Filtrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Resultados -->
+    <div class="stats-card">
+        <h3 class="stats-section-title">
+            Resultados del {{ fecha_desde|date:"d/m/Y" }} al {{ fecha_hasta|date:"d/m/Y" }}
+            {% if institucion_seleccionada %} — {{ institucion_seleccionada.nombre }}{% endif %}
+        </h3>
+
+        {% if total_general == 0 %}
+            <p class="apple-det-empty">No hay órdenes en el período seleccionado.</p>
+        {% else %}
+            <table class="apple-table" style="width:100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th class="apple-table-th" style="text-align:left; padding: 10px 16px;">Institución</th>
+                        <th class="apple-table-th" style="text-align:right; padding: 10px 16px;">Órdenes</th>
+                        <th class="apple-table-th" style="text-align:right; padding: 10px 16px;">% del total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in resultados %}
+                        {% if row.institucion__nombre %}
+                        <tr class="apple-table-row">
+                            <td class="apple-table-td" style="padding: 10px 16px;">{{ row.institucion__nombre }}</td>
+                            <td class="apple-table-td" style="text-align:right; padding: 10px 16px; font-weight:600;">{{ row.total }}</td>
+                            <td class="apple-table-td" style="text-align:right; padding: 10px 16px; color: var(--apple-blue);">
+                                {% widthratio row.total total_general 100 %}%
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                    {% if sin_institucion > 0 %}
+                        <tr class="apple-table-row" style="color: var(--apple-text-secondary);">
+                            <td class="apple-table-td" style="padding: 10px 16px; font-style: italic;">Sin institución asignada</td>
+                            <td class="apple-table-td" style="text-align:right; padding: 10px 16px; font-weight:600;">{{ sin_institucion }}</td>
+                            <td class="apple-table-td" style="text-align:right; padding: 10px 16px;">
+                                {% widthratio sin_institucion total_general 100 %}%
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+                <tfoot>
+                    <tr style="border-top: 2px solid var(--apple-border);">
+                        <td style="padding: 10px 16px; font-weight:700;">TOTAL</td>
+                        <td style="text-align:right; padding: 10px 16px; font-weight:700;">{{ total_general }}</td>
+                        <td style="text-align:right; padding: 10px 16px; font-weight:700;">100%</td>
+                    </tr>
+                </tfoot>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
