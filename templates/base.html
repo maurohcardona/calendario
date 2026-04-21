@@ -33,11 +33,11 @@
         <a href="{% url 'turnos:calendario' %}" class="apple-nav-link">Agenda</a>
         <a href="{% url 'turnos:buscar' %}" class="apple-nav-link">Buscar</a>
         <a href="{% url 'turnos:control' %}" class="apple-nav-link">Control</a>
-        <div id="stats-menu" style="position:relative;">
-          <button id="stats-menu-btn" class="apple-nav-link" style="background:none; border:none; cursor:pointer; padding:0;">Estadísticas ▼</button>
-          <div id="stats-menu-content" style="display:none; position:absolute; top:100%; left:0; background:#fff; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.12); min-width:160px; z-index:1000; padding:4px 0;">
-            <a href="{% url 'determinaciones:buscador' %}" style="display:block; padding:10px 16px; color:#333; text-decoration:none; font-size:0.9rem;">Determinaciones</a>
-            <a href="{% url 'instituciones:estadisticas' %}" style="display:block; padding:10px 16px; color:#333; text-decoration:none; font-size:0.9rem;">Instituciones</a>
+        <div class="user-menu" id="stats-menu">
+          <button class="user-menu-btn" id="stats-menu-btn">Estadísticas ▼</button>
+          <div class="user-menu-content">
+            <a href="{% url 'determinaciones:buscador' %}">Determinaciones</a>
+            <a href="{% url 'instituciones:estadisticas' %}">Instituciones</a>
           </div>
         </div>
         {% if user.is_superuser %}
@@ -94,13 +94,12 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // ── Menú Estadísticas ──────────────────────────────────────────
+      const statsMenu = document.getElementById('stats-menu');
       const statsMenuBtn = document.getElementById('stats-menu-btn');
-      const statsMenuContent = document.getElementById('stats-menu-content');
       if (statsMenuBtn) {
         statsMenuBtn.addEventListener('click', function(e) {
           e.stopPropagation();
-          const open = statsMenuContent.style.display === 'block';
-          statsMenuContent.style.display = open ? 'none' : 'block';
+          statsMenu.classList.toggle('active');
         });
       }
 
@@ -124,8 +123,8 @@
           if (etiquetadorasMenu) etiquetadorasMenu.classList.remove('active');
           if (etiquetadorasBtn) etiquetadorasBtn.textContent = 'Etiquetadoras ▼';
         }
-        if (statsMenuContent && !document.getElementById('stats-menu').contains(e.target)) {
-          statsMenuContent.style.display = 'none';
+        if (statsMenu && !statsMenu.contains(e.target)) {
+          statsMenu.classList.remove('active');
         }
       });
 
