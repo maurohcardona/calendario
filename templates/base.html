@@ -33,11 +33,11 @@
         <a href="{% url 'turnos:calendario' %}" class="apple-nav-link">Agenda</a>
         <a href="{% url 'turnos:buscar' %}" class="apple-nav-link">Buscar</a>
         <a href="{% url 'turnos:control' %}" class="apple-nav-link">Control</a>
-        <div class="user-menu" id="stats-menu">
-          <button class="user-menu-btn" id="stats-menu-btn">Estadísticas ▼</button>
-          <div class="user-menu-content">
-            <a href="{% url 'determinaciones:buscador' %}">Determinaciones</a>
-            <a href="{% url 'instituciones:estadisticas' %}">Instituciones</a>
+        <div id="stats-menu" style="position:relative;">
+          <button id="stats-menu-btn" class="apple-nav-link" style="background:none; border:none; cursor:pointer; padding:0;">Estadísticas ▼</button>
+          <div id="stats-menu-content" style="display:none; position:absolute; top:100%; left:0; background:#fff; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.12); min-width:160px; z-index:1000; padding:4px 0;">
+            <a href="{% url 'determinaciones:buscador' %}" style="display:block; padding:10px 16px; color:#333; text-decoration:none; font-size:0.9rem;">Determinaciones</a>
+            <a href="{% url 'instituciones:estadisticas' %}" style="display:block; padding:10px 16px; color:#333; text-decoration:none; font-size:0.9rem;">Instituciones</a>
           </div>
         </div>
         {% if user.is_superuser %}
@@ -50,7 +50,7 @@
     </div>
     
     <!-- Botón Opciones a la derecha extrema -->
-    <div class="user-menu">
+    <div class="user-menu" id="opciones-menu">
       <button class="user-menu-btn">Opciones ▼</button>
       <div class="user-menu-content">
         <a href="{% url 'password_change' %}">Cambiar contraseña</a>
@@ -92,40 +92,44 @@
   </main>
   <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
   <script>
-    // Manejar el menú de opciones con click
     document.addEventListener('DOMContentLoaded', function() {
-      const userMenu = document.querySelector('.user-menu');
-      const userMenuBtn = document.querySelector('.user-menu-btn');
-      const etiquetadorasBtn = document.getElementById('etiquetadoras-btn');
-      const etiquetadorasMenu = document.getElementById('etiquetadoras-menu');
-      // Menú Estadísticas
-      const statsMenu = document.getElementById('stats-menu');
+      // ── Menú Estadísticas ──────────────────────────────────────────
       const statsMenuBtn = document.getElementById('stats-menu-btn');
+      const statsMenuContent = document.getElementById('stats-menu-content');
       if (statsMenuBtn) {
         statsMenuBtn.addEventListener('click', function(e) {
           e.stopPropagation();
-          statsMenu.classList.toggle('active');
+          const open = statsMenuContent.style.display === 'block';
+          statsMenuContent.style.display = open ? 'none' : 'block';
         });
       }
 
-      // Mostrar/ocultar menú de opciones
-      if (userMenuBtn) {
-        userMenuBtn.addEventListener('click', function(e) {
+      // ── Menú Opciones ─────────────────────────────────────────────
+      const opcionesMenu = document.getElementById('opciones-menu');
+      const opcionesBtn = opcionesMenu ? opcionesMenu.querySelector('.user-menu-btn') : null;
+      const etiquetadorasBtn = document.getElementById('etiquetadoras-btn');
+      const etiquetadorasMenu = document.getElementById('etiquetadoras-menu');
+
+      if (opcionesBtn) {
+        opcionesBtn.addEventListener('click', function(e) {
           e.stopPropagation();
-          userMenu.classList.toggle('active');
-        });
-        document.addEventListener('click', function(e) {
-          if (!userMenu.contains(e.target)) {
-            userMenu.classList.remove('active');
-            etiquetadorasMenu.classList.remove('active');
-            etiquetadorasBtn.textContent = 'Etiquetadoras ▼';
-          }
-          if (statsMenu && !statsMenu.contains(e.target)) {
-            statsMenu.classList.remove('active');
-          }
+          opcionesMenu.classList.toggle('active');
         });
       }
-      // Mostrar/ocultar submenú de etiquetadoras con animación
+
+      // Cerrar ambos menús al hacer clic fuera
+      document.addEventListener('click', function(e) {
+        if (opcionesMenu && !opcionesMenu.contains(e.target)) {
+          opcionesMenu.classList.remove('active');
+          if (etiquetadorasMenu) etiquetadorasMenu.classList.remove('active');
+          if (etiquetadorasBtn) etiquetadorasBtn.textContent = 'Etiquetadoras ▼';
+        }
+        if (statsMenuContent && !document.getElementById('stats-menu').contains(e.target)) {
+          statsMenuContent.style.display = 'none';
+        }
+      });
+
+      // ── Submenú Etiquetadoras ──────────────────────────────────────
       if (etiquetadorasBtn) {
         etiquetadorasBtn.addEventListener('click', function(e) {
           e.stopPropagation();
@@ -133,16 +137,14 @@
           etiquetadorasBtn.textContent = isOpen ? 'Etiquetadoras ▲' : 'Etiquetadoras ▼';
         });
       }
-      // Guardar selección en localStorage y reflejar selección
+
+      // Guardar y restaurar selección de etiquetadora
       const radios = etiquetadorasMenu ? etiquetadorasMenu.querySelectorAll('input[type=radio][name=etiquetadora]') : [];
       radios.forEach(radio => {
         radio.addEventListener('change', function() {
-          if (this.checked) {
-            localStorage.setItem('nombre_impresora', this.value);
-          }
+          if (this.checked) localStorage.setItem('nombre_impresora', this.value);
         });
       });
-      // Al cargar, marcar la opción guardada
       const seleccionada = localStorage.getItem('nombre_impresora');
       if (seleccionada && etiquetadorasMenu) {
         const radioSel = etiquetadorasMenu.querySelector(`input[type=radio][value="${seleccionada}"]`);
