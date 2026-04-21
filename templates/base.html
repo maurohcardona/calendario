@@ -33,8 +33,13 @@
         <a href="{% url 'turnos:calendario' %}" class="apple-nav-link">Agenda</a>
         <a href="{% url 'turnos:buscar' %}" class="apple-nav-link">Buscar</a>
         <a href="{% url 'turnos:control' %}" class="apple-nav-link">Control</a>
-        <a href="{% url 'determinaciones:buscador' %}" class="apple-nav-link">Estadísticas</a>
-        <a href="{% url 'instituciones:estadisticas' %}" class="apple-nav-link">Instituciones</a>
+        <div class="user-menu" id="stats-menu">
+          <button class="user-menu-btn" id="stats-menu-btn">Estadísticas ▼</button>
+          <div class="user-menu-content">
+            <a href="{% url 'determinaciones:buscador' %}">Determinaciones</a>
+            <a href="{% url 'instituciones:estadisticas' %}">Instituciones</a>
+          </div>
+        </div>
         {% if user.is_superuser %}
         <a href="{% url 'turnos:audit_log' %}" class="apple-nav-link">Auditoría</a>
         {% endif %}
@@ -93,6 +98,16 @@
       const userMenuBtn = document.querySelector('.user-menu-btn');
       const etiquetadorasBtn = document.getElementById('etiquetadoras-btn');
       const etiquetadorasMenu = document.getElementById('etiquetadoras-menu');
+      // Menú Estadísticas
+      const statsMenu = document.getElementById('stats-menu');
+      const statsMenuBtn = document.getElementById('stats-menu-btn');
+      if (statsMenuBtn) {
+        statsMenuBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          statsMenu.classList.toggle('active');
+        });
+      }
+
       // Mostrar/ocultar menú de opciones
       if (userMenuBtn) {
         userMenuBtn.addEventListener('click', function(e) {
@@ -104,6 +119,9 @@
             userMenu.classList.remove('active');
             etiquetadorasMenu.classList.remove('active');
             etiquetadorasBtn.textContent = 'Etiquetadoras ▼';
+          }
+          if (statsMenu && !statsMenu.contains(e.target)) {
+            statsMenu.classList.remove('active');
           }
         });
       }
