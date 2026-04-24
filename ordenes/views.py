@@ -122,6 +122,14 @@ def crear_orden(request):
         orden_form = OrdenForm()
         paciente_form = PacienteInlineForm()
 
+    from determinaciones.models import Determinacion, DeterminacionCompleja
+    guardia_pks_simples = set(
+        str(pk) for pk in Determinacion.objects.filter(guardia=True).values_list("pk", flat=True)
+    )
+    guardia_pks_complejas = set(
+        str(pk) for pk in DeterminacionCompleja.objects.filter(guardia=True).values_list("pk", flat=True)
+    )
+
     guardia_orden = json.dumps(NOMBRES_GUARDIA_ORDENADOS)
 
     return render(
@@ -132,6 +140,8 @@ def crear_orden(request):
             "paciente_form": paciente_form,
             "paciente": paciente,
             "guardia_orden": guardia_orden,
+            "guardia_pks_simples": guardia_pks_simples,
+            "guardia_pks_complejas": guardia_pks_complejas,
         },
     )
 

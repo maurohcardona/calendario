@@ -27,6 +27,11 @@ class OrdenForm(forms.ModelForm):
         required=False,
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["determinaciones"].label_from_instance = lambda obj: obj.nombre
+        self.fields["determinaciones_complejas"].label_from_instance = lambda obj: obj.nombre
+
     class Meta:
         model = OrdenLaboratorio
         fields = ["tipo_origen", "servicio", "sala", "observaciones", "determinaciones", "determinaciones_complejas"]

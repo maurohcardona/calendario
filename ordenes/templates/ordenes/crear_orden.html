@@ -105,7 +105,7 @@
         {% for det in orden_form.determinaciones %}
           <div class="col det-item"
                data-nombre="{{ det.choice_label|lower }}"
-               data-guardia="{% if det.data.instance.guardia %}1{% else %}0{% endif %}">
+               data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_simples %}1{% else %}0{% endif %}">
             <div class="form-check">
               {{ det.tag }}
               <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
@@ -117,11 +117,11 @@
         {% for det in orden_form.determinaciones_complejas %}
           <div class="col det-item det-compleja"
                data-nombre="{{ det.choice_label|lower }}"
-               data-guardia="{% if det.data.instance.guardia %}1{% else %}0{% endif %}">
+               data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_complejas %}1{% else %}0{% endif %}">
             <div class="form-check">
               {{ det.tag }}
-              <label class="form-check-label text-uppercase fw-semibold" for="{{ det.id_for_label }}">
-                🔬 {{ det.choice_label }}
+              <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                {{ det.choice_label }}
               </label>
             </div>
           </div>
