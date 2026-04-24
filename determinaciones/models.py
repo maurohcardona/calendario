@@ -2,6 +2,25 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 
 
+class Sector(models.Model):
+    """Modelo que representa un sector del laboratorio."""
+
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Nombre",
+        help_text="Nombre del sector del laboratorio",
+    )
+
+    class Meta:
+        verbose_name = "Sector"
+        verbose_name_plural = "Sectores"
+        ordering = ["nombre"]
+
+    def __str__(self) -> str:
+        return self.nombre
+
+
 class Determinacion(models.Model):
     """Modelo que representa una determinación o análisis de laboratorio."""
 
@@ -15,6 +34,15 @@ class Determinacion(models.Model):
         max_length=50,
         verbose_name="Nombre",
         help_text="Nombre descriptivo de la determinación",
+    )
+    sector = models.ForeignKey(
+        Sector,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="determinaciones",
+        verbose_name="Sector",
+        help_text="Sector del laboratorio al que pertenece esta determinación",
     )
     tiempo = models.PositiveIntegerField(
         default=3,
@@ -35,6 +63,11 @@ class Determinacion(models.Model):
         default=True,
         verbose_name="Stock Disponible",
         help_text="Indica si hay stock disponible para esta determinación",
+    )
+    guardia = models.BooleanField(
+        default=False,
+        verbose_name="Guardia",
+        help_text="Indica si esta determinación está disponible para órdenes de Guardia",
     )
 
     class Meta:
@@ -101,6 +134,15 @@ class DeterminacionCompleja(models.Model):
         help_text="Nombre descriptivo de la determinación compleja",
         default="Determinación Compleja",
     )
+    sector = models.ForeignKey(
+        Sector,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="determinaciones_complejas",
+        verbose_name="Sector",
+        help_text="Sector del laboratorio al que pertenece esta determinación compleja",
+    )
     determinaciones = ArrayField(
         models.CharField(max_length=4),
         default=list,
@@ -121,6 +163,11 @@ class DeterminacionCompleja(models.Model):
         default=True,
         verbose_name="Stock Disponible",
         help_text="Indica si hay stock disponible para esta determinación",
+    )
+    guardia = models.BooleanField(
+        default=False,
+        verbose_name="Guardia",
+        help_text="Indica si esta determinación está disponible para órdenes de Guardia",
     )
 
     class Meta:

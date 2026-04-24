@@ -10,7 +10,10 @@ class MedicoAdmin(admin.ModelAdmin):
     search_fields = ("nombre", "matricula")
     ordering = ("nombre",)
 
-    fieldsets = (("Información del Médico", {"fields": ("nombre", "matricula")}),)
+    fieldsets = (
+        ("Información del Médico", {"fields": ("nombre", "matricula")}),
+        ("Acceso al sistema", {"fields": ("usuario",)}),
+    )
 
     def get_cantidad_turnos(self, obj):
         """Muestra la cantidad de turnos asociados al médico."""

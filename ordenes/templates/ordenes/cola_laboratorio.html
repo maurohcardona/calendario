@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<meta http-equiv="refresh" content="60">
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Cola de Laboratorio — {{ hoy|date:"d/m/Y" }}</h2>
+  <span class="badge bg-secondary">Auto-refresh: 60s</span>
+</div>
+
+{% if grupos %}
+  {% for tipo, ordenes in grupos.items %}
+  <div class="card mb-4">
+    <div class="card-header fw-bold">{{ tipo }}</div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Paciente</th>
+            <th>Médico</th>
+            <th>Servicio</th>
+            <th>Hora</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for orden in ordenes %}
+          <tr>
+            <td>{{ orden.pk }}</td>
+            <td>{{ orden.paciente.nombre_completo }}</td>
+            <td>{{ orden.medico }}</td>
+            <td>{{ orden.servicio|default:"-" }}</td>
+            <td>{{ orden.fecha_creacion|date:"H:i" }}</td>
+            <td>
+              <a href="{% url 'ordenes:ingresar_orden' orden.pk %}" class="btn btn-sm btn-success">Ingresar</a>
+              <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-sm btn-outline-danger">Cancelar</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-info">No hay órdenes pendientes para hoy.</div>
+{% endif %}
+{% endblock %}

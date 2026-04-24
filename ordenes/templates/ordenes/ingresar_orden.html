@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'ordenes:cola_laboratorio' %}" class="btn btn-outline-secondary">← Volver a Cola</a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-bold">Datos de la Orden #{{ orden.pk }}</div>
+  <div class="card-body">
+    <p><strong>Paciente:</strong> {{ orden.paciente.nombre_completo }} (DNI: {{ orden.paciente.iden }})</p>
+    <p><strong>Médico:</strong> {{ orden.medico }}</p>
+    <p><strong>Origen:</strong> {{ orden.get_tipo_origen_display }}</p>
+    {% if orden.observaciones %}<p><strong>Observaciones:</strong> {{ orden.observaciones }}</p>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header fw-bold">Ingresar al Laboratorio</div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="text-danger">{{ field.errors }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-success">Ingresar Orden</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

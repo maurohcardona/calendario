@@ -1,0 +1,46 @@
+{% extends "base_medico.html" %}
+{% block medico_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Órdenes de Laboratorio</h2>
+  <a href="{% url 'ordenes:crear_orden' %}" class="btn btn-primary">+ Nueva Orden</a>
+</div>
+
+{% if ordenes %}
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Paciente</th>
+        <th>Origen</th>
+        <th>Estado</th>
+        <th>Fecha</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for orden in ordenes %}
+      <tr style="cursor:pointer;" onclick="window.location='{% url 'ordenes:detalle_orden' orden.pk %}'">
+        <td>{{ orden.pk }}</td>
+        <td>{{ orden.paciente.nombre_completo }}</td>
+        <td>{{ orden.get_tipo_origen_display }}</td>
+        <td>
+          {% if orden.estado == 'PENDIENTE' %}
+            <span class="badge bg-warning text-dark">Pendiente</span>
+          {% elif orden.estado == 'INGRESADA' %}
+            <span class="badge bg-info text-dark">Ingresada</span>
+          {% elif orden.estado == 'COMPLETADA' %}
+            <span class="badge bg-success">Completada</span>
+          {% elif orden.estado == 'CANCELADA' %}
+            <span class="badge bg-danger">Cancelada</span>
+          {% endif %}
+        </td>
+        <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="alert alert-info">No hay órdenes registradas.</div>
+{% endif %}
+{% endblock %}

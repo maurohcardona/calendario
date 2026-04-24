@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "dotenv",
     # Tu app
     "turnos",
+    "ordenes",
 ]
 
 # Middleware

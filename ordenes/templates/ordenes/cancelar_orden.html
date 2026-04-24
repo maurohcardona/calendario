@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'ordenes:detalle_orden' orden.pk %}" class="btn btn-outline-secondary">← Volver</a>
+</div>
+
+<div class="card mb-4 border-danger">
+  <div class="card-header fw-bold text-danger">Cancelar Orden #{{ orden.pk }}</div>
+  <div class="card-body">
+    <p><strong>Paciente:</strong> {{ orden.paciente.nombre_completo }} (DNI: {{ orden.paciente.iden }})</p>
+    <p><strong>Origen:</strong> {{ orden.get_tipo_origen_display }}</p>
+    <p><strong>Estado actual:</strong> {{ orden.get_estado_display }}</p>
+    <p><strong>Fecha:</strong> {{ orden.fecha_creacion|date:"d/m/Y H:i" }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header fw-bold">Confirmar Cancelación</div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="text-danger">{{ field.errors }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger">Confirmar Cancelación</button>
+        <a href="{% url 'ordenes:detalle_orden' orden.pk %}" class="btn btn-outline-secondary">Volver</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base_medico.html" %}
+{% block medico_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Orden #{{ orden.pk }}</h2>
+  <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">← Volver</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header fw-bold">Datos del Paciente</div>
+  <div class="card-body">
+    <p><strong>Paciente:</strong> {{ orden.paciente.nombre_completo }}</p>
+    <p><strong>DNI:</strong> {{ orden.paciente.iden }}</p>
+    <p><strong>Médico:</strong> {{ orden.medico }}</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header fw-bold">Datos de la Orden</div>
+  <div class="card-body">
+    <p><strong>Origen:</strong> {{ orden.get_tipo_origen_display }}</p>
+    {% if orden.servicio %}<p><strong>Servicio:</strong> {{ orden.servicio }}</p>{% endif %}
+    {% if orden.sala %}<p><strong>Cama/Sala:</strong> {{ orden.sala }}</p>{% endif %}
+    <p><strong>Estado:</strong>
+      {% if orden.estado == 'PENDIENTE' %}
+        <span class="badge bg-warning text-dark">Pendiente</span>
+      {% elif orden.estado == 'INGRESADA' %}
+        <span class="badge bg-info text-dark">Ingresada</span>
+      {% elif orden.estado == 'COMPLETADA' %}
+        <span class="badge bg-success">Completada</span>
+      {% elif orden.estado == 'CANCELADA' %}
+        <span class="badge bg-danger">Cancelada</span>
+      {% endif %}
+    </p>
+    {% if orden.observaciones %}<p><strong>Observaciones:</strong> {{ orden.observaciones }}</p>{% endif %}
+    <p><strong>Creado:</strong> {{ orden.fecha_creacion|date:"d/m/Y H:i" }}</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header fw-bold">Determinaciones</div>
+  <div class="card-body">
+    {% if orden.determinaciones.all %}
+      <ul>
+        {% for det in orden.determinaciones.all %}
+          <li>{{ det.nombre|upper }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if orden.determinaciones_complejas.all %}
+      <ul>
+        {% for det in orden.determinaciones_complejas.all %}
+          <li>🔬 {{ det.nombre|upper }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+
+{% if orden.numero_orden_lab or orden.observaciones_lab %}
+<div class="card mb-3">
+  <div class="card-header fw-bold">Datos de Laboratorio</div>
+  <div class="card-body">
+    {% if orden.numero_orden_lab %}<p><strong>N° Orden Lab:</strong> {{ orden.numero_orden_lab }}</p>{% endif %}
+    {% if orden.observaciones_lab %}<p><strong>Obs. Lab:</strong> {{ orden.observaciones_lab }}</p>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if es_operador_lab %}
+<div class="d-flex gap-2 mt-3">
+  {% if orden.puede_ingresar %}
+    <a href="{% url 'ordenes:ingresar_orden' orden.pk %}" class="btn btn-success">Ingresar</a>
+    <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-danger">Cancelar</a>
+  {% elif orden.puede_completar %}
+    <form method="post" action="{% url 'ordenes:completar_orden' orden.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success">Completar</button>
+    </form>
+    <a href="{% url 'ordenes:vincular_turno' orden.pk %}" class="btn btn-outline-primary">Vincular Turno</a>
+    <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-danger">Cancelar</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

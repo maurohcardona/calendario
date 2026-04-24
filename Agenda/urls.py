@@ -21,6 +21,10 @@ urlpatterns = [
     ),
     path("medicos/", include(("medicos.urls", "medicos"), namespace="medicos")),
     path(
+        "ordenes/",
+        include(("ordenes.urls", "ordenes"), namespace="ordenes"),
+    ),
+    path(
         "instituciones/",
         include(("instituciones.urls", "instituciones"), namespace="instituciones"),
     ),
