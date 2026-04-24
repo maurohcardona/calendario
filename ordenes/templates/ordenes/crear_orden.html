@@ -210,11 +210,93 @@
     </div>
   </div>
 
-  <div class="d-flex gap-2">
-    <button type="submit" class="btn btn-primary">Crear Orden</button>
+  <div class="d-flex gap-2 justify-content-end">
+    <button type="button" class="btn btn-outline-secondary" id="btn-vista-previa">Vista previa</button>
     <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">Crear Orden</button>
   </div>
 </form>
+
+{# ── MODAL VISTA PREVIA ── #}
+<div class="modal fade" id="modal-vista-previa" tabindex="-1" aria-labelledby="modal-vista-previa-label" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: var(--color-primary); color: white;">
+        <h5 class="modal-title" id="modal-vista-previa-label">Vista previa — Orden de Laboratorio</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        {# Previsualización de la orden #}
+        <div id="orden-preview" style="font-family: 'Georgia', serif; background: #fff; padding: 2rem 2.5rem; min-height: 500px;">
+
+          {# Encabezado institución #}
+          <div class="text-center mb-3" style="border-bottom: 2px solid var(--color-primary); padding-bottom: .75rem;">
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--color-primary); letter-spacing: .02em;">ORDEN DE LABORATORIO</div>
+            <div style="font-size: .8rem; color: var(--color-text-light);">Sistema de Gestión — {{ request.get_host }}</div>
+          </div>
+
+          {# Datos del médico #}
+          <div class="row mb-3">
+            <div class="col">
+              <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter);">Médico solicitante</div>
+              <div style="font-size: 1rem; font-weight: 600; color: var(--color-text);">
+                {% if request.user.medico %}{{ request.user.medico.nombre }}{% else %}—{% endif %}
+              </div>
+              <div style="font-size: .85rem; color: var(--color-text-light);">
+                Mat. {% if request.user.medico %}{{ request.user.medico.matricula }}{% else %}—{% endif %}
+              </div>
+            </div>
+            <div class="col text-end">
+              <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter);">Fecha</div>
+              <div style="font-size: .9rem; color: var(--color-text);" id="preview-fecha">—</div>
+              <div style="font-size: .8rem; color: var(--color-text-light);" id="preview-origen-label">—</div>
+            </div>
+          </div>
+
+          {# Datos del paciente #}
+          <div class="mb-3 p-3 rounded-2" style="background-color: var(--color-bg); border: 1px solid var(--color-gray-lighter);">
+            <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter); margin-bottom: .4rem;">Paciente</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: var(--color-text);" id="preview-paciente-nombre">
+              {% if paciente %}{{ paciente.nombre_completo }}{% else %}—{% endif %}
+            </div>
+            <div style="font-size: .85rem; color: var(--color-text-light);">
+              DNI: <span id="preview-paciente-dni">{% if paciente %}{{ paciente.iden }}{% else %}—{% endif %}</span>
+              &nbsp;|&nbsp; Sexo: <span id="preview-paciente-sexo">{% if paciente %}{{ paciente.sexo }}{% else %}—{% endif %}</span>
+              &nbsp;|&nbsp; Fecha Nac.: <span id="preview-paciente-fnac">{% if paciente %}{{ paciente.fecha_nacimiento|date:"d/m/Y" }}{% else %}—{% endif %}</span>
+            </div>
+          </div>
+
+          {# Diagnóstico / Observaciones #}
+          <div class="mb-3">
+            <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter); margin-bottom: .3rem;">Diagnóstico / Observaciones</div>
+            <div style="font-size: .9rem; color: var(--color-text); min-height: 1.5rem; font-style: italic;" id="preview-observaciones">—</div>
+          </div>
+
+          {# Determinaciones #}
+          <div>
+            <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter); margin-bottom: .5rem;">Determinaciones solicitadas</div>
+            <div id="preview-determinaciones" style="font-size: .9rem; color: var(--color-text);">
+              <em style="color: var(--color-text-lighter);">Ninguna seleccionada.</em>
+            </div>
+          </div>
+
+          {# Firma #}
+          <div class="mt-5 pt-3" style="border-top: 1px solid var(--color-gray-lighter); display: flex; justify-content: flex-end;">
+            <div class="text-center" style="width: 200px;">
+              <div style="border-top: 1px solid var(--color-text); padding-top: .3rem; font-size: .8rem; color: var(--color-text-light);">
+                Firma y sello del médico
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 const GUARDIA_ORDEN = {{ guardia_orden|safe }};
@@ -222,6 +304,13 @@ const BUSCAR_URL = "{% url 'ordenes:buscar_paciente' %}";
 const SERVICIOS_URL = "{% url 'ordenes:obtener_servicios' %}";
 
 // ── BÚSQUEDA DE PACIENTE ──────────────────────────────────────
+let pacienteData = {% if paciente %}{
+  nombre: "{{ paciente.nombre_completo }}",
+  dni: "{{ paciente.iden }}",
+  sexo: "{{ paciente.sexo }}",
+  fnac: "{{ paciente.fecha_nacimiento|date:'d/m/Y' }}"
+}{% else %}null{% endif %};
+
 document.getElementById('btn-buscar')?.addEventListener('click', function() {
   const dni = document.getElementById('buscar-dni').value.trim();
   if (!dni) return;
@@ -229,12 +318,19 @@ document.getElementById('btn-buscar')?.addEventListener('click', function() {
     .then(r => r.json())
     .then(data => {
       if (data.encontrado) {
+        pacienteData = {
+          nombre: data.paciente.nombre_completo,
+          dni: data.paciente.iden,
+          sexo: data.paciente.sexo || '—',
+          fnac: data.paciente.fecha_nacimiento || '—',
+        };
         document.getElementById('paciente-encontrado').classList.remove('d-none');
         document.getElementById('paciente-no-encontrado').classList.add('d-none');
         document.getElementById('paciente-info').textContent =
           `${data.paciente.nombre_completo} — DNI: ${data.paciente.iden}`;
         document.getElementById('paciente-id-hidden').value = data.paciente.id;
       } else {
+        pacienteData = null;
         document.getElementById('paciente-no-encontrado').classList.remove('d-none');
         document.getElementById('paciente-encontrado').classList.add('d-none');
       }
@@ -356,6 +452,59 @@ function actualizarContador() {
   const cnt = vistaActiva.querySelectorAll('input:checked').length;
   document.getElementById('contador-sel').textContent = `${cnt} seleccionada${cnt !== 1 ? 's' : ''}`;
 }
+
+// ── VISTA PREVIA ──────────────────────────────────────────────
+document.getElementById('btn-vista-previa')?.addEventListener('click', function() {
+  // Fecha de hoy
+  const hoy = new Date();
+  const fechaHoy = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
+  document.getElementById('preview-fecha').textContent = fechaHoy;
+
+  // Paciente
+  if (pacienteData) {
+    document.getElementById('preview-paciente-nombre').textContent = pacienteData.nombre;
+    document.getElementById('preview-paciente-dni').textContent = pacienteData.dni;
+    document.getElementById('preview-paciente-sexo').textContent = pacienteData.sexo || '—';
+    // Convertir YYYY-MM-DD a DD/MM/YYYY si hace falta
+    let fnac = pacienteData.fnac || '—';
+    if (fnac && fnac.includes('-') && fnac.length === 10) {
+      const [y, m, d] = fnac.split('-');
+      fnac = `${d}/${m}/${y}`;
+    }
+    document.getElementById('preview-paciente-fnac').textContent = fnac;
+  } else {
+    document.getElementById('preview-paciente-nombre').textContent = '—';
+    document.getElementById('preview-paciente-dni').textContent = '—';
+    document.getElementById('preview-paciente-sexo').textContent = '—';
+    document.getElementById('preview-paciente-fnac').textContent = '—';
+  }
+
+  // Origen
+  const origenVal = document.querySelector('input[name="tipo_origen"]:checked')?.value || '—';
+  const origenLabels = { GUARDIA: '🚨 Guardia', INTERNACION: '🏥 Internación', AMBULATORIO: '📅 Ambulatorio' };
+  document.getElementById('preview-origen-label').textContent = origenLabels[origenVal] || '—';
+
+  // Observaciones
+  const obs = document.querySelector('textarea[name="observaciones"]')?.value.trim() || '—';
+  document.getElementById('preview-observaciones').textContent = obs;
+
+  // Determinaciones — tomar de la vista activa, en mayúsculas
+  const vistaActiva = vistaGuardia.classList.contains('d-none') ? vistaSectores : vistaGuardia;
+  const checkeados = Array.from(vistaActiva.querySelectorAll('input[type="checkbox"]:checked'))
+    .map(cb => cb.closest('.det-item')?.querySelector('label')?.textContent.trim().toUpperCase())
+    .filter(Boolean);
+
+  const previewDets = document.getElementById('preview-determinaciones');
+  if (checkeados.length === 0) {
+    previewDets.innerHTML = '<em style="color: var(--color-text-lighter);">Ninguna seleccionada.</em>';
+  } else {
+    previewDets.innerHTML = checkeados
+      .map(n => `<div style="padding: .2rem 0; border-bottom: 1px dotted var(--color-gray-lighter);">• ${n}</div>`)
+      .join('');
+  }
+
+  new bootstrap.Modal(document.getElementById('modal-vista-previa')).show();
+});
 
 // ── DESHABILITAR VISTA OCULTA ANTES DE SUBMIT ─────────────────
 document.getElementById('orden-form').addEventListener('submit', function() {
