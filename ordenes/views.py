@@ -122,13 +122,41 @@ def crear_orden(request):
         orden_form = OrdenForm()
         paciente_form = PacienteInlineForm()
 
-    from determinaciones.models import Determinacion, DeterminacionCompleja
+    from determinaciones.models import Determinacion, DeterminacionCompleja, Sector
     guardia_pks_simples = set(
         str(pk) for pk in Determinacion.objects.filter(guardia=True).values_list("pk", flat=True)
     )
     guardia_pks_complejas = set(
         str(pk) for pk in DeterminacionCompleja.objects.filter(guardia=True).values_list("pk", flat=True)
     )
+
+    # Sectores con sus PKs para agrupar en el template
+    sectores = []
+    for sector in Sector.objects.order_by("nombre"):
+        pks_simples = list(
+            Determinacion.objects.filter(sector=sector, activa=True, visible=True)
+            .values_list("pk", flat=True)
+        )
+        pks_complejas = list(
+            DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
+            .values_list("pk", flat=True)
+        )
+        sectores.append({
+            "nombre": sector.nombre,
+            "pks_simples": set(str(pk) for pk in pks_simples),
+            "pks_complejas": set(str(pk) for pk in pks_complejas),
+        })
+    # Determinaciones sin sector
+    pks_sin_sector_simples = set(
+        str(pk) for pk in Determinacion.objects.filter(sector__isnull=True, activa=True, visible=True)
+        .values_list("pk", flat=True)
+    )
+    if pks_sin_sector_simples:
+        sectores.append({
+            "nombre": "Otros",
+            "pks_simples": pks_sin_sector_simples,
+            "pks_complejas": set(),
+        })
 
     guardia_orden = json.dumps(NOMBRES_GUARDIA_ORDENADOS)
 
@@ -142,6 +170,7 @@ def crear_orden(request):
             "guardia_orden": guardia_orden,
             "guardia_pks_simples": guardia_pks_simples,
             "guardia_pks_complejas": guardia_pks_complejas,
+            "sectores": sectores,
         },
     )
 

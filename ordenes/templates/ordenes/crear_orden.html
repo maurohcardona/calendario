@@ -136,31 +136,76 @@
       {% if orden_form.non_field_errors %}
         <div class="alert alert-danger">{{ orden_form.non_field_errors }}</div>
       {% endif %}
-      <div class="row row-cols-1 row-cols-md-3 g-2" id="det-grid">
-        {% for det in orden_form.determinaciones %}
-          <div class="col det-item"
-               data-nombre="{{ det.choice_label|lower }}"
-               data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_simples %}1{% else %}0{% endif %}">
-            <div class="form-check">
-              {{ det.tag }}
-              <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
-                {{ det.choice_label }}
-              </label>
+      <div id="det-grid">
+        {# ── VISTA GUARDIA: grilla plana sin sectores ── #}
+        <div id="vista-guardia" class="row row-cols-1 row-cols-md-3 g-2 d-none">
+          {% for det in orden_form.determinaciones %}
+            <div class="col det-item det-guardia-simple"
+                 data-nombre="{{ det.choice_label|lower }}"
+                 data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_simples %}1{% else %}0{% endif %}">
+              <div class="form-check">
+                {{ det.tag }}
+                <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                  {{ det.choice_label }}
+                </label>
+              </div>
             </div>
-          </div>
-        {% endfor %}
-        {% for det in orden_form.determinaciones_complejas %}
-          <div class="col det-item det-compleja"
-               data-nombre="{{ det.choice_label|lower }}"
-               data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_complejas %}1{% else %}0{% endif %}">
-            <div class="form-check">
-              {{ det.tag }}
-              <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
-                {{ det.choice_label }}
-              </label>
+          {% endfor %}
+          {% for det in orden_form.determinaciones_complejas %}
+            <div class="col det-item det-guardia-compleja"
+                 data-nombre="{{ det.choice_label|lower }}"
+                 data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_complejas %}1{% else %}0{% endif %}">
+              <div class="form-check">
+                {{ det.tag }}
+                <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                  {{ det.choice_label }}
+                </label>
+              </div>
             </div>
-          </div>
-        {% endfor %}
+          {% endfor %}
+        </div>
+
+        {# ── VISTA SECTORES: agrupada por sector ── #}
+        <div id="vista-sectores">
+          {% for sector in sectores %}
+            <div class="sector-group mb-3" data-sector="{{ sector.nombre }}">
+              <div class="sector-header px-2 py-1 mb-2 rounded-2"
+                   style="background-color: var(--color-mint-light); color: var(--color-text); font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;">
+                {{ sector.nombre }}
+              </div>
+              <div class="row row-cols-1 row-cols-md-3 g-2 sector-items">
+                {% for det in orden_form.determinaciones %}
+                  {% if det.data.value|stringformat:'s' in sector.pks_simples %}
+                    <div class="col det-item"
+                         data-nombre="{{ det.choice_label|lower }}"
+                         data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_simples %}1{% else %}0{% endif %}">
+                      <div class="form-check">
+                        {{ det.tag }}
+                        <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                          {{ det.choice_label }}
+                        </label>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+                {% for det in orden_form.determinaciones_complejas %}
+                  {% if det.data.value|stringformat:'s' in sector.pks_complejas %}
+                    <div class="col det-item"
+                         data-nombre="{{ det.choice_label|lower }}"
+                         data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_complejas %}1{% else %}0{% endif %}">
+                      <div class="form-check">
+                        {{ det.tag }}
+                        <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                          {{ det.choice_label }}
+                        </label>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
       </div>
     </div>
   </div>
@@ -235,8 +280,11 @@ document.querySelectorAll('input[name="tipo_origen"]').forEach(radio => {
 });
 
 // ── DETERMINACIONES ───────────────────────────────────────────
+const vistaGuardia = document.getElementById('vista-guardia');
+const vistaSectores = document.getElementById('vista-sectores');
+
 function reordenarParaGuardia() {
-  const grid = document.getElementById('det-grid');
+  const grid = vistaGuardia;
   const items = Array.from(grid.querySelectorAll('.det-item'));
   const guardiaItems = items.filter(el => el.dataset.guardia === '1');
   const restoItems = items.filter(el => el.dataset.guardia !== '1');
@@ -251,9 +299,8 @@ function reordenarParaGuardia() {
     return posA - posB;
   });
 
-  grid.innerHTML = '';
-  guardiaItems.forEach(el => grid.appendChild(el));
-  restoItems.forEach(el => grid.appendChild(el));
+  // Reordenar en el DOM
+  [...guardiaItems, ...restoItems].forEach(el => grid.appendChild(el));
 }
 
 function filtrarDeterminaciones(q) {
@@ -261,27 +308,63 @@ function filtrarDeterminaciones(q) {
   const esGuardia = tipoSeleccionado === 'GUARDIA';
   const texto = q.toLowerCase();
 
-  if (esGuardia) reordenarParaGuardia();
-
-  document.querySelectorAll('.det-item').forEach(el => {
-    const nombre = el.dataset.nombre;
-    const esDeGuardia = el.dataset.guardia === '1';
-    const coincideTexto = !texto || nombre.includes(texto);
-    const coincideTipo = !esGuardia || esDeGuardia;
-    el.style.display = (coincideTexto && coincideTipo) ? '' : 'none';
-  });
+  if (esGuardia) {
+    vistaGuardia.classList.remove('d-none');
+    vistaSectores.classList.add('d-none');
+    reordenarParaGuardia();
+    vistaGuardia.querySelectorAll('.det-item').forEach(el => {
+      const esDeGuardia = el.dataset.guardia === '1';
+      const coincideTexto = !texto || el.dataset.nombre.includes(texto);
+      el.style.display = (esDeGuardia && coincideTexto) ? '' : 'none';
+    });
+  } else {
+    vistaGuardia.classList.add('d-none');
+    vistaSectores.classList.remove('d-none');
+    vistaSectores.querySelectorAll('.sector-group').forEach(grupo => {
+      let visibles = 0;
+      grupo.querySelectorAll('.det-item').forEach(el => {
+        const coincideTexto = !texto || el.dataset.nombre.includes(texto);
+        el.style.display = coincideTexto ? '' : 'none';
+        if (coincideTexto) visibles++;
+      });
+      // Ocultar el grupo entero si no tiene items visibles
+      grupo.style.display = visibles > 0 ? '' : 'none';
+    });
+  }
 }
 
 document.getElementById('filtro-det')?.addEventListener('input', function() {
   filtrarDeterminaciones(this.value);
 });
 
+// ── SINCRONIZAR CHECKS ENTRE VISTAS ──────────────────────────
+document.getElementById('det-grid').addEventListener('change', function(e) {
+  if (!e.target.matches('input[type="checkbox"]')) return;
+  const name = e.target.name;
+  const value = e.target.value;
+  const checked = e.target.checked;
+  document.querySelectorAll(`#det-grid input[name="${name}"][value="${value}"]`).forEach(cb => {
+    cb.checked = checked;
+  });
+  actualizarContador();
+});
+
 // ── CONTADOR ──────────────────────────────────────────────────
 function actualizarContador() {
-  const cnt = document.querySelectorAll('.det-item input:checked').length;
+  // Contar solo en la vista visible para no duplicar
+  const vistaActiva = vistaGuardia.classList.contains('d-none') ? vistaSectores : vistaGuardia;
+  const cnt = vistaActiva.querySelectorAll('input:checked').length;
   document.getElementById('contador-sel').textContent = `${cnt} seleccionada${cnt !== 1 ? 's' : ''}`;
 }
 
-document.getElementById('det-grid')?.addEventListener('change', actualizarContador);
+// ── DESHABILITAR VISTA OCULTA ANTES DE SUBMIT ─────────────────
+document.getElementById('orden-form').addEventListener('submit', function() {
+  const tipoSeleccionado = document.querySelector('input[name="tipo_origen"]:checked')?.value;
+  if (tipoSeleccionado === 'GUARDIA') {
+    vistaSectores.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = true);
+  } else {
+    vistaGuardia.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = true);
+  }
+});
 </script>
 {% endblock %}
