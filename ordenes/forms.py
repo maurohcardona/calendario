@@ -13,6 +13,13 @@ class PacienteInlineForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.required = False
+            widget = field.widget
+            css = widget.attrs.get("class", "")
+            if "form-select" not in css and "form-control" not in css:
+                if hasattr(widget, "choices"):
+                    widget.attrs["class"] = (css + " form-select").strip()
+                else:
+                    widget.attrs["class"] = (css + " form-control").strip()
 
 
 class OrdenForm(forms.ModelForm):

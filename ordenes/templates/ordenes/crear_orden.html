@@ -40,8 +40,43 @@
           <input type="hidden" name="paciente_id" id="paciente-id-hidden">
         </div>
         <div id="paciente-no-encontrado" class="d-none">
-          <div class="alert alert-warning">Paciente no encontrado. Completá los datos para crearlo:</div>
-          {{ paciente_form.as_p }}
+          <div class="rounded-3 p-3 mb-3 d-flex align-items-center gap-2"
+               style="background-color: var(--color-warning-light); border-left: 4px solid var(--color-teal); color: var(--color-warning-text);">
+            <span style="font-size: 1.2rem;">⚠️</span>
+            <span>Paciente no encontrado. Completá los datos para crearlo.</span>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Nombre <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.nombre }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Apellido <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.apellido }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                DNI <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.iden }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Fecha de nacimiento
+              </label>
+              {{ paciente_form.fecha_nacimiento }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Sexo
+              </label>
+              {{ paciente_form.sexo }}
+            </div>
+          </div>
         </div>
       {% endif %}
     </div>
