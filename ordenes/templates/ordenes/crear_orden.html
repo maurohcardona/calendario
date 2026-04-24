@@ -31,7 +31,7 @@
         <div class="mb-3">
           <label class="form-label">Buscar por DNI</label>
           <div class="input-group">
-            <input type="text" id="buscar-dni" class="form-control" placeholder="Ingresá el DNI...">
+            <input type="text" id="buscar-dni" class="form-control" placeholder="Ingresá el DNI..." inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
             <button type="button" class="btn btn-outline-primary" id="btn-buscar">Buscar</button>
           </div>
         </div>
@@ -41,7 +41,7 @@
         </div>
         <div id="paciente-no-encontrado" class="d-none">
           <div class="rounded-3 p-3 mb-3 d-flex align-items-center gap-2"
-               style="background-color: var(--color-warning-light); border-left: 4px solid var(--color-teal); color: var(--color-warning-text);">
+               style="background-color: #ffe0b2; border-left: 4px solid #e65100; color: #bf360c;">
             <span style="font-size: 1.2rem;">⚠️</span>
             <span>Paciente no encontrado. Completá los datos para crearlo.</span>
           </div>
