@@ -143,8 +143,8 @@ def precoordinacion_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
                 "apellido": apellido_nuevo,
                 "fecha_nacimiento": fecha_nac_parsed or date.today(),
                 "sexo": sexo_model,
-                "telefono": telefono or None,
-                "email": email or None,
+                "telefono": telefono or "",
+                "email": email or "",
                 "observaciones": observaciones_paciente or "",
             },
         )
