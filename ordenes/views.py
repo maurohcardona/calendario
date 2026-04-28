@@ -211,7 +211,18 @@ def cola_laboratorio(request):
             grupos[tipo] = []
         grupos[tipo].append(orden)
 
-    return render(request, "ordenes/cola_laboratorio.html", {"grupos": grupos, "hoy": hoy})
+    # Servicios con órdenes hoy para el filtro
+    servicios = (
+        Servicio.objects.filter(ordenlaboratorio__estado="PENDIENTE", ordenlaboratorio__fecha_creacion__date=hoy)
+        .distinct()
+        .order_by("nombre")
+    )
+
+    return render(request, "ordenes/cola_laboratorio.html", {
+        "grupos": grupos,
+        "hoy": hoy,
+        "servicios": servicios,
+    })
 
 
 @operador_lab_requerido
@@ -222,7 +233,6 @@ def ingresar_orden(request, pk):
         form = IngresarOrdenForm(request.POST, instance=orden)
         if form.is_valid():
             orden.ingresar(
-                numero_orden=form.cleaned_data.get("numero_orden_lab", ""),
                 observaciones_lab=form.cleaned_data.get("observaciones_lab", ""),
             )
             messages.success(request, f"Orden #{orden.pk} ingresada al laboratorio.")

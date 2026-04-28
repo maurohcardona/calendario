@@ -11,7 +11,7 @@ class PacienteInlineForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
+        for name, field in self.fields.items():
             field.required = False
             widget = field.widget
             css = widget.attrs.get("class", "")
@@ -20,6 +20,9 @@ class PacienteInlineForm(forms.ModelForm):
                     widget.attrs["class"] = (css + " form-select").strip()
                 else:
                     widget.attrs["class"] = (css + " form-control").strip()
+            if name in ("nombre", "apellido"):
+                widget.attrs["style"] = "text-transform: uppercase;"
+                widget.attrs["oninput"] = "this.value = this.value.toUpperCase();"
 
 
 class OrdenForm(forms.ModelForm):
@@ -55,9 +58,8 @@ class OrdenForm(forms.ModelForm):
 class IngresarOrdenForm(forms.ModelForm):
     class Meta:
         model = OrdenLaboratorio
-        fields = ["numero_orden_lab", "observaciones_lab"]
+        fields = ["observaciones_lab"]
         labels = {
-            "numero_orden_lab": "Número de orden (lab)",
             "observaciones_lab": "Observaciones",
         }
 

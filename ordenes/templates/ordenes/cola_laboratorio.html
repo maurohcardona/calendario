@@ -7,16 +7,41 @@
   <span class="badge bg-secondary">Auto-refresh: 60s</span>
 </div>
 
+{# ── FILTROS ── #}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Buscar por DNI o N° Orden</label>
+        <input type="text" id="filtro-busqueda" class="form-control" placeholder="DNI o número de orden...">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Filtrar por servicio</label>
+        <select id="filtro-servicio" class="form-select">
+          <option value="">Todos los servicios</option>
+          {% for servicio in servicios %}
+            <option value="{{ servicio.pk }}">{{ servicio.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-secondary w-100" id="btn-limpiar-filtros">Limpiar filtros</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% if grupos %}
   {% for tipo, ordenes in grupos.items %}
-  <div class="card mb-4">
+  <div class="card mb-4 grupo-origen">
     <div class="card-header fw-bold">{{ tipo }}</div>
     <div class="card-body p-0">
       <table class="table table-hover mb-0">
         <thead>
           <tr>
-            <th>#</th>
+            <th>N° Orden</th>
             <th>Paciente</th>
+            <th>DNI</th>
             <th>Médico</th>
             <th>Servicio</th>
             <th>Hora</th>
@@ -25,9 +50,13 @@
         </thead>
         <tbody>
           {% for orden in ordenes %}
-          <tr>
-            <td>{{ orden.pk }}</td>
+          <tr class="fila-orden"
+              data-dni="{{ orden.paciente.iden }}"
+              data-orden="{{ orden.numero_orden_lab|lower }}"
+              data-servicio="{{ orden.servicio.pk|default:'' }}">
+            <td><span class="badge" style="background-color: var(--color-primary);">{{ orden.numero_orden_lab }}</span></td>
             <td>{{ orden.paciente.nombre_completo }}</td>
+            <td>{{ orden.paciente.iden }}</td>
             <td>{{ orden.medico }}</td>
             <td>{{ orden.servicio|default:"-" }}</td>
             <td>{{ orden.fecha_creacion|date:"H:i" }}</td>
@@ -45,4 +74,45 @@
 {% else %}
   <div class="alert alert-info">No hay órdenes pendientes para hoy.</div>
 {% endif %}
+
+<div id="sin-resultados" class="alert alert-warning d-none">No se encontraron órdenes con los filtros aplicados.</div>
+
+<script>
+function aplicarFiltros() {
+  const busqueda = document.getElementById('filtro-busqueda').value.trim().toLowerCase();
+  const servicioId = document.getElementById('filtro-servicio').value;
+  let totalVisibles = 0;
+
+  document.querySelectorAll('.grupo-origen').forEach(grupo => {
+    let visiblesEnGrupo = 0;
+    grupo.querySelectorAll('.fila-orden').forEach(fila => {
+      const dni = fila.dataset.dni || '';
+      const orden = fila.dataset.orden || '';
+      const servicio = fila.dataset.servicio || '';
+
+      const coincideBusqueda = !busqueda || dni.includes(busqueda) || orden.includes(busqueda);
+      const coincideServicio = !servicioId || servicio === servicioId;
+
+      if (coincideBusqueda && coincideServicio) {
+        fila.style.display = '';
+        visiblesEnGrupo++;
+        totalVisibles++;
+      } else {
+        fila.style.display = 'none';
+      }
+    });
+    grupo.style.display = visiblesEnGrupo > 0 ? '' : 'none';
+  });
+
+  document.getElementById('sin-resultados').classList.toggle('d-none', totalVisibles > 0);
+}
+
+document.getElementById('filtro-busqueda').addEventListener('input', aplicarFiltros);
+document.getElementById('filtro-servicio').addEventListener('change', aplicarFiltros);
+document.getElementById('btn-limpiar-filtros').addEventListener('click', function() {
+  document.getElementById('filtro-busqueda').value = '';
+  document.getElementById('filtro-servicio').value = '';
+  aplicarFiltros();
+});
+</script>
 {% endblock %}

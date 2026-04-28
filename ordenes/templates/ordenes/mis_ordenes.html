@@ -7,12 +7,14 @@
 
 {% if ordenes %}
 <div class="table-responsive">
-  <table class="table table-hover">
+  <table class="table table-hover align-middle">
     <thead>
       <tr>
-        <th>#</th>
+        <th>N° Orden</th>
         <th>Paciente</th>
         <th>Origen</th>
+        <th>Cama</th>
+        <th>Obs.</th>
         <th>Estado</th>
         <th>Fecha</th>
       </tr>
@@ -20,9 +22,22 @@
     <tbody>
       {% for orden in ordenes %}
       <tr style="cursor:pointer;" onclick="window.location='{% url 'ordenes:detalle_orden' orden.pk %}'">
-        <td>{{ orden.pk }}</td>
-        <td>{{ orden.paciente.nombre_completo }}</td>
+        <td>
+          <span class="badge" style="background-color: var(--color-primary);">{{ orden.numero_orden_lab }}</span>
+        </td>
+        <td>
+          <strong>{{ orden.paciente.nombre_completo }}</strong><br>
+          <small class="text-muted">DNI: {{ orden.paciente.iden }}</small>
+        </td>
         <td>{{ orden.get_tipo_origen_display }}</td>
+        <td>{{ orden.sala|default:"—" }}</td>
+        <td>
+          {% if orden.observaciones %}
+            <span title="{{ orden.observaciones }}" style="color: var(--color-teal-dark); font-size: 1.1rem;">💬</span>
+          {% else %}
+            —
+          {% endif %}
+        </td>
         <td>
           {% if orden.estado == 'PENDIENTE' %}
             <span class="badge bg-warning text-dark">Pendiente</span>

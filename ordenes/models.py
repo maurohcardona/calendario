@@ -79,9 +79,15 @@ class OrdenLaboratorio(models.Model):
     def puede_vincular_turno(self):
         return self.estado in ("PENDIENTE", "INGRESADA")
 
-    def ingresar(self, numero_orden="", observaciones_lab=""):
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Generar numero_orden_lab la primera vez (único, basado en pk)
+        if not self.numero_orden_lab:
+            self.numero_orden_lab = f"LAB-{self.pk:06d}"
+            super().save(update_fields=["numero_orden_lab"])
+
+    def ingresar(self, observaciones_lab=""):
         self.estado = "INGRESADA"
-        self.numero_orden_lab = numero_orden
         self.observaciones_lab = observaciones_lab
         self.save()
 

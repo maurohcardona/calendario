@@ -7,10 +7,11 @@
 <div class="card mb-4">
   <div class="card-header fw-bold">Datos de la Orden #{{ orden.pk }}</div>
   <div class="card-body">
+    <p><strong>N° Orden Lab:</strong> <span class="badge" style="background-color: var(--color-primary); font-size: .95rem;">{{ orden.numero_orden_lab }}</span></p>
     <p><strong>Paciente:</strong> {{ orden.paciente.nombre_completo }} (DNI: {{ orden.paciente.iden }})</p>
     <p><strong>Médico:</strong> {{ orden.medico }}</p>
     <p><strong>Origen:</strong> {{ orden.get_tipo_origen_display }}</p>
-    {% if orden.observaciones %}<p><strong>Observaciones:</strong> {{ orden.observaciones }}</p>{% endif %}
+    {% if orden.observaciones %}<p><strong>Observaciones médico:</strong> {{ orden.observaciones }}</p>{% endif %}
   </div>
 </div>
 

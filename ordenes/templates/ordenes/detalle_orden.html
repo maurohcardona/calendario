@@ -49,7 +49,7 @@
     {% if orden.determinaciones_complejas.all %}
       <ul>
         {% for det in orden.determinaciones_complejas.all %}
-          <li>🔬 {{ det.nombre|upper }}</li>
+          <li>{{ det.nombre|upper }}</li>
         {% endfor %}
       </ul>
     {% endif %}

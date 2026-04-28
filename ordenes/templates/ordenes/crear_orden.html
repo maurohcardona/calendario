@@ -31,8 +31,8 @@
         <div class="mb-3">
           <label class="form-label">Buscar por DNI</label>
           <div class="input-group">
-            <input type="text" id="buscar-dni" class="form-control" placeholder="Ingresá el DNI..." inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-            <button type="button" class="btn btn-outline-primary" id="btn-buscar">Buscar</button>
+            <input type="text" id="buscar-dni" class="form-control" placeholder="Ingresá el DNI..." inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('btn-buscar').click();}">            <button type="button" class="btn btn-outline-primary" id="btn-buscar">Buscar</button>
           </div>
         </div>
         <div id="paciente-encontrado" class="d-none">
@@ -232,7 +232,7 @@
           {# Encabezado institución #}
           <div class="text-center mb-3" style="border-bottom: 2px solid var(--color-primary); padding-bottom: .75rem;">
             <div style="font-size: 1.3rem; font-weight: 700; color: var(--color-primary); letter-spacing: .02em;">ORDEN DE LABORATORIO</div>
-            <div style="font-size: .8rem; color: var(--color-text-light);">Sistema de Gestión — {{ request.get_host }}</div>
+            <div style="font-size: .8rem; color: var(--color-text-light);">Hospital Balestrini</div>
           </div>
 
           {# Datos del médico #}
@@ -333,6 +333,9 @@ document.getElementById('btn-buscar')?.addEventListener('click', function() {
         pacienteData = null;
         document.getElementById('paciente-no-encontrado').classList.remove('d-none');
         document.getElementById('paciente-encontrado').classList.add('d-none');
+        // Pre-completar DNI en el formulario de nuevo paciente
+        const idenInput = document.querySelector('#paciente-no-encontrado input[name="iden"]');
+        if (idenInput) idenInput.value = dni;
       }
     });
 });
