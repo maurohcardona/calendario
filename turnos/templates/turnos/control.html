@@ -32,6 +32,7 @@
                 <div class="paciente-meta">
                     Agenda: <strong>{{ orden.turno.agenda.name }}</strong>
                     {% if orden.turno.medico %}| Médico: <strong>{{ orden.turno.medico.nombre }}</strong>{% endif %}
+                    {% if orden.turno.nota_interna %}| Nota: <strong>{{ orden.turno.nota_interna }}</strong>{% endif %}
                 </div>
             </div>
             <div class="orden-contador">
