@@ -66,15 +66,27 @@
             </div>
             <div class="col-md-4">
               <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
-                Fecha de nacimiento
+                Fecha de nacimiento <span class="text-danger">*</span>
               </label>
               {{ paciente_form.fecha_nacimiento }}
             </div>
             <div class="col-md-4">
               <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
-                Sexo
+                Sexo <span class="text-danger">*</span>
               </label>
               {{ paciente_form.sexo }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Teléfono
+              </label>
+              {{ paciente_form.telefono }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Email
+              </label>
+              {{ paciente_form.email }}
             </div>
           </div>
         </div>
@@ -165,43 +177,50 @@
           {% endfor %}
         </div>
 
-        {# ── VISTA SECTORES: agrupada por sector ── #}
+        {# ── VISTA SECTORES: agrupada por sector, con collapse ── #}
         <div id="vista-sectores">
           {% for sector in sectores %}
-            <div class="sector-group mb-3" data-sector="{{ sector.nombre }}">
-              <div class="sector-header px-2 py-1 mb-2 rounded-2"
-                   style="background-color: var(--color-mint-light); color: var(--color-text); font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;">
-                {{ sector.nombre }}
-              </div>
-              <div class="row row-cols-1 row-cols-md-3 g-2 sector-items">
-                {% for det in orden_form.determinaciones %}
-                  {% if det.data.value|stringformat:'s' in sector.pks_simples %}
-                    <div class="col det-item"
-                         data-nombre="{{ det.choice_label|lower }}"
-                         data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_simples %}1{% else %}0{% endif %}">
-                      <div class="form-check">
-                        {{ det.tag }}
-                        <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
-                          {{ det.choice_label }}
-                        </label>
+            <div class="sector-group mb-2" data-sector="{{ sector.nombre }}">
+              <button class="btn btn-sm w-100 text-start d-flex justify-content-between align-items-center px-2 py-1 rounded-2 sector-toggle"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#sector-{{ forloop.counter }}"
+                      aria-expanded="true"
+                      style="background-color: var(--color-mint-light); color: var(--color-text); font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; border: none;">
+                <span>{{ sector.nombre }}</span>
+                <span class="sector-chevron">▲</span>
+              </button>
+              <div id="sector-{{ forloop.counter }}" class="collapse show sector-items">
+                <div class="row row-cols-1 row-cols-md-3 g-2 pt-2">
+                  {% for det in orden_form.determinaciones %}
+                    {% if det.data.value|stringformat:'s' in sector.pks_simples %}
+                      <div class="col det-item"
+                           data-nombre="{{ det.choice_label|lower }}"
+                           data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_simples %}1{% else %}0{% endif %}">
+                        <div class="form-check">
+                          {{ det.tag }}
+                          <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                            {{ det.choice_label }}
+                          </label>
+                        </div>
                       </div>
-                    </div>
-                  {% endif %}
-                {% endfor %}
-                {% for det in orden_form.determinaciones_complejas %}
-                  {% if det.data.value|stringformat:'s' in sector.pks_complejas %}
-                    <div class="col det-item"
-                         data-nombre="{{ det.choice_label|lower }}"
-                         data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_complejas %}1{% else %}0{% endif %}">
-                      <div class="form-check">
-                        {{ det.tag }}
-                        <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
-                          {{ det.choice_label }}
-                        </label>
+                    {% endif %}
+                  {% endfor %}
+                  {% for det in orden_form.determinaciones_complejas %}
+                    {% if det.data.value|stringformat:'s' in sector.pks_complejas %}
+                      <div class="col det-item"
+                           data-nombre="{{ det.choice_label|lower }}"
+                           data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_complejas %}1{% else %}0{% endif %}">
+                        <div class="form-check">
+                          {{ det.tag }}
+                          <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                            {{ det.choice_label }}
+                          </label>
+                        </div>
                       </div>
-                    </div>
-                  {% endif %}
-                {% endfor %}
+                    {% endif %}
+                  {% endfor %}
+                </div>
               </div>
             </div>
           {% endfor %}
@@ -507,6 +526,18 @@ document.getElementById('btn-vista-previa')?.addEventListener('click', function(
   }
 
   new bootstrap.Modal(document.getElementById('modal-vista-previa')).show();
+});
+
+// ── CHEVRON EN SECTORES PLEGABLES ────────────────────────────
+document.querySelectorAll('.sector-toggle').forEach(btn => {
+  const target = document.querySelector(btn.dataset.bsTarget);
+  if (!target) return;
+  target.addEventListener('show.bs.collapse', () => {
+    btn.querySelector('.sector-chevron').textContent = '▲';
+  });
+  target.addEventListener('hide.bs.collapse', () => {
+    btn.querySelector('.sector-chevron').textContent = '▼';
+  });
 });
 
 // ── DESHABILITAR VISTA OCULTA ANTES DE SUBMIT ─────────────────

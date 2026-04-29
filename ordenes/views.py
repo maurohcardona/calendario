@@ -2,6 +2,7 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -131,21 +132,39 @@ def crear_orden(request):
     )
 
     # Sectores con sus PKs para agrupar en el template
-    sectores = []
-    for sector in Sector.objects.order_by("nombre"):
-        pks_simples = list(
-            Determinacion.objects.filter(sector=sector, activa=True, visible=True)
+    ORDEN_SECTORES = [
+        "hematologia",
+        "hemostasia",
+        "quimica",
+        "enzimas cardiacas",
+        "serologia",
+        "endocrinologia",
+    ]
+
+    sectores_raw = []
+    for sector in Sector.objects.all():
+        pks_simples = set(
+            str(pk) for pk in Determinacion.objects.filter(sector=sector, activa=True, visible=True)
             .values_list("pk", flat=True)
         )
-        pks_complejas = list(
-            DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
+        pks_complejas = set(
+            str(pk) for pk in DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
             .values_list("pk", flat=True)
         )
-        sectores.append({
+        sectores_raw.append({
             "nombre": sector.nombre,
-            "pks_simples": set(str(pk) for pk in pks_simples),
-            "pks_complejas": set(str(pk) for pk in pks_complejas),
+            "pks_simples": pks_simples,
+            "pks_complejas": pks_complejas,
         })
+
+    def sector_sort_key(s):
+        nombre = s["nombre"].lower()
+        try:
+            return ORDEN_SECTORES.index(nombre)
+        except ValueError:
+            return len(ORDEN_SECTORES)  # los que no están en la lista van al final
+
+    sectores = sorted(sectores_raw, key=sector_sort_key)
     # Determinaciones sin sector
     pks_sin_sector_simples = set(
         str(pk) for pk in Determinacion.objects.filter(sector__isnull=True, activa=True, visible=True)
@@ -280,3 +299,65 @@ def cancelar_orden(request, pk):
     else:
         form = CancelarOrdenForm()
     return render(request, "ordenes/cancelar_orden.html", {"orden": orden, "form": form})
+
+
+@login_required
+def buscar_ordenes_global(request):
+    """AJAX: busca órdenes por DNI o número de orden en toda la base de datos."""
+    q = request.GET.get("q", "").strip()
+    if not q:
+        return JsonResponse({"ordenes": []})
+
+    ordenes = OrdenLaboratorio.objects.select_related(
+        "paciente", "medico", "servicio"
+    ).filter(
+        Q(paciente__iden__icontains=q) | Q(numero_orden_lab__icontains=q)
+    ).order_by("-fecha_creacion")[:20]
+
+    data = []
+    for o in ordenes:
+        data.append({
+            "pk": o.pk,
+            "numero_orden_lab": o.numero_orden_lab,
+            "paciente": o.paciente.nombre_completo,
+            "dni": o.paciente.iden,
+            "origen": o.get_tipo_origen_display(),
+            "estado": o.estado,
+            "estado_display": o.get_estado_display(),
+            "fecha": o.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
+            "url": f"/ordenes/{o.pk}/",
+        })
+    return JsonResponse({"ordenes": data})
+
+
+@login_required
+def todas_ordenes(request):
+    """Vista con filtros avanzados para buscar todas las órdenes."""
+    qs = OrdenLaboratorio.objects.select_related("paciente", "medico", "servicio").order_by("-fecha_creacion")
+
+    dni = request.GET.get("dni", "").strip()
+    servicio_id = request.GET.get("servicio", "").strip()
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+
+    if dni:
+        qs = qs.filter(paciente__iden__icontains=dni)
+    if servicio_id:
+        qs = qs.filter(servicio_id=servicio_id)
+    if fecha_desde:
+        qs = qs.filter(fecha_creacion__date__gte=fecha_desde)
+    if fecha_hasta:
+        qs = qs.filter(fecha_creacion__date__lte=fecha_hasta)
+
+    servicios = Servicio.objects.filter(activo=True).order_by("nombre")
+
+    return render(request, "ordenes/todas_ordenes.html", {
+        "ordenes": qs[:200],
+        "servicios": servicios,
+        "filtros": {
+            "dni": dni,
+            "servicio": servicio_id,
+            "fecha_desde": fecha_desde,
+            "fecha_hasta": fecha_hasta,
+        },
+    })

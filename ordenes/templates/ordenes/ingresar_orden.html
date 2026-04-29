@@ -4,33 +4,131 @@
   <a href="{% url 'ordenes:cola_laboratorio' %}" class="btn btn-outline-secondary">← Volver a Cola</a>
 </div>
 
-<div class="card mb-4">
-  <div class="card-header fw-bold">Datos de la Orden #{{ orden.pk }}</div>
-  <div class="card-body">
-    <p><strong>N° Orden Lab:</strong> <span class="badge" style="background-color: var(--color-primary); font-size: .95rem;">{{ orden.numero_orden_lab }}</span></p>
-    <p><strong>Paciente:</strong> {{ orden.paciente.nombre_completo }} (DNI: {{ orden.paciente.iden }})</p>
-    <p><strong>Médico:</strong> {{ orden.medico }}</p>
-    <p><strong>Origen:</strong> {{ orden.get_tipo_origen_display }}</p>
-    {% if orden.observaciones %}<p><strong>Observaciones médico:</strong> {{ orden.observaciones }}</p>{% endif %}
-  </div>
-</div>
+<div class="row g-4">
 
-<div class="card">
-  <div class="card-header fw-bold">Ingresar al Laboratorio</div>
-  <div class="card-body">
-    <form method="post">
-      {% csrf_token %}
-      {% for field in form %}
-        <div class="mb-3">
-          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}
-            <div class="text-danger">{{ field.errors }}</div>
+  {# ── Columna izquierda: datos de la orden ── #}
+  <div class="col-md-7">
+
+    <div class="card mb-3">
+      <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+        <span>Orden <span class="badge" style="background-color: var(--color-primary);">{{ orden.numero_orden_lab }}</span></span>
+        <span>
+          {% if orden.estado == 'PENDIENTE' %}
+            <span class="badge bg-warning text-dark">Pendiente</span>
+          {% elif orden.estado == 'INGRESADA' %}
+            <span class="badge bg-info text-dark">Ingresada</span>
+          {% elif orden.estado == 'COMPLETADA' %}
+            <span class="badge bg-success">Completada</span>
+          {% elif orden.estado == 'CANCELADA' %}
+            <span class="badge bg-danger">Cancelada</span>
           {% endif %}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Origen</div>
+            <div>{{ orden.get_tipo_origen_display }}</div>
+          </div>
+          {% if orden.servicio %}
+          <div class="col-6">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Servicio</div>
+            <div>{{ orden.servicio }}</div>
+          </div>
+          {% endif %}
+          {% if orden.sala %}
+          <div class="col-6">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Cama / Sala</div>
+            <div>{{ orden.sala }}</div>
+          </div>
+          {% endif %}
+          <div class="col-6">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Médico</div>
+            <div>{{ orden.medico }}</div>
+          </div>
+          <div class="col-6">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Fecha</div>
+            <div>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</div>
+          </div>
         </div>
-      {% endfor %}
-      <button type="submit" class="btn btn-success">Ingresar Orden</button>
-    </form>
+        {% if orden.observaciones %}
+        <div class="mt-3 p-2 rounded-2" style="background-color: var(--color-bg); border-left: 3px solid var(--color-teal);">
+          <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Observaciones del médico</div>
+          <div class="mt-1">{{ orden.observaciones }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-bold">Paciente</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-8">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Nombre completo</div>
+            <div class="fw-semibold">{{ orden.paciente.nombre_completo }}</div>
+          </div>
+          <div class="col-4">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">DNI</div>
+            <div>{{ orden.paciente.iden }}</div>
+          </div>
+          <div class="col-4">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Sexo</div>
+            <div>{{ orden.paciente.sexo }}</div>
+          </div>
+          <div class="col-4">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Fecha Nac.</div>
+            <div>{{ orden.paciente.fecha_nacimiento|date:"d/m/Y" }}</div>
+          </div>
+          <div class="col-4">
+            <div class="small text-uppercase" style="color: var(--color-text-lighter); letter-spacing: .04em;">Edad</div>
+            <div>{{ orden.paciente.edad }} años</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header fw-bold">Determinaciones solicitadas</div>
+      <div class="card-body">
+        {% if orden.determinaciones.all or orden.determinaciones_complejas.all %}
+          <ul class="mb-0">
+            {% for det in orden.determinaciones.all %}
+              <li>{{ det.nombre|upper }}</li>
+            {% endfor %}
+            {% for det in orden.determinaciones_complejas.all %}
+              <li>{{ det.nombre|upper }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span class="text-muted">Sin determinaciones registradas.</span>
+        {% endif %}
+      </div>
+    </div>
+
   </div>
+
+  {# ── Columna derecha: acción de ingreso ── #}
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header fw-bold">Ingresar al Laboratorio</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="mb-3">
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}
+                <div class="text-danger">{{ field.errors }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-success w-100">Ingresar Orden</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

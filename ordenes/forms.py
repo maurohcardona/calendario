@@ -7,7 +7,7 @@ from .models import OrdenLaboratorio, Servicio
 class PacienteInlineForm(forms.ModelForm):
     class Meta:
         model = Paciente
-        fields = ["iden", "apellido", "nombre", "fecha_nacimiento", "sexo"]
+        fields = ["iden", "apellido", "nombre", "fecha_nacimiento", "sexo", "telefono", "email"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

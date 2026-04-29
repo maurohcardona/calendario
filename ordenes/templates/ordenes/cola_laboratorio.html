@@ -7,16 +7,19 @@
   <span class="badge bg-secondary">Auto-refresh: 60s</span>
 </div>
 
-{# ── FILTROS ── #}
+{# ── BÚSQUEDA GLOBAL ── #}
 <div class="card mb-4">
   <div class="card-body">
     <div class="row g-2 align-items-end">
-      <div class="col-md-5">
-        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Buscar por DNI o N° Orden</label>
-        <input type="text" id="filtro-busqueda" class="form-control" placeholder="DNI o número de orden...">
+      <div class="col-md-7">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Buscar por DNI o N° Orden (toda la base de datos)</label>
+        <div class="input-group">
+          <input type="text" id="busqueda-global" class="form-control" placeholder="Ingresá DNI o número de orden...">
+          <button class="btn btn-outline-secondary" id="btn-limpiar-global" type="button">✕</button>
+        </div>
       </div>
       <div class="col-md-4">
-        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Filtrar por servicio</label>
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Filtrar cola por servicio</label>
         <select id="filtro-servicio" class="form-select">
           <option value="">Todos los servicios</option>
           {% for servicio in servicios %}
@@ -24,13 +27,38 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-3">
-        <button class="btn btn-outline-secondary w-100" id="btn-limpiar-filtros">Limpiar filtros</button>
-      </div>
     </div>
   </div>
 </div>
 
+{# ── RESULTADOS BÚSQUEDA GLOBAL ── #}
+<div id="resultados-busqueda" class="d-none mb-4">
+  <div class="card border-primary">
+    <div class="card-header fw-bold" style="background-color: var(--color-primary); color: white;">
+      Resultados de búsqueda — <span id="resultados-count">0</span> orden(es)
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>N° Orden</th>
+            <th>Paciente</th>
+            <th>DNI</th>
+            <th>Origen</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="resultados-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div id="busqueda-sin-resultados" class="alert alert-warning d-none">No se encontraron órdenes para esa búsqueda.</div>
+
+{# ── COLA DEL DÍA ── #}
+<div id="cola-hoy">
 {% if grupos %}
   {% for tipo, ordenes in grupos.items %}
   <div class="card mb-4 grupo-origen">
@@ -61,7 +89,11 @@
             <td>{{ orden.servicio|default:"-" }}</td>
             <td>{{ orden.fecha_creacion|date:"H:i" }}</td>
             <td>
-              <a href="{% url 'ordenes:ingresar_orden' orden.pk %}" class="btn btn-sm btn-success">Ingresar</a>
+              {% if orden.tipo_origen == 'AMBULATORIO' %}
+                <a href="{% url 'ordenes:vincular_turno' orden.pk %}" class="btn btn-sm btn-primary">Turno</a>
+              {% else %}
+                <a href="{% url 'ordenes:ingresar_orden' orden.pk %}" class="btn btn-sm btn-success">Ingresar</a>
+              {% endif %}
               <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-sm btn-outline-danger">Cancelar</a>
             </td>
           </tr>
@@ -74,45 +106,98 @@
 {% else %}
   <div class="alert alert-info">No hay órdenes pendientes para hoy.</div>
 {% endif %}
+</div>
 
-<div id="sin-resultados" class="alert alert-warning d-none">No se encontraron órdenes con los filtros aplicados.</div>
+<div id="sin-resultados-cola" class="alert alert-warning d-none">No hay órdenes para el servicio seleccionado.</div>
 
 <script>
-function aplicarFiltros() {
-  const busqueda = document.getElementById('filtro-busqueda').value.trim().toLowerCase();
+const BUSCAR_ORDENES_URL = "{% url 'ordenes:buscar_ordenes_global' %}";
+
+// ── BÚSQUEDA GLOBAL AJAX ───────────────────────────────────────
+const inputBusqueda = document.getElementById('busqueda-global');
+const resultadosDiv = document.getElementById('resultados-busqueda');
+const resultadosTbody = document.getElementById('resultados-tbody');
+const resultadosCount = document.getElementById('resultados-count');
+const sinResultados = document.getElementById('busqueda-sin-resultados');
+const colaHoy = document.getElementById('cola-hoy');
+
+const ESTADO_LABELS = {
+  PENDIENTE: '<span class="badge bg-warning text-dark">Pendiente</span>',
+  INGRESADA: '<span class="badge bg-info text-dark">Ingresada</span>',
+  COMPLETADA: '<span class="badge bg-success">Completada</span>',
+  CANCELADA: '<span class="badge bg-danger">Cancelada</span>',
+};
+
+let busquedaTimer = null;
+
+inputBusqueda.addEventListener('input', function() {
+  clearTimeout(busquedaTimer);
+  const q = this.value.trim();
+  if (!q) {
+    ocultarResultados();
+    return;
+  }
+  busquedaTimer = setTimeout(() => ejecutarBusqueda(q), 350);
+});
+
+document.getElementById('btn-limpiar-global').addEventListener('click', function() {
+  inputBusqueda.value = '';
+  ocultarResultados();
+});
+
+function ejecutarBusqueda(q) {
+  fetch(`${BUSCAR_ORDENES_URL}?q=${encodeURIComponent(q)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.ordenes.length === 0) {
+        resultadosDiv.classList.add('d-none');
+        sinResultados.classList.remove('d-none');
+        colaHoy.classList.add('d-none');
+        return;
+      }
+      sinResultados.classList.add('d-none');
+      resultadosCount.textContent = data.ordenes.length;
+      resultadosTbody.innerHTML = data.ordenes.map(o => `
+        <tr style="cursor:pointer;" onclick="window.location='${o.url}'">
+          <td><span class="badge" style="background-color: var(--color-primary);">${o.numero_orden_lab}</span></td>
+          <td>${o.paciente}</td>
+          <td>${o.dni}</td>
+          <td>${o.origen}</td>
+          <td>${ESTADO_LABELS[o.estado] || o.estado_display}</td>
+          <td>${o.fecha}</td>
+          <td><a href="${o.url}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+        </tr>
+      `).join('');
+      resultadosDiv.classList.remove('d-none');
+      colaHoy.classList.add('d-none');
+    });
+}
+
+function ocultarResultados() {
+  resultadosDiv.classList.add('d-none');
+  sinResultados.classList.add('d-none');
+  colaHoy.classList.remove('d-none');
+  aplicarFiltroServicio();
+}
+
+// ── FILTRO DE SERVICIO (solo sobre la cola del día) ────────────
+function aplicarFiltroServicio() {
   const servicioId = document.getElementById('filtro-servicio').value;
   let totalVisibles = 0;
 
   document.querySelectorAll('.grupo-origen').forEach(grupo => {
     let visiblesEnGrupo = 0;
     grupo.querySelectorAll('.fila-orden').forEach(fila => {
-      const dni = fila.dataset.dni || '';
-      const orden = fila.dataset.orden || '';
-      const servicio = fila.dataset.servicio || '';
-
-      const coincideBusqueda = !busqueda || dni.includes(busqueda) || orden.includes(busqueda);
-      const coincideServicio = !servicioId || servicio === servicioId;
-
-      if (coincideBusqueda && coincideServicio) {
-        fila.style.display = '';
-        visiblesEnGrupo++;
-        totalVisibles++;
-      } else {
-        fila.style.display = 'none';
-      }
+      const coincide = !servicioId || fila.dataset.servicio === servicioId;
+      fila.style.display = coincide ? '' : 'none';
+      if (coincide) { visiblesEnGrupo++; totalVisibles++; }
     });
     grupo.style.display = visiblesEnGrupo > 0 ? '' : 'none';
   });
 
-  document.getElementById('sin-resultados').classList.toggle('d-none', totalVisibles > 0);
+  document.getElementById('sin-resultados-cola').classList.toggle('d-none', totalVisibles > 0 || !!document.querySelector('.alert-info'));
 }
 
-document.getElementById('filtro-busqueda').addEventListener('input', aplicarFiltros);
-document.getElementById('filtro-servicio').addEventListener('change', aplicarFiltros);
-document.getElementById('btn-limpiar-filtros').addEventListener('click', function() {
-  document.getElementById('filtro-busqueda').value = '';
-  document.getElementById('filtro-servicio').value = '';
-  aplicarFiltros();
-});
+document.getElementById('filtro-servicio').addEventListener('change', aplicarFiltroServicio);
 </script>
 {% endblock %}
