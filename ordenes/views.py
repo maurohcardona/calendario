@@ -302,6 +302,46 @@ def cancelar_orden(request, pk):
 
 
 @login_required
+def buscar_orden_pendiente(request):
+    """AJAX: busca órdenes PENDIENTES de un paciente por DNI."""
+    dni = request.GET.get("dni", "").strip()
+    if not dni:
+        return JsonResponse({"tiene_orden_pendiente": False, "ordenes": []})
+
+    ordenes = (
+        OrdenLaboratorio.objects.filter(paciente__iden=dni, estado="PENDIENTE")
+        .select_related("medico", "servicio", "paciente")
+        .prefetch_related("determinaciones", "determinaciones_complejas")
+        .order_by("-fecha_creacion")
+    )
+
+    if not ordenes.exists():
+        return JsonResponse({"tiene_orden_pendiente": False, "ordenes": []})
+
+    data = []
+    for o in ordenes:
+        data.append({
+            "pk": o.pk,
+            "numero_orden_lab": o.numero_orden_lab,
+            "tipo_origen": o.get_tipo_origen_display(),
+            "servicio": str(o.servicio) if o.servicio else None,
+            "observaciones": o.observaciones,
+            "medico": str(o.medico),
+            "fecha_creacion": o.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
+            "determinaciones": [
+                {"pk": d.pk, "codigo": d.codigo, "nombre": d.nombre}
+                for d in o.determinaciones.all()
+            ],
+            "determinaciones_complejas": [
+                {"pk": d.pk, "codigo": d.codigo, "nombre": d.nombre}
+                for d in o.determinaciones_complejas.all()
+            ],
+        })
+
+    return JsonResponse({"tiene_orden_pendiente": True, "ordenes": data})
+
+
+@login_required
 def buscar_ordenes_global(request):
     """AJAX: busca órdenes por DNI o número de orden en toda la base de datos."""
     q = request.GET.get("q", "").strip()

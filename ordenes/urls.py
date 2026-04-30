@@ -13,6 +13,7 @@ urlpatterns = [
     path("ajax/buscar-paciente/", views.buscar_paciente, name="buscar_paciente"),
     path("ajax/servicios/", views.obtener_servicios, name="obtener_servicios"),
     path("ajax/buscar-ordenes/", views.buscar_ordenes_global, name="buscar_ordenes_global"),
+    path("ajax/buscar-orden-pendiente/", views.buscar_orden_pendiente, name="buscar_orden_pendiente"),
     # Laboratorio
     path("cola/", views.cola_laboratorio, name="cola_laboratorio"),
     path("<int:pk>/ingresar/", views.ingresar_orden, name="ingresar_orden"),

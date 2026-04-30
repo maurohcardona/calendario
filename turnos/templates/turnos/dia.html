@@ -164,10 +164,39 @@
   </div>
 </div>
 
+<!-- Modal de órdenes pendientes -->
+<div id="modalOrdenesPendientes" class="apple-modal">
+  <div class="apple-modal-content apple-modal-content-relative apple-modal-content-large">
+    <button id="cerrarModalOrdenes" class="apple-modal-close">&times;</button>
+    <h3 class="apple-modal-title" style="color: var(--apple-blue);">Órdenes de Laboratorio Pendientes</h3>
+
+    <!-- Selector si hay múltiples órdenes -->
+    <div class="apple-form-group" id="selectorOrdenesGroup">
+      <label class="apple-label">Seleccionar Orden</label>
+      <select id="selectOrdenPendiente" class="apple-select"></select>
+    </div>
+
+    <!-- Detalles de la orden seleccionada -->
+    <div id="detallesOrdenModal"></div>
+
+    <!-- Botones -->
+    <div class="apple-modal-actions-ordenes">
+      <button id="btnCancelarModalOrdenes" class="apple-btn apple-btn-light">Cancelar</button>
+      <button id="btnIngresarOrden" class="apple-btn apple-btn-success">Ingresar datos al turno</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===================================================================
 // JAVASCRIPT ESPECÍFICO DE DIA.HTML (buscar paciente, validación, etc.)
 // ===================================================================
+
+const BUSCAR_ORDEN_PENDIENTE_URL = "/ordenes/ajax/buscar-orden-pendiente/";
+
+// Variables globales para órdenes pendientes
+let ordenesPendientes = [];
+let ordenSeleccionada = null;
 
 // Buscar paciente por DNI al presionar Enter
 document.getElementById('id_dni')?.addEventListener('keypress', function(e) {
@@ -190,11 +219,14 @@ document.getElementById('btnBuscarPaciente')?.addEventListener('click', async fu
     status.innerHTML = '<span class="apple-status-searching">Buscando...</span>';
     
     try {
-        const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${dni}`);
-        const data = await response.json();
         // Eliminar cartel previo si existe
         const cartelExistente = document.getElementById('cartel-turno-pendiente');
         if (cartelExistente) cartelExistente.remove();
+
+        // ── 1. Buscar paciente ──────────────────────────────────────
+        const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${dni}`);
+        const data = await response.json();
+
         if (data.found) {
             status.innerHTML = '<span class="apple-status-found">Paciente encontrado</span>';
             document.getElementById('id_nombre').value = data.nombre;
@@ -208,21 +240,58 @@ document.getElementById('btnBuscarPaciente')?.addEventListener('click', async fu
             document.getElementById('id_observaciones_paciente').disabled = false;
             document.getElementById('id_observaciones_paciente').classList.remove('apple-input-disabled');
             document.getElementById('id_observaciones_paciente').classList.add('apple-input-enabled');
-            // Mostrar cartel si tiene turno pendiente
-            if (data.tiene_turno_pendiente && data.proximo_turno) {
+
+            // ── 2. Buscar órdenes pendientes ────────────────────────
+            const respOrden = await fetch(`${BUSCAR_ORDEN_PENDIENTE_URL}?dni=${dni}`);
+            const dataOrden = await respOrden.json();
+            ordenesPendientes = dataOrden.ordenes || [];
+
+            const tieneOrden = dataOrden.tiene_orden_pendiente;
+            const tieneTurno = data.tiene_turno_pendiente && data.proximo_turno;
+
+            // ── 3. Armar cartel combinado ───────────────────────────
+            if (tieneTurno || tieneOrden) {
                 const cartel = document.createElement('div');
                 cartel.id = 'cartel-turno-pendiente';
                 cartel.className = 'apple-warning-banner';
-                cartel.innerHTML = `El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b>.<br>¿Desea continuar con el turno de todos modos?<br><button id="btnContinuarTurno" class="apple-btn apple-btn-success apple-btn-sm">Sí</button> <button id="btnVerTurnosPendientes" class="apple-btn apple-btn-primary apple-btn-sm">Turnos pendientes</button>`;
+
+                let mensaje = '';
+                if (tieneTurno && tieneOrden) {
+                    const nOrdenes = ordenesPendientes.length;
+                    mensaje = `El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b> y <b>${nOrdenes} orden${nOrdenes > 1 ? 'es' : ''} de laboratorio pendiente${nOrdenes > 1 ? 's' : ''}</b>.`;
+                } else if (tieneTurno) {
+                    mensaje = `El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b>.`;
+                } else {
+                    const nOrdenes = ordenesPendientes.length;
+                    mensaje = `El paciente tiene <b>${nOrdenes} orden${nOrdenes > 1 ? 'es' : ''} de laboratorio pendiente${nOrdenes > 1 ? 's' : ''}</b>.`;
+                }
+
+                let botones = '';
+                if (tieneTurno) {
+                    botones += `<button id="btnVerTurnosPendientes" class="apple-btn apple-btn-primary apple-btn-sm">Ver turnos pendientes</button> `;
+                }
+                if (tieneOrden) {
+                    botones += `<button id="btnVerOrdenesPendientes" class="apple-btn apple-btn-primary apple-btn-sm">Ver órdenes</button> `;
+                }
+                botones += `<button id="btnContinuarTurno" class="apple-btn apple-btn-success apple-btn-sm">Continuar de todos modos</button>`;
+
+                cartel.innerHTML = `${mensaje}<br><div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap;">${botones}</div>`;
+
                 const form = document.getElementById('turnoForm');
                 form.parentNode.insertBefore(cartel, form);
-                cartel.querySelector('#btnContinuarTurno').onclick = function() {
-                    cartel.remove();
-                };
-                cartel.querySelector('#btnVerTurnosPendientes').onclick = function() {
-                    window.location.href = `/turnos/buscar/?q=${dni}`;
-                };
+
+                cartel.querySelector('#btnContinuarTurno').onclick = () => cartel.remove();
+
+                if (tieneTurno) {
+                    cartel.querySelector('#btnVerTurnosPendientes').onclick = () => {
+                        window.location.href = `/turnos/buscar/?q=${dni}`;
+                    };
+                }
+                if (tieneOrden) {
+                    cartel.querySelector('#btnVerOrdenesPendientes').onclick = abrirModalOrdenes;
+                }
             }
+
         } else {
             status.innerHTML = '<span class="apple-status-not-found">Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
             document.getElementById('id_nombre').value = '';
@@ -242,6 +311,150 @@ document.getElementById('btnBuscarPaciente')?.addEventListener('click', async fu
         status.innerHTML = '<span class="apple-status-error">Error al buscar</span>';
         habilitarTodosCampos();
     }
+});
+
+// ===================================================================
+// MODAL DE ÓRDENES PENDIENTES
+// ===================================================================
+
+function abrirModalOrdenes() {
+    if (!ordenesPendientes.length) return;
+
+    const select = document.getElementById('selectOrdenPendiente');
+    const selectorGroup = document.getElementById('selectorOrdenesGroup');
+
+    // Poblar select
+    select.innerHTML = ordenesPendientes.map((o, idx) =>
+        `<option value="${idx}">${o.numero_orden_lab} — ${o.fecha_creacion}</option>`
+    ).join('');
+
+    // Ocultar selector si hay una sola orden
+    selectorGroup.style.display = ordenesPendientes.length > 1 ? '' : 'none';
+
+    // Mostrar detalles de la primera
+    ordenSeleccionada = ordenesPendientes[0];
+    renderizarDetallesOrden(ordenSeleccionada);
+
+    document.getElementById('modalOrdenesPendientes').style.display = 'flex';
+}
+
+function renderizarDetallesOrden(orden) {
+    const container = document.getElementById('detallesOrdenModal');
+
+    const detsSimples = orden.determinaciones.map(d =>
+        `<li><code class="apple-orden-det-codigo">${d.codigo}</code> ${d.nombre}</li>`
+    ).join('');
+    const detsComplejas = orden.determinaciones_complejas.map(d =>
+        `<li><code class="apple-orden-det-codigo apple-orden-det-codigo-compleja">${d.codigo}</code> ${d.nombre}</li>`
+    ).join('');
+    const totalDets = orden.determinaciones.length + orden.determinaciones_complejas.length;
+
+    container.innerHTML = `
+        <div class="apple-orden-card">
+            <div class="apple-orden-header">
+                <span style="background-color:var(--color-primary);color:white;padding:.2rem .6rem;border-radius:4px;font-weight:700;font-size:.85rem;">${orden.numero_orden_lab}</span>
+                <span style="font-size:.85rem;color:var(--apple-gray-dark);">Creada: ${orden.fecha_creacion}</span>
+            </div>
+            <div class="apple-orden-row">
+                <strong>Origen</strong>
+                <span>${orden.tipo_origen}</span>
+            </div>
+            ${orden.servicio ? `
+            <div class="apple-orden-row">
+                <strong>Servicio</strong>
+                <span>${orden.servicio}</span>
+            </div>` : ''}
+            <div class="apple-orden-row">
+                <strong>Médico solicitante</strong>
+                <span>${orden.medico}</span>
+            </div>
+            <div class="apple-orden-row">
+                <strong>Observaciones</strong>
+                <span style="font-style:italic;">${orden.observaciones || '—'}</span>
+            </div>
+            <div class="apple-orden-row">
+                <strong>Determinaciones (${totalDets})</strong>
+                <ul class="apple-det-list-modal">
+                    ${detsSimples}
+                    ${detsComplejas}
+                </ul>
+            </div>
+        </div>
+    `;
+}
+
+// Cambio de orden en el select
+document.getElementById('selectOrdenPendiente')?.addEventListener('change', function() {
+    const idx = parseInt(this.value);
+    ordenSeleccionada = ordenesPendientes[idx];
+    renderizarDetallesOrden(ordenSeleccionada);
+});
+
+// Cerrar modal
+document.getElementById('cerrarModalOrdenes')?.addEventListener('click', () => {
+    document.getElementById('modalOrdenesPendientes').style.display = 'none';
+});
+document.getElementById('btnCancelarModalOrdenes')?.addEventListener('click', () => {
+    document.getElementById('modalOrdenesPendientes').style.display = 'none';
+});
+document.getElementById('modalOrdenesPendientes')?.addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+
+// ── Ingresar datos de la orden al formulario ──────────────────────
+document.getElementById('btnIngresarOrden')?.addEventListener('click', function() {
+    if (!ordenSeleccionada) return;
+
+    // 1. Cerrar modal y quitar cartel
+    document.getElementById('modalOrdenesPendientes').style.display = 'none';
+    const cartel = document.getElementById('cartel-turno-pendiente');
+    if (cartel) cartel.remove();
+
+    // 2. Nota interna ← observaciones de la orden
+    const notaInput = document.getElementById('id_nota_interna');
+    if (notaInput) {
+        notaInput.value = ordenSeleccionada.observaciones || '';
+        notaInput.disabled = false;
+        notaInput.classList.remove('apple-input-disabled');
+        notaInput.classList.add('apple-input-enabled');
+    }
+
+    // 3. Médico ← médico de la orden
+    const medicoInput = document.getElementById('id_medico');
+    if (medicoInput) {
+        medicoInput.value = ordenSeleccionada.medico || '';
+    }
+
+    // 4. Limpiar array de determinaciones y cargar las de la orden
+    determinaciones = [];
+
+    ordenSeleccionada.determinaciones.forEach(det => {
+        determinaciones.push({
+            tipo: 'simple',
+            codigo: det.codigo,
+            nombre: det.nombre,
+            stock: true
+        });
+    });
+
+    ordenSeleccionada.determinaciones_complejas.forEach(det => {
+        determinaciones.push({
+            tipo: 'compleja',
+            codigo: det.codigo,
+            nombre: det.nombre,
+            determinaciones: '',
+            stock: true
+        });
+    });
+
+    // 5. Actualizar lista visual y hidden input
+    actualizarListaDeterminaciones();
+    document.getElementById('id_determinaciones').value =
+        determinaciones.map(d => d.codigo).join(',');
+
+    // 6. Feedback
+    document.getElementById('pacienteStatus').innerHTML =
+        '<span class="apple-status-found">✓ Datos de la orden cargados correctamente</span>';
 });
 
 // Función para habilitar SOLO determinaciones (paciente encontrado)
