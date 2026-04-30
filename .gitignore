@@ -43,3 +43,7 @@ logs/
 # Configuración de tareas programadas Windows
 tarea_programada_backup.xml
 *.xml
+
+# Certificados SSL (no versionar claves privadas)
+certs/*.crt
+certs/*.key
