@@ -326,7 +326,7 @@ def buscar_orden_pendiente(request):
             "tipo_origen": o.get_tipo_origen_display(),
             "servicio": str(o.servicio) if o.servicio else None,
             "observaciones": o.observaciones,
-            "medico": str(o.medico),
+            "medico": o.medico.nombre if o.medico else "",
             "fecha_creacion": o.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
             "determinaciones": [
                 {"pk": d.pk, "codigo": d.codigo, "nombre": d.nombre}
