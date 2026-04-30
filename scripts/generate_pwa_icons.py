@@ -51,7 +51,7 @@ def get_font(candidates: list[str], size: int) -> ImageFont.FreeTypeFont:
 
 
 def generate_icon(size: int) -> Image.Image:
-    """Genera un ícono cuadrado con fondo blanco y texto LBH turquesa."""
+    """Genera un ícono cuadrado con fondo blanco y texto LHB turquesa."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
@@ -72,7 +72,7 @@ def generate_icon(size: int) -> Image.Image:
 
     # Texto "LBH"
     font = get_font(BOLD_FONTS, int(size * 0.35))
-    text = "LBH"
+    text = "LHB"
     bbox = draw.textbbox((0, 0), text, font=font)
     tw = bbox[2] - bbox[0]
     th = bbox[3] - bbox[1]
