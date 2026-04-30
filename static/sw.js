@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════════════
 
 // Versión del cache (se reemplaza automáticamente con update_sw_version.py)
-const CACHE_VERSION = 'CACHE_VERSION_PLACEHOLDER';
+const CACHE_VERSION = '20260430-141250';
 const CACHE_NAME = `lab-balestrini-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline/';
 
