@@ -129,6 +129,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles_collected"  # Para producción
 # WhiteNoise (storage SIN manifest)
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
+# WhiteNoise: MIME type correcto para manifest.json (PWA)
+WHITENOISE_MIMETYPES = {
+    ".json": "application/manifest+json",
+}
+
 # Archivos subidos (si los usás)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

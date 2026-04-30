@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import TemplateView
 from turnos import views as turnos_views
 from django.conf import settings
 from django.urls import include, path
@@ -33,6 +34,8 @@ urlpatterns = [
     path("accounts/logout/", turnos_views.logout_view, name="logout"),
     # Authentication (login/password reset etc.)
     path("accounts/", include("django.contrib.auth.urls")),
+    # PWA: página offline (fallback cuando no hay conexión)
+    path("offline/", TemplateView.as_view(template_name="offline.html"), name="offline"),
 ]
 
 
