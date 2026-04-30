@@ -377,6 +377,15 @@ def coordinar_turno(request: HttpRequest, turno_id: int) -> JsonResponse:
         )
 
         if exito:
+            # Si el turno tiene orden vinculada, actualizarla a INGRESADA
+            try:
+                orden_vinculada = turno.orden.first()
+                if orden_vinculada and orden_vinculada.estado == "TURNO":
+                    orden_vinculada.estado = "INGRESADA"
+                    orden_vinculada.save(update_fields=["estado"])
+            except Exception:
+                pass  # No interrumpir coordinación si falla la actualización
+
             return JsonResponse(
                 {
                     "success": True,

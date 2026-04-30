@@ -66,6 +66,8 @@
         <td>
           {% if orden.estado == 'PENDIENTE' %}
             <span class="badge bg-warning text-dark">Pendiente</span>
+          {% elif orden.estado == 'TURNO' %}
+            <span class="badge" style="background-color:#fd7e14;color:white;">Turno Asignado</span>
           {% elif orden.estado == 'INGRESADA' %}
             <span class="badge bg-info text-dark">Ingresada</span>
           {% elif orden.estado == 'COMPLETADA' %}

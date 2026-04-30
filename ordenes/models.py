@@ -33,6 +33,7 @@ class OrdenLaboratorio(models.Model):
     ]
     ESTADO_CHOICES = [
         ("PENDIENTE", "Pendiente"),
+        ("TURNO", "Turno Asignado"),
         ("INGRESADA", "Ingresada"),
         ("COMPLETADA", "Completada"),
         ("CANCELADA", "Cancelada"),
@@ -48,7 +49,7 @@ class OrdenLaboratorio(models.Model):
     urgente = models.BooleanField(default=False)
     determinaciones = models.ManyToManyField(Determinacion, blank=True, related_name="ordenes")
     determinaciones_complejas = models.ManyToManyField(DeterminacionCompleja, blank=True, related_name="ordenes")
-    turno = models.ForeignKey("turnos.Turno", on_delete=models.SET_NULL, null=True, blank=True, related_name="ordenes")
+    turno = models.ForeignKey("turnos.Turno", on_delete=models.SET_NULL, null=True, blank=True, related_name="orden")
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="ordenes_creadas")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
@@ -65,7 +66,7 @@ class OrdenLaboratorio(models.Model):
 
     @property
     def puede_ingresar(self):
-        return self.estado == "PENDIENTE"
+        return self.estado in ("PENDIENTE", "TURNO")
 
     @property
     def puede_completar(self):
@@ -73,7 +74,7 @@ class OrdenLaboratorio(models.Model):
 
     @property
     def puede_cancelar(self):
-        return self.estado in ("PENDIENTE", "INGRESADA")
+        return self.estado in ("PENDIENTE", "TURNO", "INGRESADA")
 
     @property
     def puede_vincular_turno(self):

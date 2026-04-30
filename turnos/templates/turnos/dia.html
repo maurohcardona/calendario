@@ -410,7 +410,13 @@ document.getElementById('btnIngresarOrden')?.addEventListener('click', function(
     const cartel = document.getElementById('cartel-turno-pendiente');
     if (cartel) cartel.remove();
 
-    // 2. Nota interna ← observaciones de la orden
+    // 2. Guardar pk de la orden en el form (para vincular al guardar)
+    const ordenPkInput = document.getElementById('id_orden_pk');
+    if (ordenPkInput) {
+        ordenPkInput.value = ordenSeleccionada.pk;
+    }
+
+    // 3. Nota interna ← observaciones de la orden
     const notaInput = document.getElementById('id_nota_interna');
     if (notaInput) {
         notaInput.value = ordenSeleccionada.observaciones || '';
@@ -419,13 +425,13 @@ document.getElementById('btnIngresarOrden')?.addEventListener('click', function(
         notaInput.classList.add('apple-input-enabled');
     }
 
-    // 3. Médico ← médico de la orden
+    // 4. Médico ← médico de la orden
     const medicoInput = document.getElementById('id_medico');
     if (medicoInput) {
         medicoInput.value = ordenSeleccionada.medico || '';
     }
 
-    // 4. Limpiar array de determinaciones y cargar las de la orden
+    // 5. Limpiar array de determinaciones y cargar las de la orden
     determinaciones = [];
 
     ordenSeleccionada.determinaciones.forEach(det => {
@@ -447,12 +453,12 @@ document.getElementById('btnIngresarOrden')?.addEventListener('click', function(
         });
     });
 
-    // 5. Actualizar lista visual y hidden input
+    // 6. Actualizar lista visual y hidden input
     actualizarListaDeterminaciones();
     document.getElementById('id_determinaciones').value =
         determinaciones.map(d => d.codigo).join(',');
 
-    // 6. Feedback
+    // 7. Feedback
     document.getElementById('pacienteStatus').innerHTML =
         '<span class="apple-status-found">✓ Datos de la orden cargados correctamente</span>';
 });

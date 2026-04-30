@@ -72,6 +72,7 @@ class TurnoService:
         nota_interna: str = "",
         determinaciones: str = "",
         usuario: Any = None,
+        orden_pk: Optional[int] = None,
     ) -> Tuple[bool, Optional[Turno], str]:
         """
         Crea un nuevo turno con validaciones.
@@ -131,6 +132,17 @@ class TurnoService:
                     determinaciones=determinaciones,
                     usuario=usuario,
                 )
+
+                # Vincular orden si viene de orden pendiente
+                if orden_pk:
+                    try:
+                        from ordenes.models import OrdenLaboratorio
+                        orden = OrdenLaboratorio.objects.get(pk=orden_pk, estado="PENDIENTE")
+                        orden.turno = turno
+                        orden.estado = "TURNO"
+                        orden.save(update_fields=["turno", "estado"])
+                    except OrdenLaboratorio.DoesNotExist:
+                        pass  # Orden inexistente o ya no está pendiente → ignorar
 
                 return True, turno, ""
 

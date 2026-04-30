@@ -240,6 +240,8 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                         institucion_nombre = form.cleaned_data.get("institucion", "")
                         nota_interna = form.cleaned_data.get("nota_interna", "")
                         determinaciones = form.cleaned_data.get("determinaciones", "")
+                        orden_pk_raw = request.POST.get("orden_pk")
+                        orden_pk = int(orden_pk_raw) if orden_pk_raw else None
 
                         # Usar el servicio para crear el turno
                         exito, turno_nuevo, mensaje_error = TurnoService.crear_turno(
@@ -258,6 +260,7 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                             nota_interna=nota_interna,
                             determinaciones=determinaciones,
                             usuario=request.user,
+                            orden_pk=orden_pk,
                         )
 
                         if exito:
