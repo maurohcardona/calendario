@@ -1,0 +1,64 @@
+{
+  "name": "Laboratorio Hospital Balestrini",
+  "short_name": "Lab Balestrini",
+  "description": "Sistema de gestión de turnos, órdenes y coordinación de laboratorio",
+  "start_url": "/turnos/calendario/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#248f8d",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "es-AR",
+  "dir": "ltr",
+  "categories": ["medical", "health", "productivity"],
+
+  "icons": [
+    {
+      "src": "/static/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+
+  "shortcuts": [
+    {
+      "name": "Agenda del día",
+      "short_name": "Agenda",
+      "description": "Ver turnos del día actual",
+      "url": "/turnos/calendario/",
+      "icons": [
+        {"src": "/static/icons/icon-192x192.png", "sizes": "192x192"}
+      ]
+    },
+    {
+      "name": "Buscar turnos",
+      "short_name": "Buscar",
+      "description": "Buscar turnos por paciente o fecha",
+      "url": "/turnos/buscar/",
+      "icons": [
+        {"src": "/static/icons/icon-192x192.png", "sizes": "192x192"}
+      ]
+    },
+    {
+      "name": "Cola de laboratorio",
+      "short_name": "Cola",
+      "description": "Órdenes pendientes de ingreso",
+      "url": "/ordenes/cola/",
+      "icons": [
+        {"src": "/static/icons/icon-192x192.png", "sizes": "192x192"}
+      ]
+    }
+  ]
+}
