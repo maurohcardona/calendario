@@ -334,6 +334,8 @@ def buscar_orden_pendiente(request):
             "observaciones": o.observaciones,
             "medico": o.medico.nombre if o.medico else "",
             "fecha_creacion": o.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
+            "fecha_creacion_raw": o.fecha_creacion.isoformat(),
+            "estado": o.estado,
             "determinaciones": [
                 {"pk": d.pk, "codigo": d.codigo, "nombre": d.nombre}
                 for d in o.determinaciones.all()

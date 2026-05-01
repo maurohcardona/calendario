@@ -25,6 +25,7 @@ Contextos de uso:
 <form method="post" id="turnoForm" class="apple-turno-form-grid">
     {% csrf_token %}
     <input type="hidden" name="orden_pk" id="id_orden_pk" value="">
+    <input type="hidden" name="ordenes_pks" id="id_ordenes_pks" value="">
     
     {% if form.non_field_errors %}
         <div class="apple-alert apple-alert-danger">

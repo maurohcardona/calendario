@@ -150,6 +150,13 @@ class Turno(models.Model):
         verbose_name="Institucion",
         help_text="Institucion de origen de la orden medica",
     )
+    ordenes = models.ManyToManyField(
+        "ordenes.OrdenLaboratorio",
+        blank=True,
+        related_name="turnos",
+        verbose_name="Órdenes de Laboratorio",
+        help_text="Órdenes de laboratorio vinculadas a este turno",
+    )
 
     class Meta:
         ordering = ["fecha", "creado"]

@@ -3,7 +3,7 @@ Servicio para lógica de negocio relacionada con turnos.
 """
 
 from datetime import date, datetime
-from typing import Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from turnos.models import Turno, Cupo, Agenda, Feriados
@@ -73,9 +73,14 @@ class TurnoService:
         determinaciones: str = "",
         usuario: Any = None,
         orden_pk: Optional[int] = None,
+        ordenes_pks: Optional[List[int]] = None,
     ) -> Tuple[bool, Optional[Turno], str]:
         """
         Crea un nuevo turno con validaciones.
+
+        Puede vincular una sola orden (orden_pk) o múltiples órdenes unificadas
+        (ordenes_pks). En ambos casos actualiza estado de las órdenes a 'TURNO'
+        y sincroniza la relación M2M turno.ordenes.
 
         Returns:
             Tupla (exito, turno, mensaje_error)
@@ -133,14 +138,48 @@ class TurnoService:
                     usuario=usuario,
                 )
 
-                # Vincular orden si viene de orden pendiente
-                if orden_pk:
-                    try:
-                        from ordenes.models import OrdenLaboratorio
-                        orden = OrdenLaboratorio.objects.get(pk=orden_pk, estado="PENDIENTE")
+                # ═══ VINCULACIÓN DE ÓRDENES ═══
+                from ordenes.models import OrdenLaboratorio
+
+                if ordenes_pks:
+                    # ── MODO UNIFICACIÓN: múltiples órdenes ──
+                    ordenes = OrdenLaboratorio.objects.filter(
+                        pk__in=ordenes_pks,
+                        paciente=paciente_obj,  # Seguridad: solo del mismo paciente
+                        estado__in=["PENDIENTE", "INGRESADA"],
+                    )
+
+                    if ordenes.count() != len(ordenes_pks):
+                        return (
+                            False,
+                            None,
+                            "Algunas órdenes no están disponibles para vincular "
+                            "(pueden haber sido asignadas a otro turno o no pertenecen al paciente).",
+                        )
+
+                    # Actualizar estado y FK de cada orden
+                    for orden in ordenes:
                         orden.turno = turno
                         orden.estado = "TURNO"
                         orden.save(update_fields=["turno", "estado"])
+
+                    # Sincronizar relación M2M
+                    turno.ordenes.set(ordenes)
+
+                elif orden_pk:
+                    # ── MODO SIMPLE: una sola orden ──
+                    try:
+                        orden = OrdenLaboratorio.objects.get(
+                            pk=orden_pk,
+                            estado="PENDIENTE",  # Solo PENDIENTE (comportamiento original)
+                        )
+                        orden.turno = turno
+                        orden.estado = "TURNO"
+                        orden.save(update_fields=["turno", "estado"])
+
+                        # Sincronizar relación M2M para consistencia
+                        turno.ordenes.add(orden)
+
                     except OrdenLaboratorio.DoesNotExist:
                         pass  # Orden inexistente o ya no está pendiente → ignorar
 
