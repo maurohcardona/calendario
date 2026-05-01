@@ -1,7 +1,8 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base_medico.html" %}
+{% block medico_content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Todas las Órdenes</h2>
+  <a href="{% url 'ordenes:crear_orden' %}" class="btn btn-primary">+ Nueva Orden</a>
 </div>
 
 <div class="card mb-4">

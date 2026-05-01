@@ -2,9 +2,11 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from pacientes.models import Paciente
@@ -195,9 +197,13 @@ def crear_orden(request):
 
 
 @medico_requerido
+@medico_requerido
 def mis_ordenes(request):
-    """Vista que muestra todas las órdenes de laboratorio."""
-    ordenes = OrdenLaboratorio.objects.select_related("paciente", "medico").order_by("-fecha_creacion")
+    """Vista que muestra las órdenes del médico autenticado."""
+    medico = request.user.medico
+    ordenes = OrdenLaboratorio.objects.filter(
+        medico=medico
+    ).select_related("paciente", "medico").order_by("-fecha_creacion")
     return render(request, "ordenes/mis_ordenes.html", {"ordenes": ordenes})
 
 
@@ -370,7 +376,7 @@ def buscar_ordenes_global(request):
     return JsonResponse({"ordenes": data})
 
 
-@login_required
+@medico_requerido
 def todas_ordenes(request):
     """Vista con filtros avanzados para buscar todas las órdenes."""
     qs = OrdenLaboratorio.objects.select_related("paciente", "medico", "servicio").order_by("-fecha_creacion")
@@ -401,3 +407,19 @@ def todas_ordenes(request):
             "fecha_hasta": fecha_hasta,
         },
     })
+
+
+class MedicoAwareLoginView(DjangoLoginView):
+    """
+    LoginView que redirige médicos a su interfaz específica post-login.
+
+    - Usuarios con médico asociado → ordenes:mis_ordenes
+    - Resto de usuarios → comportamiento default de Django (LOGIN_REDIRECT_URL)
+    """
+
+    def get_success_url(self):
+        try:
+            _ = self.request.user.medico  # Dispara DoesNotExist si no tiene
+            return reverse("ordenes:mis_ordenes")
+        except Exception:
+            return super().get_success_url()
