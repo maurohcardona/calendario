@@ -5,89 +5,123 @@
   <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">← Volver</a>
 </div>
 
-<div class="card mb-3">
-  <div class="card-header fw-bold">Datos del Paciente</div>
-  <div class="card-body">
-    <p><strong>Paciente:</strong> {{ orden.paciente.nombre_completo }}</p>
-    <p><strong>DNI:</strong> {{ orden.paciente.iden }}</p>
-    <p><strong>Médico:</strong> {{ orden.medico }}</p>
-  </div>
-</div>
+<div class="row g-4">
 
-<div class="card mb-3">
-  <div class="card-header fw-bold">Datos de la Orden</div>
-  <div class="card-body">
-    <p><strong>Origen:</strong> {{ orden.get_tipo_origen_display }}</p>
-    {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' %}
-      <p><strong>Fecha Programada:</strong>
-        {% if orden.fecha_programada %}
-          <span class="badge bg-light text-dark border">📅 {{ orden.fecha_programada|date:"d/m/Y" }}</span>
-        {% else %}
-          <span class="text-muted">Sin fecha asignada</span>
+  {# ── COLUMNA IZQUIERDA: Paciente + Datos de la Orden ── #}
+  <div class="col-md-6">
+
+    <div class="card mb-3">
+      <div class="card-header fw-bold">Datos del Paciente</div>
+      <div class="card-body">
+        <p class="mb-1"><strong>Paciente:</strong> {{ orden.paciente.nombre_completo }}</p>
+        <p class="mb-1"><strong>DNI:</strong> {{ orden.paciente.iden }}</p>
+        <p class="mb-0"><strong>Médico:</strong> {{ orden.medico }}</p>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-bold">Datos de la Orden</div>
+      <div class="card-body">
+        <p class="mb-1"><strong>Origen:</strong> {{ orden.get_tipo_origen_display }}</p>
+        {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' %}
+          <p class="mb-1"><strong>Fecha Programada:</strong>
+            {% if orden.fecha_programada %}
+              <span class="badge bg-light text-dark border">📅 {{ orden.fecha_programada|date:"d/m/Y" }}</span>
+            {% else %}
+              <span class="text-muted">Sin fecha asignada</span>
+            {% endif %}
+          </p>
         {% endif %}
-      </p>
+        {% if orden.servicio %}
+          <p class="mb-1"><strong>Servicio:</strong> {{ orden.servicio.nombre }}</p>
+        {% endif %}
+        {% if orden.sala %}
+          <p class="mb-1"><strong>Cama/Sala:</strong> {{ orden.sala }}</p>
+        {% endif %}
+        <p class="mb-1"><strong>Estado:</strong>
+          {% if orden.estado == 'PENDIENTE' %}
+            <span class="badge bg-warning text-dark">Pendiente</span>
+          {% elif orden.estado == 'TURNO' %}
+            <span class="badge" style="background-color:#fd7e14;color:white;">Turno Asignado</span>
+          {% elif orden.estado == 'INGRESADA' %}
+            <span class="badge bg-info text-dark">Ingresada</span>
+          {% elif orden.estado == 'COMPLETADA' %}
+            <span class="badge bg-success">Completada</span>
+          {% elif orden.estado == 'CANCELADA' %}
+            <span class="badge bg-danger">Cancelada</span>
+          {% endif %}
+        </p>
+        {% if orden.observaciones %}
+          <p class="mb-1"><strong>Observaciones:</strong> {{ orden.observaciones }}</p>
+        {% endif %}
+        <p class="mb-1"><strong>Creado:</strong> {{ orden.fecha_creacion|date:"d/m/Y H:i" }}</p>
+        {% if orden.turno %}
+          <p class="mb-0"><strong>Turno Vinculado:</strong>
+            <span class="badge" style="background-color:#fd7e14;color:white;">
+              📅 {{ orden.turno.fecha|date:"d/m/Y" }}
+            </span>
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if orden.numero_orden_lab or orden.observaciones_lab %}
+    <div class="card mb-3">
+      <div class="card-header fw-bold">Datos de Laboratorio</div>
+      <div class="card-body">
+        {% if orden.numero_orden_lab %}<p class="mb-1"><strong>N° Orden Lab:</strong> {{ orden.numero_orden_lab }}</p>{% endif %}
+        {% if orden.observaciones_lab %}<p class="mb-0"><strong>Obs. Lab:</strong> {{ orden.observaciones_lab }}</p>{% endif %}
+      </div>
+    </div>
     {% endif %}
-    {% if orden.servicio %}<p><strong>Servicio:</strong> {{ orden.servicio }}</p>{% endif %}
-    {% if orden.sala %}<p><strong>Cama/Sala:</strong> {{ orden.sala }}</p>{% endif %}
-    <p><strong>Estado:</strong>
-      {% if orden.estado == 'PENDIENTE' %}
-        <span class="badge bg-warning text-dark">Pendiente</span>
-      {% elif orden.estado == 'INGRESADA' %}
-        <span class="badge bg-info text-dark">Ingresada</span>
-      {% elif orden.estado == 'COMPLETADA' %}
-        <span class="badge bg-success">Completada</span>
-      {% elif orden.estado == 'CANCELADA' %}
-        <span class="badge bg-danger">Cancelada</span>
+
+    {% if es_operador_lab %}
+    <div class="d-flex gap-2">
+      {% if orden.puede_ingresar %}
+        <a href="{% url 'ordenes:ingresar_orden' orden.pk %}" class="btn btn-success">Ingresar</a>
+        <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-danger">Cancelar</a>
+      {% elif orden.puede_completar %}
+        <form method="post" action="{% url 'ordenes:completar_orden' orden.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success">Completar</button>
+        </form>
+        <a href="{% url 'ordenes:vincular_turno' orden.pk %}" class="btn btn-outline-primary">Vincular Turno</a>
+        <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-danger">Cancelar</a>
       {% endif %}
-    </p>
-    {% if orden.observaciones %}<p><strong>Observaciones:</strong> {{ orden.observaciones }}</p>{% endif %}
-    <p><strong>Creado:</strong> {{ orden.fecha_creacion|date:"d/m/Y H:i" }}</p>
-  </div>
-</div>
-
-<div class="card mb-3">
-  <div class="card-header fw-bold">Determinaciones</div>
-  <div class="card-body">
-    {% if orden.determinaciones.all %}
-      <ul>
-        {% for det in orden.determinaciones.all %}
-          <li>{{ det.nombre|upper }}</li>
-        {% endfor %}
-      </ul>
+    </div>
     {% endif %}
-    {% if orden.determinaciones_complejas.all %}
-      <ul>
-        {% for det in orden.determinaciones_complejas.all %}
-          <li>{{ det.nombre|upper }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-  </div>
-</div>
 
-{% if orden.numero_orden_lab or orden.observaciones_lab %}
-<div class="card mb-3">
-  <div class="card-header fw-bold">Datos de Laboratorio</div>
-  <div class="card-body">
-    {% if orden.numero_orden_lab %}<p><strong>N° Orden Lab:</strong> {{ orden.numero_orden_lab }}</p>{% endif %}
-    {% if orden.observaciones_lab %}<p><strong>Obs. Lab:</strong> {{ orden.observaciones_lab }}</p>{% endif %}
-  </div>
-</div>
-{% endif %}
+  </div>{# fin col izquierda #}
 
-{% if es_operador_lab %}
-<div class="d-flex gap-2 mt-3">
-  {% if orden.puede_ingresar %}
-    <a href="{% url 'ordenes:ingresar_orden' orden.pk %}" class="btn btn-success">Ingresar</a>
-    <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-danger">Cancelar</a>
-  {% elif orden.puede_completar %}
-    <form method="post" action="{% url 'ordenes:completar_orden' orden.pk %}">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-success">Completar</button>
-    </form>
-    <a href="{% url 'ordenes:vincular_turno' orden.pk %}" class="btn btn-outline-primary">Vincular Turno</a>
-    <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-danger">Cancelar</a>
-  {% endif %}
-</div>
-{% endif %}
+  {# ── COLUMNA DERECHA: Determinaciones ── #}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header fw-bold">Determinaciones</div>
+      <div class="card-body">
+        {% with dets=orden.determinaciones.all complejas=orden.determinaciones_complejas.all %}
+        {% if dets or complejas %}
+          {% if dets %}
+            <ul class="list-unstyled mb-2">
+              {% for det in dets %}
+                <li class="py-1 border-bottom">{{ det.nombre|upper }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if complejas %}
+            {% if dets %}<p class="small text-muted text-uppercase mt-3 mb-1" style="letter-spacing:.05em;">Complejas</p>{% endif %}
+            <ul class="list-unstyled mb-0">
+              {% for det in complejas %}
+                <li class="py-1 border-bottom">{{ det.nombre|upper }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% else %}
+          <p class="text-muted mb-0">Sin determinaciones cargadas.</p>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>{# fin col derecha #}
+
+</div>{# fin row #}
 {% endblock %}

@@ -1,9 +1,6 @@
 {% extends "base_medico.html" %}
 {% block medico_content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>Todas las Órdenes</h2>
-  <a href="{% url 'ordenes:crear_orden' %}" class="btn btn-primary">+ Nueva Orden</a>
-</div>
+<h2 class="mb-3">Todas las Órdenes</h2>
 
 <div class="card mb-4">
   <div class="card-body">
@@ -47,7 +44,7 @@
         <th>N° Orden</th>
         <th>Paciente</th>
         <th>Origen</th>
-        <th>Servicio</th>
+        <th>Servicio / Cama</th>
         <th>Médico</th>
         <th>Estado</th>
         <th>Fecha</th>
@@ -67,7 +64,10 @@
             <br><small class="text-muted">📅 {{ orden.fecha_programada|date:"d/m/Y" }}</small>
           {% endif %}
         </td>
-        <td>{{ orden.servicio|default:"—" }}</td>
+        <td>
+          {% if orden.servicio %}{{ orden.servicio.nombre }}{% else %}—{% endif %}
+          {% if orden.sala %}<br><small class="text-muted">Cama: {{ orden.sala }}</small>{% endif %}
+        </td>
         <td>{{ orden.medico }}</td>
         <td>
           {% if orden.estado == 'PENDIENTE' %}
@@ -88,6 +88,34 @@
     </tbody>
   </table>
 </div>
+
+{# ── PAGINACIÓN con preservación de filtros ── #}
+{% if ordenes.has_other_pages %}
+{% with dni=filtros.dni srv=filtros.servicio fde=filtros.fecha_desde fha=filtros.fecha_hasta %}
+<nav aria-label="Paginación de órdenes" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if ordenes.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ ordenes.previous_page_number }}{% if dni %}&dni={{ dni }}{% endif %}{% if srv %}&servicio={{ srv }}{% endif %}{% if fde %}&fecha_desde={{ fde }}{% endif %}{% if fha %}&fecha_hasta={{ fha }}{% endif %}">← Anterior</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">← Anterior</span></li>
+    {% endif %}
+    <li class="page-item disabled">
+      <span class="page-link">Página {{ ordenes.number }} de {{ ordenes.paginator.num_pages }}</span>
+    </li>
+    {% if ordenes.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ ordenes.next_page_number }}{% if dni %}&dni={{ dni }}{% endif %}{% if srv %}&servicio={{ srv }}{% endif %}{% if fde %}&fecha_desde={{ fde }}{% endif %}{% if fha %}&fecha_hasta={{ fha }}{% endif %}">Siguiente →</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Siguiente →</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endwith %}
+{% endif %}
+
 {% elif filtros.dni or filtros.servicio or filtros.fecha_desde or filtros.fecha_hasta %}
   <div class="alert alert-warning">No se encontraron órdenes con los filtros aplicados.</div>
 {% else %}

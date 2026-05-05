@@ -1,9 +1,6 @@
 {% extends "base_medico.html" %}
 {% block medico_content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>Órdenes de Laboratorio</h2>
-  <a href="{% url 'ordenes:crear_orden' %}" class="btn btn-primary">+ Nueva Orden</a>
-</div>
+<h2 class="mb-3">Órdenes de Laboratorio</h2>
 
 {# ── CARD FILTROS ── #}
 <div class="card mb-4">
@@ -75,7 +72,8 @@
           <th>N° Orden</th>
           <th>Paciente</th>
           <th>Origen</th>
-          <th>Cama / Fecha Prog.</th>
+          <th>Servicio / Cama</th>
+          <th>Fecha Prog.</th>
           <th>Obs.</th>
           <th>Estado</th>
           <th>Fecha</th>
@@ -92,6 +90,10 @@
             <small class="text-muted">DNI: {{ orden.paciente.iden }}</small>
           </td>
           <td>{{ orden.get_tipo_origen_display }}</td>
+          <td>
+            {% if orden.servicio %}{{ orden.servicio.nombre }}{% else %}—{% endif %}
+            {% if orden.sala %}<br><small class="text-muted">Cama: {{ orden.sala }}</small>{% endif %}
+        </td>
           <td>
             {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' %}
               {% if orden.fecha_programada %}
@@ -130,8 +132,34 @@
   <div id="sin-resultados" class="alert alert-warning d-none">No se encontraron órdenes con los filtros aplicados.</div>
 </div>
 
+{# ── PAGINACIÓN (solo visible sin filtros activos) ── #}
+{% if ordenes.has_other_pages %}
+<nav aria-label="Paginación de órdenes" id="paginador" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if ordenes.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ ordenes.previous_page_number }}">← Anterior</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">← Anterior</span></li>
+    {% endif %}
+    <li class="page-item disabled">
+      <span class="page-link">Página {{ ordenes.number }} de {{ ordenes.paginator.num_pages }}</span>
+    </li>
+    {% if ordenes.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ ordenes.next_page_number }}">Siguiente →</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Siguiente →</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
 <script>
 const FILTRAR_URL = "{% url 'ordenes:filtrar_mis_ordenes_ajax' %}";
+const paginador = document.getElementById('paginador');
 
 const ESTADO_LABELS = {
   PENDIENTE: '<span class="badge bg-warning text-dark">Pendiente</span>',
@@ -185,8 +213,12 @@ function renderFila(o) {
 }
 
 function ejecutarFiltro() {
+  // Ocultar paginador cuando hay filtros activos
+  if (paginador) paginador.style.display = hayFiltrosActivos() ? 'none' : '';
+
   if (!hayFiltrosActivos()) {
-    location.reload();
+    // Sin filtros: restaurar tabla original (página 1 del servidor)
+    location.replace(window.location.pathname);
     return;
   }
   fetch(`${FILTRAR_URL}?${getParams()}`)
@@ -232,7 +264,8 @@ document.getElementById('btn-limpiar-filtros').addEventListener('click', functio
   document.getElementById('radio-creacion').checked = true;
   document.getElementById('contador-resultados').textContent = '';
   document.getElementById('sin-resultados').classList.add('d-none');
-  location.reload();
+  if (paginador) paginador.style.display = '';
+  location.replace(window.location.pathname);
 });
 </script>
 {% endblock %}

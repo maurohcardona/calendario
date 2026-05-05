@@ -128,8 +128,8 @@
               <th>DNI</th>
               <th>Médico</th>
               <th>Servicio</th>
+              <th>Creada</th>
               <th>Fecha Prog.</th>
-              <th>Hora</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -144,6 +144,7 @@
               <td>{{ orden.paciente.iden }}</td>
               <td>{{ orden.medico }}</td>
               <td>{{ orden.servicio|default:"-" }}</td>
+              <td><small class="text-muted">{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</small></td>
               <td>
                 {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' and orden.fecha_programada %}
                   <span class="badge bg-light text-dark border">{{ orden.fecha_programada|date:"d/m/Y" }}</span>
@@ -151,7 +152,6 @@
                   —
                 {% endif %}
               </td>
-              <td>{{ orden.fecha_creacion|date:"H:i" }}</td>
               <td>
                 {% if orden.tipo_origen == 'AMBULATORIO' %}
                   <a href="{% url 'ordenes:vincular_turno' orden.pk %}" class="btn btn-sm btn-primary">Turno</a>

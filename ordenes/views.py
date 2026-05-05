@@ -1,6 +1,7 @@
 import json
 
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.db.models import Q
@@ -344,11 +345,13 @@ def crear_orden_programada(request):
 @medico_requerido
 @medico_requerido
 def mis_ordenes(request):
-    """Vista que muestra las órdenes del médico autenticado (carga inicial sin filtros)."""
+    """Vista que muestra las órdenes del médico autenticado con paginación de 10 por página."""
     medico = request.user.medico
-    ordenes = OrdenLaboratorio.objects.filter(
+    ordenes_qs = OrdenLaboratorio.objects.filter(
         medico=medico
-    ).select_related("paciente", "medico").order_by("-fecha_creacion")[:100]
+    ).select_related("paciente", "medico").order_by("-fecha_creacion")
+    paginator = Paginator(ordenes_qs, 10)
+    ordenes = paginator.get_page(request.GET.get("page", 1))
     return render(request, "ordenes/mis_ordenes.html", {"ordenes": ordenes})
 
 
@@ -414,7 +417,10 @@ def filtrar_mis_ordenes_ajax(request):
 @login_required
 def detalle_orden(request, pk):
     """Vista que muestra el detalle de una orden de laboratorio."""
-    orden = get_object_or_404(OrdenLaboratorio, pk=pk)
+    orden = get_object_or_404(
+        OrdenLaboratorio.objects.select_related("paciente", "medico", "servicio", "turno"),
+        pk=pk,
+    )
     es_operador_lab = request.user.is_superuser or request.user.groups.filter(name="laboratorio").exists()
     return render(
         request,
@@ -615,7 +621,7 @@ def buscar_ordenes_global(request):
 
 @medico_requerido
 def todas_ordenes(request):
-    """Vista con filtros avanzados para buscar todas las órdenes."""
+    """Vista con filtros avanzados para buscar todas las órdenes con paginación de 10 por página."""
     qs = OrdenLaboratorio.objects.select_related("paciente", "medico", "servicio").order_by("-fecha_creacion")
 
     dni = request.GET.get("dni", "").strip()
@@ -634,8 +640,11 @@ def todas_ordenes(request):
 
     servicios = Servicio.objects.filter(activo=True).order_by("nombre")
 
+    paginator = Paginator(qs, 10)
+    ordenes = paginator.get_page(request.GET.get("page", 1))
+
     return render(request, "ordenes/todas_ordenes.html", {
-        "ordenes": qs[:200],
+        "ordenes": ordenes,
         "servicios": servicios,
         "filtros": {
             "dni": dni,
