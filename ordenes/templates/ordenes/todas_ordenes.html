@@ -61,7 +61,12 @@
           <strong>{{ orden.paciente.nombre_completo }}</strong><br>
           <small class="text-muted">DNI: {{ orden.paciente.iden }}</small>
         </td>
-        <td>{{ orden.get_tipo_origen_display }}</td>
+        <td>
+          {{ orden.get_tipo_origen_display }}
+          {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' and orden.fecha_programada %}
+            <br><small class="text-muted">📅 {{ orden.fecha_programada|date:"d/m/Y" }}</small>
+          {% endif %}
+        </td>
         <td>{{ orden.servicio|default:"—" }}</td>
         <td>{{ orden.medico }}</td>
         <td>

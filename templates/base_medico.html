@@ -82,9 +82,24 @@
                class="nav-link-medico {% if request.resolver_match.url_name == 'mis_ordenes' %}active{% endif %}">
               Mis órdenes
             </a>
-            <a href="{% url 'ordenes:crear_orden' %}" class="nav-link-nueva ms-2">
-              + Nueva Orden
-            </a>
+            <div class="dropdown ms-2">
+              <button class="nav-link-nueva dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                      style="background: none; border: none; cursor: pointer;">
+                + Nueva Orden
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="{% url 'ordenes:crear_orden' %}">
+                    🏥 Guardia / Internación / Ambulatorio
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'ordenes:crear_orden_programada' %}">
+                    📅 Orden Programada
+                  </a>
+                </li>
+              </ul>
+            </div>
           </nav>
         </div>
 

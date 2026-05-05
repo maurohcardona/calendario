@@ -18,6 +18,15 @@
   <div class="card-header fw-bold">Datos de la Orden</div>
   <div class="card-body">
     <p><strong>Origen:</strong> {{ orden.get_tipo_origen_display }}</p>
+    {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' %}
+      <p><strong>Fecha Programada:</strong>
+        {% if orden.fecha_programada %}
+          <span class="badge bg-light text-dark border">📅 {{ orden.fecha_programada|date:"d/m/Y" }}</span>
+        {% else %}
+          <span class="text-muted">Sin fecha asignada</span>
+        {% endif %}
+      </p>
+    {% endif %}
     {% if orden.servicio %}<p><strong>Servicio:</strong> {{ orden.servicio }}</p>{% endif %}
     {% if orden.sala %}<p><strong>Cama/Sala:</strong> {{ orden.sala }}</p>{% endif %}
     <p><strong>Estado:</strong>

@@ -26,8 +26,8 @@ class ServicioAdmin(admin.ModelAdmin):
 
 @admin.register(OrdenLaboratorio)
 class OrdenLaboratorioAdmin(admin.ModelAdmin):
-    list_display = ("pk", "paciente", "medico", "tipo_origen", "estado", "fecha_creacion")
-    list_filter = ("estado", "tipo_origen")
+    list_display = ("pk", "paciente", "medico", "tipo_origen", "estado", "fecha_programada", "fecha_creacion")
+    list_filter = ("estado", "tipo_origen", "fecha_programada")
     search_fields = ("paciente__apellido", "paciente__iden", "numero_orden_lab")
     readonly_fields = ("fecha_creacion", "fecha_actualizacion", "creado_por")
     inlines = [DeterminacionesInline, DeterminacionesComplejasInline]

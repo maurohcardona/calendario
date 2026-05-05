@@ -1,3 +1,5 @@
+import datetime
+
 from django import forms
 from determinaciones.models import Determinacion, DeterminacionCompleja
 from pacientes.models import Paciente
@@ -77,3 +79,70 @@ class CancelarOrdenForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 3}),
         required=False,
     )
+
+
+class OrdenProgramadaForm(forms.ModelForm):
+    """Formulario exclusivo para el origen Órdenes Programadas."""
+
+    fecha_programada = forms.DateField(
+        label="Fecha programada",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        required=True,
+    )
+    determinaciones = forms.ModelMultipleChoiceField(
+        queryset=Determinacion.objects.filter(activa=True, visible=True).order_by("nombre"),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+    determinaciones_complejas = forms.ModelMultipleChoiceField(
+        queryset=DeterminacionCompleja.objects.filter(activa=True, visible=True).order_by("nombre"),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Excluir servicios ambulatorios
+        self.fields["servicio"].queryset = Servicio.objects.exclude(
+            origen="AMBULATORIO"
+        ).filter(activo=True).order_by("origen", "nombre")
+        self.fields["servicio"].required = True
+        self.fields["servicio"].empty_label = "---------"
+        self.fields["determinaciones"].label_from_instance = lambda obj: obj.nombre
+        self.fields["determinaciones_complejas"].label_from_instance = lambda obj: obj.nombre
+
+    class Meta:
+        model = OrdenLaboratorio
+        fields = [
+            "servicio",
+            "sala",
+            "fecha_programada",
+            "observaciones",
+            "determinaciones",
+            "determinaciones_complejas",
+        ]
+        labels = {
+            "sala": "Cama / Sala",
+            "observaciones": "Diagnóstico y/u Observaciones",
+        }
+        widgets = {
+            "sala": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Cama 12 - Sala C"}),
+            "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Diagnóstico, notas clínicas..."}),
+        }
+
+    def clean_fecha_programada(self):
+        """Validar que la fecha no sea anterior a hoy."""
+        fecha = self.cleaned_data.get("fecha_programada")
+        if fecha and fecha < datetime.date.today():
+            raise forms.ValidationError(
+                "La fecha programada no puede ser anterior a hoy."
+            )
+        return fecha
+
+    def clean(self):
+        cleaned_data = super().clean()
+        dets = cleaned_data.get("determinaciones")
+        dets_c = cleaned_data.get("determinaciones_complejas")
+        if not dets and not dets_c:
+            raise forms.ValidationError("Seleccioná al menos una determinación.")
+        return cleaned_data

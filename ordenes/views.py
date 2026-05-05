@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from pacientes.models import Paciente
 
-from .forms import CancelarOrdenForm, IngresarOrdenForm, OrdenForm, PacienteInlineForm, VincularTurnoForm
+from .forms import CancelarOrdenForm, IngresarOrdenForm, OrdenForm, OrdenProgramadaForm, PacienteInlineForm, VincularTurnoForm
 from .mixins import medico_requerido, operador_lab_requerido
 from .models import OrdenLaboratorio, Servicio
 
@@ -197,14 +197,218 @@ def crear_orden(request):
 
 
 @medico_requerido
+def crear_orden_programada(request):
+    """Vista para crear una nueva orden programada (pacientes internados, fecha futura).
+
+    Tras crear exitosamente una orden, redirige al mismo formulario manteniendo
+    servicio y fecha para facilitar la carga de múltiples órdenes consecutivas.
+    """
+    import datetime
+
+    # Leer parámetros GET para pre-rellenar servicio y fecha en recarga
+    servicio_id_get = request.GET.get("servicio_id")
+    fecha_get = request.GET.get("fecha_programada")
+    es_recarga = bool(servicio_id_get or fecha_get)
+
+    if request.method == "POST":
+        orden_form = OrdenProgramadaForm(request.POST)
+        paciente_form = PacienteInlineForm(request.POST)
+
+        paciente = None
+        paciente_id = request.POST.get("paciente_id")
+        if paciente_id:
+            from django.shortcuts import get_object_or_404
+            paciente = get_object_or_404(Paciente, pk=paciente_id)
+
+        if not paciente:
+            if paciente_form.is_valid():
+                iden = paciente_form.cleaned_data.get("iden")
+                if iden:
+                    paciente, _ = Paciente.objects.get_or_create(
+                        iden=iden,
+                        defaults={
+                            "apellido": paciente_form.cleaned_data.get("apellido", ""),
+                            "nombre": paciente_form.cleaned_data.get("nombre", ""),
+                            "fecha_nacimiento": paciente_form.cleaned_data.get("fecha_nacimiento"),
+                            "sexo": paciente_form.cleaned_data.get("sexo", ""),
+                        },
+                    )
+
+        if paciente and orden_form.is_valid():
+            orden = orden_form.save(commit=False)
+            orden.paciente = paciente
+            orden.medico = request.user.medico
+            orden.creado_por = request.user
+            orden.tipo_origen = "ORDENES_PROGRAMADAS"
+            orden.estado = "PENDIENTE"
+            orden.save()
+            orden_form.save_m2m()
+            messages.success(
+                request,
+                f"✓ Orden {orden.numero_orden_lab} creada correctamente. "
+                f"Podés crear otra para el mismo servicio y fecha.",
+            )
+            # Redirigir manteniendo servicio y fecha para la siguiente orden
+            redirect_url = (
+                reverse("ordenes:crear_orden_programada")
+                + f"?servicio_id={orden.servicio_id}&fecha_programada={orden.fecha_programada}"
+            )
+            return redirect(redirect_url)
+        elif not paciente:
+            messages.error(request, "Debés seleccionar o ingresar un paciente.")
+
+    else:
+        # GET: inicializar formulario con valores pre-rellenados si corresponde
+        initial = {}
+        if servicio_id_get:
+            initial["servicio"] = servicio_id_get
+        if fecha_get:
+            initial["fecha_programada"] = fecha_get
+        else:
+            # Por defecto: mañana
+            initial["fecha_programada"] = datetime.date.today() + datetime.timedelta(days=1)
+
+        orden_form = OrdenProgramadaForm(initial=initial)
+        paciente_form = PacienteInlineForm()
+
+    # Preparar sectores y determinaciones (igual que crear_orden)
+    from determinaciones.models import Determinacion, DeterminacionCompleja, Sector
+
+    guardia_pks_simples = set(
+        str(pk) for pk in Determinacion.objects.filter(guardia=True).values_list("pk", flat=True)
+    )
+    guardia_pks_complejas = set(
+        str(pk) for pk in DeterminacionCompleja.objects.filter(guardia=True).values_list("pk", flat=True)
+    )
+
+    ORDEN_SECTORES = [
+        "hematologia",
+        "hemostasia",
+        "quimica",
+        "enzimas cardiacas",
+        "serologia",
+        "endocrinologia",
+    ]
+
+    sectores_raw = []
+    for sector in Sector.objects.all():
+        pks_simples = set(
+            str(pk) for pk in Determinacion.objects.filter(sector=sector, activa=True, visible=True)
+            .values_list("pk", flat=True)
+        )
+        pks_complejas = set(
+            str(pk) for pk in DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
+            .values_list("pk", flat=True)
+        )
+        sectores_raw.append({
+            "nombre": sector.nombre,
+            "pks_simples": pks_simples,
+            "pks_complejas": pks_complejas,
+        })
+
+    def sector_sort_key(s):
+        nombre = s["nombre"].lower()
+        try:
+            return ORDEN_SECTORES.index(nombre)
+        except ValueError:
+            return len(ORDEN_SECTORES)
+
+    sectores = sorted(sectores_raw, key=sector_sort_key)
+    pks_sin_sector_simples = set(
+        str(pk) for pk in Determinacion.objects.filter(sector__isnull=True, activa=True, visible=True)
+        .values_list("pk", flat=True)
+    )
+    if pks_sin_sector_simples:
+        sectores.append({
+            "nombre": "Otros",
+            "pks_simples": pks_sin_sector_simples,
+            "pks_complejas": set(),
+        })
+
+    return render(
+        request,
+        "ordenes/crear_orden_programada.html",
+        {
+            "orden_form": orden_form,
+            "paciente_form": paciente_form,
+            "es_recarga": es_recarga,
+            "servicio_id_preseleccionado": servicio_id_get,
+            "fecha_preseleccionada": fecha_get,
+            "guardia_pks_simples": guardia_pks_simples,
+            "guardia_pks_complejas": guardia_pks_complejas,
+            "sectores": sectores,
+        },
+    )
+
+
+@medico_requerido
 @medico_requerido
 def mis_ordenes(request):
-    """Vista que muestra las órdenes del médico autenticado."""
+    """Vista que muestra las órdenes del médico autenticado (carga inicial sin filtros)."""
     medico = request.user.medico
     ordenes = OrdenLaboratorio.objects.filter(
         medico=medico
-    ).select_related("paciente", "medico").order_by("-fecha_creacion")
+    ).select_related("paciente", "medico").order_by("-fecha_creacion")[:100]
     return render(request, "ordenes/mis_ordenes.html", {"ordenes": ordenes})
+
+
+@medico_requerido
+def filtrar_mis_ordenes_ajax(request):
+    """Endpoint AJAX: filtra las órdenes del médico autenticado según parámetros GET."""
+    medico = request.user.medico
+    qs = OrdenLaboratorio.objects.filter(medico=medico).select_related("paciente", "servicio")
+
+    paciente_busqueda = request.GET.get("paciente", "").strip()
+    origen = request.GET.get("origen", "").strip()
+    estado = request.GET.get("estado", "").strip()
+    fecha_desde = request.GET.get("fecha_desde", "").strip()
+    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+    tipo_fecha = request.GET.get("tipo_fecha", "creacion")
+
+    if paciente_busqueda:
+        qs = qs.filter(
+            Q(paciente__iden__icontains=paciente_busqueda)
+            | Q(paciente__nombre__icontains=paciente_busqueda)
+            | Q(paciente__apellido__icontains=paciente_busqueda)
+        )
+    if origen:
+        qs = qs.filter(tipo_origen=origen)
+    if estado:
+        qs = qs.filter(estado=estado)
+
+    if tipo_fecha == "programada":
+        if fecha_desde:
+            qs = qs.filter(fecha_programada__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_programada__lte=fecha_hasta)
+    else:
+        if fecha_desde:
+            qs = qs.filter(fecha_creacion__date__gte=fecha_desde)
+        if fecha_hasta:
+            qs = qs.filter(fecha_creacion__date__lte=fecha_hasta)
+
+    qs = qs.order_by("-fecha_creacion")[:100]
+
+    ordenes_data = []
+    for orden in qs:
+        ordenes_data.append({
+            "pk": orden.pk,
+            "numero_orden_lab": orden.numero_orden_lab,
+            "paciente_nombre": orden.paciente.nombre_completo,
+            "paciente_dni": orden.paciente.iden,
+            "origen": orden.get_tipo_origen_display(),
+            "tipo_origen": orden.tipo_origen,
+            "sala": orden.sala or "—",
+            "tiene_observaciones": bool(orden.observaciones),
+            "observaciones": orden.observaciones,
+            "estado": orden.estado,
+            "estado_display": orden.get_estado_display(),
+            "fecha_creacion": orden.fecha_creacion.strftime("%d/%m/%Y %H:%i"),
+            "fecha_programada": orden.fecha_programada.strftime("%d/%m/%Y") if orden.fecha_programada else None,
+            "url": reverse("ordenes:detalle_orden", args=[orden.pk]),
+        })
+
+    return JsonResponse({"ordenes": ordenes_data, "total": len(ordenes_data)})
 
 
 @login_required
@@ -221,14 +425,23 @@ def detalle_orden(request, pk):
 
 @operador_lab_requerido
 def cola_laboratorio(request):
-    """Vista que muestra la cola de órdenes pendientes del día."""
+    """Vista que muestra la cola de órdenes pendientes con filtros por origen y fecha programada."""
     hoy = timezone.localtime(timezone.now()).date()
-    ordenes = OrdenLaboratorio.objects.filter(
-        estado="PENDIENTE",
-        fecha_creacion__date=hoy,
-    ).select_related("paciente", "medico", "servicio").order_by("fecha_creacion")
 
-    # Agrupar por tipo_origen
+    origen_filtro = request.GET.get("origen", "").strip()
+    fecha_programada_filtro = request.GET.get("fecha_programada", "").strip()
+
+    # Base: todas las órdenes PENDIENTES (sin restricción de fecha de creación)
+    qs = OrdenLaboratorio.objects.filter(estado="PENDIENTE")
+
+    if origen_filtro:
+        qs = qs.filter(tipo_origen=origen_filtro)
+    if fecha_programada_filtro:
+        qs = qs.filter(fecha_programada=fecha_programada_filtro)
+
+    ordenes = qs.select_related("paciente", "medico", "servicio").order_by("fecha_creacion")
+
+    # Agrupar por tipo_origen para la tabla
     grupos = {}
     for orden in ordenes:
         tipo = orden.get_tipo_origen_display()
@@ -236,17 +449,39 @@ def cola_laboratorio(request):
             grupos[tipo] = []
         grupos[tipo].append(orden)
 
-    # Servicios con órdenes hoy para el filtro
+    # Contar por origen para los badges de los tabs (sobre base sin filtro de origen)
+    base_qs = OrdenLaboratorio.objects.filter(estado="PENDIENTE")
+    if fecha_programada_filtro:
+        base_qs = base_qs.filter(fecha_programada=fecha_programada_filtro)
+
+    contadores = {
+        "AMBULATORIO": base_qs.filter(tipo_origen="AMBULATORIO").count(),
+        "GUARDIA": base_qs.filter(tipo_origen="GUARDIA").count(),
+        "INTERNACION": base_qs.filter(tipo_origen="INTERNACION").count(),
+        "ORDENES_PROGRAMADAS": base_qs.filter(tipo_origen="ORDENES_PROGRAMADAS").count(),
+        "TODOS": base_qs.count(),
+    }
+
+    # Servicios para filtro de servicio (solo los que tienen órdenes pendientes)
     servicios = (
-        Servicio.objects.filter(ordenlaboratorio__estado="PENDIENTE", ordenlaboratorio__fecha_creacion__date=hoy)
+        Servicio.objects.filter(ordenlaboratorio__estado="PENDIENTE")
         .distinct()
         .order_by("nombre")
     )
+
+    # Próximos 7 días para el select de fecha programada
+    import datetime as dt
+    proximos_dias = [hoy + dt.timedelta(days=i) for i in range(8)]
 
     return render(request, "ordenes/cola_laboratorio.html", {
         "grupos": grupos,
         "hoy": hoy,
         "servicios": servicios,
+        "origen_filtro": origen_filtro,
+        "fecha_programada_filtro": fecha_programada_filtro,
+        "contadores": contadores,
+        "total_ordenes": ordenes.count(),
+        "proximos_dias": proximos_dias,
     })
 
 

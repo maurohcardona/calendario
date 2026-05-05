@@ -5,59 +5,234 @@
   <a href="{% url 'ordenes:crear_orden' %}" class="btn btn-primary">+ Nueva Orden</a>
 </div>
 
-{% if ordenes %}
-<div class="table-responsive">
-  <table class="table table-hover align-middle">
-    <thead>
-      <tr>
-        <th>N° Orden</th>
-        <th>Paciente</th>
-        <th>Origen</th>
-        <th>Cama</th>
-        <th>Obs.</th>
-        <th>Estado</th>
-        <th>Fecha</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for orden in ordenes %}
-      <tr style="cursor:pointer;" onclick="window.location='{% url 'ordenes:detalle_orden' orden.pk %}'">
-        <td>
-          <span class="badge" style="background-color: var(--color-primary);">{{ orden.numero_orden_lab }}</span>
-        </td>
-        <td>
-          <strong>{{ orden.paciente.nombre_completo }}</strong><br>
-          <small class="text-muted">DNI: {{ orden.paciente.iden }}</small>
-        </td>
-        <td>{{ orden.get_tipo_origen_display }}</td>
-        <td>{{ orden.sala|default:"—" }}</td>
-        <td>
-          {% if orden.observaciones %}
-            <span title="{{ orden.observaciones }}" style="color: var(--color-teal-dark); font-size: 1.1rem;">💬</span>
-          {% else %}
-            —
-          {% endif %}
-        </td>
-        <td>
-          {% if orden.estado == 'PENDIENTE' %}
-            <span class="badge bg-warning text-dark">Pendiente</span>
-          {% elif orden.estado == 'TURNO' %}
-            <span class="badge" style="background-color:#fd7e14;color:white;">Turno Asignado</span>
-          {% elif orden.estado == 'INGRESADA' %}
-            <span class="badge bg-info text-dark">Ingresada</span>
-          {% elif orden.estado == 'COMPLETADA' %}
-            <span class="badge bg-success">Completada</span>
-          {% elif orden.estado == 'CANCELADA' %}
-            <span class="badge bg-danger">Cancelada</span>
-          {% endif %}
-        </td>
-        <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{# ── CARD FILTROS ── #}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Paciente (nombre o DNI)</label>
+        <input type="text" id="filtro-paciente" class="form-control" placeholder="Buscá por nombre o DNI...">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Origen</label>
+        <select id="filtro-origen" class="form-select">
+          <option value="">Todos</option>
+          <option value="AMBULATORIO">Ambulatorio</option>
+          <option value="GUARDIA">Guardia</option>
+          <option value="INTERNACION">Internación</option>
+          <option value="ORDENES_PROGRAMADAS">Programadas</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Estado</label>
+        <select id="filtro-estado" class="form-select">
+          <option value="">Todos</option>
+          <option value="PENDIENTE">Pendiente</option>
+          <option value="TURNO">Turno Asignado</option>
+          <option value="INGRESADA">Ingresada</option>
+          <option value="COMPLETADA">Completada</option>
+          <option value="CANCELADA">Cancelada</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Desde</label>
+        <input type="date" id="filtro-fecha-desde" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Hasta</label>
+        <input type="date" id="filtro-fecha-hasta" class="form-control">
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button type="button" id="btn-limpiar-filtros" class="btn btn-outline-secondary w-100" title="Limpiar filtros">✕</button>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-md-4">
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="tipo_fecha" id="radio-creacion" value="creacion" checked>
+            <label class="form-check-label small" for="radio-creacion">Por fecha de creación</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="tipo_fecha" id="radio-programada" value="programada">
+            <label class="form-check-label small" for="radio-programada">Por fecha programada</label>
+          </div>
+        </div>
+      </div>
+      <div class="col text-end">
+        <small class="text-muted" id="contador-resultados"></small>
+      </div>
+    </div>
+  </div>
 </div>
-{% else %}
-  <div class="alert alert-info">No hay órdenes registradas.</div>
-{% endif %}
+
+{# ── TABLA ── #}
+<div id="tabla-ordenes">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>N° Orden</th>
+          <th>Paciente</th>
+          <th>Origen</th>
+          <th>Cama / Fecha Prog.</th>
+          <th>Obs.</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody id="ordenes-tbody">
+        {% for orden in ordenes %}
+        <tr style="cursor:pointer;" onclick="window.location='{% url 'ordenes:detalle_orden' orden.pk %}'">
+          <td>
+            <span class="badge" style="background-color: var(--color-primary);">{{ orden.numero_orden_lab }}</span>
+          </td>
+          <td>
+            <strong>{{ orden.paciente.nombre_completo }}</strong><br>
+            <small class="text-muted">DNI: {{ orden.paciente.iden }}</small>
+          </td>
+          <td>{{ orden.get_tipo_origen_display }}</td>
+          <td>
+            {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' %}
+              {% if orden.fecha_programada %}
+                <span class="badge bg-light text-dark border">📅 {{ orden.fecha_programada|date:"d/m/Y" }}</span>
+              {% else %}—{% endif %}
+            {% else %}
+              {{ orden.sala|default:"—" }}
+            {% endif %}
+          </td>
+          <td>
+            {% if orden.observaciones %}
+              <span title="{{ orden.observaciones }}" style="color: var(--color-teal-dark); font-size: 1.1rem;">💬</span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if orden.estado == 'PENDIENTE' %}
+              <span class="badge bg-warning text-dark">Pendiente</span>
+            {% elif orden.estado == 'TURNO' %}
+              <span class="badge" style="background-color:#fd7e14;color:white;">Turno Asignado</span>
+            {% elif orden.estado == 'INGRESADA' %}
+              <span class="badge bg-info text-dark">Ingresada</span>
+            {% elif orden.estado == 'COMPLETADA' %}
+              <span class="badge bg-success">Completada</span>
+            {% elif orden.estado == 'CANCELADA' %}
+              <span class="badge bg-danger">Cancelada</span>
+            {% endif %}
+          </td>
+          <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr id="fila-vacia"><td colspan="7" class="text-center text-muted py-3">No hay órdenes registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div id="sin-resultados" class="alert alert-warning d-none">No se encontraron órdenes con los filtros aplicados.</div>
+</div>
+
+<script>
+const FILTRAR_URL = "{% url 'ordenes:filtrar_mis_ordenes_ajax' %}";
+
+const ESTADO_LABELS = {
+  PENDIENTE: '<span class="badge bg-warning text-dark">Pendiente</span>',
+  TURNO: '<span class="badge" style="background-color:#fd7e14;color:white;">Turno Asignado</span>',
+  INGRESADA: '<span class="badge bg-info text-dark">Ingresada</span>',
+  COMPLETADA: '<span class="badge bg-success">Completada</span>',
+  CANCELADA: '<span class="badge bg-danger">Cancelada</span>',
+};
+
+let debounceTimer = null;
+
+function getParams() {
+  return new URLSearchParams({
+    paciente: document.getElementById('filtro-paciente').value.trim(),
+    origen: document.getElementById('filtro-origen').value,
+    estado: document.getElementById('filtro-estado').value,
+    fecha_desde: document.getElementById('filtro-fecha-desde').value,
+    fecha_hasta: document.getElementById('filtro-fecha-hasta').value,
+    tipo_fecha: document.querySelector('input[name="tipo_fecha"]:checked').value,
+  });
+}
+
+function hayFiltrosActivos() {
+  const p = getParams();
+  return p.get('paciente') || p.get('origen') || p.get('estado') ||
+         p.get('fecha_desde') || p.get('fecha_hasta');
+}
+
+function renderFila(o) {
+  let celdaCama;
+  if (o.tipo_origen === 'ORDENES_PROGRAMADAS') {
+    celdaCama = o.fecha_programada
+      ? `<span class="badge bg-light text-dark border">📅 ${o.fecha_programada}</span>`
+      : '—';
+  } else {
+    celdaCama = o.sala || '—';
+  }
+  const obsCell = o.tiene_observaciones
+    ? `<span title="${o.observaciones.replace(/"/g,'&quot;')}" style="color: var(--color-teal-dark); font-size: 1.1rem;">💬</span>`
+    : '—';
+  return `
+    <tr style="cursor:pointer;" onclick="window.location='${o.url}'">
+      <td><span class="badge" style="background-color: var(--color-primary);">${o.numero_orden_lab}</span></td>
+      <td><strong>${o.paciente_nombre}</strong><br><small class="text-muted">DNI: ${o.paciente_dni}</small></td>
+      <td>${o.origen}</td>
+      <td>${celdaCama}</td>
+      <td>${obsCell}</td>
+      <td>${ESTADO_LABELS[o.estado] || o.estado_display}</td>
+      <td>${o.fecha_creacion}</td>
+    </tr>`;
+}
+
+function ejecutarFiltro() {
+  if (!hayFiltrosActivos()) {
+    location.reload();
+    return;
+  }
+  fetch(`${FILTRAR_URL}?${getParams()}`)
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('ordenes-tbody');
+      const sinResultados = document.getElementById('sin-resultados');
+      const contador = document.getElementById('contador-resultados');
+
+      if (data.ordenes.length === 0) {
+        tbody.innerHTML = '';
+        sinResultados.classList.remove('d-none');
+        contador.textContent = 'Sin resultados';
+      } else {
+        tbody.innerHTML = data.ordenes.map(renderFila).join('');
+        sinResultados.classList.add('d-none');
+        contador.textContent = `${data.total} orden${data.total !== 1 ? 'es' : ''}`;
+      }
+    });
+}
+
+// Texto: debounce 300ms
+document.getElementById('filtro-paciente').addEventListener('input', function() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(ejecutarFiltro, 300);
+});
+
+// Selects y radios: inmediato
+['filtro-origen', 'filtro-estado', 'filtro-fecha-desde', 'filtro-fecha-hasta'].forEach(id => {
+  document.getElementById(id).addEventListener('change', ejecutarFiltro);
+});
+document.querySelectorAll('input[name="tipo_fecha"]').forEach(r => {
+  r.addEventListener('change', ejecutarFiltro);
+});
+
+// Limpiar
+document.getElementById('btn-limpiar-filtros').addEventListener('click', function() {
+  document.getElementById('filtro-paciente').value = '';
+  document.getElementById('filtro-origen').value = '';
+  document.getElementById('filtro-estado').value = '';
+  document.getElementById('filtro-fecha-desde').value = '';
+  document.getElementById('filtro-fecha-hasta').value = '';
+  document.getElementById('radio-creacion').checked = true;
+  document.getElementById('contador-resultados').textContent = '';
+  document.getElementById('sin-resultados').classList.add('d-none');
+  location.reload();
+});
+</script>
 {% endblock %}

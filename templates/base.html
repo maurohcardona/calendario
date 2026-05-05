@@ -62,13 +62,6 @@
         <a href="{% url 'turnos:generar_cupos_masivo' %}" class="apple-nav-link">Cupos</a>
         <a href="/admin/" class="apple-nav-link">Tablas</a>
         <a href="{% url 'informes:listado' %}" class="apple-nav-link">Informes</a>
-        <div class="user-menu" id="ordenes-menu">
-          <button class="user-menu-btn" id="ordenes-menu-btn" style="font-size:1.25rem; font-weight:600;">Órdenes ▼</button>
-          <div class="user-menu-content">
-            <a href="{% url 'ordenes:mis_ordenes' %}">Mis Órdenes</a>
-            <a href="{% url 'ordenes:todas_ordenes' %}">Todas las Órdenes</a>
-          </div>
-        </div>
         <a href="{% url 'ordenes:cola_laboratorio' %}" class="apple-nav-link">Cola Lab</a>
       </nav>
     </div>
@@ -166,17 +159,7 @@
         });
       }
 
-      // ── Menú Órdenes ──────────────────────────────────────────
-      const ordenesMenu = document.getElementById('ordenes-menu');
-      const ordenesMenuBtn = document.getElementById('ordenes-menu-btn');
-      if (ordenesMenuBtn) {
-        ordenesMenuBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          ordenesMenu.classList.toggle('active');
-        });
-      }
-
-      // Cerrar ambos menús al hacer clic fuera
+      // ── Cerrar menús al hacer clic fuera ──────────────────────
       document.addEventListener('click', function(e) {
         if (opcionesMenu && !opcionesMenu.contains(e.target)) {
           opcionesMenu.classList.remove('active');
@@ -185,9 +168,6 @@
         }
         if (statsMenu && !statsMenu.contains(e.target)) {
           statsMenu.classList.remove('active');
-        }
-        if (ordenesMenu && !ordenesMenu.contains(e.target)) {
-          ordenesMenu.classList.remove('active');
         }
       });
 

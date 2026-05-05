@@ -30,6 +30,7 @@ class OrdenLaboratorio(models.Model):
         ("AMBULATORIO", "Ambulatorio"),
         ("GUARDIA", "Guardia"),
         ("INTERNACION", "Internación"),
+        ("ORDENES_PROGRAMADAS", "Órdenes Programadas"),
     ]
     ESTADO_CHOICES = [
         ("PENDIENTE", "Pendiente"),
@@ -50,6 +51,7 @@ class OrdenLaboratorio(models.Model):
     determinaciones = models.ManyToManyField(Determinacion, blank=True, related_name="ordenes")
     determinaciones_complejas = models.ManyToManyField(DeterminacionCompleja, blank=True, related_name="ordenes")
     turno = models.ForeignKey("turnos.Turno", on_delete=models.SET_NULL, null=True, blank=True, related_name="orden")
+    fecha_programada = models.DateField(null=True, blank=True, verbose_name="Fecha programada")
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="ordenes_creadas")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)

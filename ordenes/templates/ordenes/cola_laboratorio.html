@@ -11,14 +11,14 @@
 <div class="card mb-4">
   <div class="card-body">
     <div class="row g-2 align-items-end">
-      <div class="col-md-7">
+      <div class="col-md-5">
         <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Buscar por DNI o N° Orden (toda la base de datos)</label>
         <div class="input-group">
           <input type="text" id="busqueda-global" class="form-control" placeholder="Ingresá DNI o número de orden...">
           <button class="btn btn-outline-secondary" id="btn-limpiar-global" type="button">✕</button>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Filtrar cola por servicio</label>
         <select id="filtro-servicio" class="form-select">
           <option value="">Todos los servicios</option>
@@ -26,6 +26,22 @@
             <option value="{{ servicio.pk }}">{{ servicio.nombre }}</option>
           {% endfor %}
         </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Fecha programada</label>
+        <div class="input-group">
+          <select id="filtro-fecha-prog" class="form-select" onchange="aplicarFiltroFechaOrigen()">
+            <option value="">Todas las fechas</option>
+            {% for dia in proximos_dias %}
+              <option value="{{ dia|date:'Y-m-d' }}" {% if fecha_programada_filtro == dia|date:'Y-m-d' %}selected{% endif %}>
+                {% if dia == hoy %}Hoy{% else %}{{ dia|date:"d/m" }}{% endif %} — {{ dia|date:"l" }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if fecha_programada_filtro %}
+            <a href="?{% if origen_filtro %}origen={{ origen_filtro }}{% endif %}" class="btn btn-outline-secondary" title="Limpiar fecha">✕</a>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
@@ -57,55 +73,103 @@
 </div>
 <div id="busqueda-sin-resultados" class="alert alert-warning d-none">No se encontraron órdenes para esa búsqueda.</div>
 
-{# ── COLA DEL DÍA ── #}
+{# ── COLA ── #}
 <div id="cola-hoy">
-{% if grupos %}
-  {% for tipo, ordenes in grupos.items %}
-  <div class="card mb-4 grupo-origen">
-    <div class="card-header fw-bold">{{ tipo }}</div>
-    <div class="card-body p-0">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>N° Orden</th>
-            <th>Paciente</th>
-            <th>DNI</th>
-            <th>Médico</th>
-            <th>Servicio</th>
-            <th>Hora</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for orden in ordenes %}
-          <tr class="fila-orden"
-              data-dni="{{ orden.paciente.iden }}"
-              data-orden="{{ orden.numero_orden_lab|lower }}"
-              data-servicio="{{ orden.servicio.pk|default:'' }}">
-            <td><span class="badge" style="background-color: var(--color-primary);">{{ orden.numero_orden_lab }}</span></td>
-            <td>{{ orden.paciente.nombre_completo }}</td>
-            <td>{{ orden.paciente.iden }}</td>
-            <td>{{ orden.medico }}</td>
-            <td>{{ orden.servicio|default:"-" }}</td>
-            <td>{{ orden.fecha_creacion|date:"H:i" }}</td>
-            <td>
-              {% if orden.tipo_origen == 'AMBULATORIO' %}
-                <a href="{% url 'ordenes:vincular_turno' orden.pk %}" class="btn btn-sm btn-primary">Turno</a>
-              {% else %}
-                <a href="{% url 'ordenes:ingresar_orden' orden.pk %}" class="btn btn-sm btn-success">Ingresar</a>
-              {% endif %}
-              <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-sm btn-outline-danger">Cancelar</a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+  {# TABS DE ORIGEN #}
+  <ul class="nav nav-tabs mb-3" id="tabs-origen">
+    <li class="nav-item">
+      <a class="nav-link {% if not origen_filtro %}active{% endif %}"
+         href="?{% if fecha_programada_filtro %}fecha_programada={{ fecha_programada_filtro }}{% endif %}">
+        Todos
+        <span class="badge bg-secondary ms-1">{{ contadores.TODOS }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if origen_filtro == 'AMBULATORIO' %}active{% endif %}"
+         href="?origen=AMBULATORIO{% if fecha_programada_filtro %}&fecha_programada={{ fecha_programada_filtro }}{% endif %}">
+        Ambulatorio
+        <span class="badge bg-secondary ms-1">{{ contadores.AMBULATORIO }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if origen_filtro == 'GUARDIA' %}active{% endif %}"
+         href="?origen=GUARDIA{% if fecha_programada_filtro %}&fecha_programada={{ fecha_programada_filtro }}{% endif %}">
+        Guardia
+        <span class="badge bg-secondary ms-1">{{ contadores.GUARDIA }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if origen_filtro == 'INTERNACION' %}active{% endif %}"
+         href="?origen=INTERNACION{% if fecha_programada_filtro %}&fecha_programada={{ fecha_programada_filtro }}{% endif %}">
+        Internación
+        <span class="badge bg-secondary ms-1">{{ contadores.INTERNACION }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if origen_filtro == 'ORDENES_PROGRAMADAS' %}active{% endif %}"
+         href="?origen=ORDENES_PROGRAMADAS{% if fecha_programada_filtro %}&fecha_programada={{ fecha_programada_filtro }}{% endif %}">
+        📅 Programadas
+        <span class="badge bg-secondary ms-1">{{ contadores.ORDENES_PROGRAMADAS }}</span>
+      </a>
+    </li>
+  </ul>
+
+  {% if grupos %}
+    {% for tipo, ordenes_grupo in grupos.items %}
+    <div class="card mb-4 grupo-origen">
+      <div class="card-header fw-bold">{{ tipo }} <span class="badge bg-secondary ms-1">{{ ordenes_grupo|length }}</span></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>N° Orden</th>
+              <th>Paciente</th>
+              <th>DNI</th>
+              <th>Médico</th>
+              <th>Servicio</th>
+              <th>Fecha Prog.</th>
+              <th>Hora</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for orden in ordenes_grupo %}
+            <tr class="fila-orden"
+                data-dni="{{ orden.paciente.iden }}"
+                data-orden="{{ orden.numero_orden_lab|lower }}"
+                data-servicio="{{ orden.servicio.pk|default:'' }}">
+              <td><span class="badge" style="background-color: var(--color-primary);">{{ orden.numero_orden_lab }}</span></td>
+              <td>{{ orden.paciente.nombre_completo }}</td>
+              <td>{{ orden.paciente.iden }}</td>
+              <td>{{ orden.medico }}</td>
+              <td>{{ orden.servicio|default:"-" }}</td>
+              <td>
+                {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' and orden.fecha_programada %}
+                  <span class="badge bg-light text-dark border">{{ orden.fecha_programada|date:"d/m/Y" }}</span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>{{ orden.fecha_creacion|date:"H:i" }}</td>
+              <td>
+                {% if orden.tipo_origen == 'AMBULATORIO' %}
+                  <a href="{% url 'ordenes:vincular_turno' orden.pk %}" class="btn btn-sm btn-primary">Turno</a>
+                {% else %}
+                  <a href="{% url 'ordenes:ingresar_orden' orden.pk %}" class="btn btn-sm btn-success">Ingresar</a>
+                {% endif %}
+                <a href="{% url 'ordenes:cancelar_orden' orden.pk %}" class="btn btn-sm btn-outline-danger">Cancelar</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-  {% endfor %}
-{% else %}
-  <div class="alert alert-info">No hay órdenes pendientes para hoy.</div>
-{% endif %}
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-info">No hay órdenes pendientes{% if origen_filtro %} para este origen{% endif %}{% if fecha_programada_filtro %} en esa fecha{% endif %}.</div>
+  {% endif %}
 </div>
 
 <div id="sin-resultados-cola" class="alert alert-warning d-none">No hay órdenes para el servicio seleccionado.</div>
@@ -134,10 +198,7 @@ let busquedaTimer = null;
 inputBusqueda.addEventListener('input', function() {
   clearTimeout(busquedaTimer);
   const q = this.value.trim();
-  if (!q) {
-    ocultarResultados();
-    return;
-  }
+  if (!q) { ocultarResultados(); return; }
   busquedaTimer = setTimeout(() => ejecutarBusqueda(q), 350);
 });
 
@@ -181,7 +242,7 @@ function ocultarResultados() {
   aplicarFiltroServicio();
 }
 
-// ── FILTRO DE SERVICIO (solo sobre la cola del día) ────────────
+// ── FILTRO DE SERVICIO (client-side) ──────────────────────────
 function aplicarFiltroServicio() {
   const servicioId = document.getElementById('filtro-servicio').value;
   let totalVisibles = 0;
@@ -200,5 +261,17 @@ function aplicarFiltroServicio() {
 }
 
 document.getElementById('filtro-servicio').addEventListener('change', aplicarFiltroServicio);
+
+// ── FILTRO FECHA PROGRAMADA (server-side via GET) ─────────────
+function aplicarFiltroFechaOrigen() {
+  const fecha = document.getElementById('filtro-fecha-prog').value;
+  const params = new URLSearchParams(window.location.search);
+  if (fecha) {
+    params.set('fecha_programada', fecha);
+  } else {
+    params.delete('fecha_programada');
+  }
+  window.location.search = params.toString();
+}
 </script>
 {% endblock %}

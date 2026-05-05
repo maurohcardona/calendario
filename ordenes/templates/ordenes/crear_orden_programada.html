@@ -1,0 +1,309 @@
+{% extends "base_medico.html" %}
+{% block medico_content %}
+<div class="row mb-3">
+  <div class="col">
+    <h2>📅 Nueva Orden Programada</h2>
+    <p class="text-muted mb-0" style="font-size: .9rem;">
+      Órdenes para pacientes internados — se procesarán en la fecha seleccionada.
+    </p>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<form method="post" id="orden-programada-form">
+  {% csrf_token %}
+
+  {# ── SERVICIO Y FECHA (se mantienen entre órdenes consecutivas) ── #}
+  <div class="card mb-4" style="{% if es_recarga %}border-color: var(--color-primary); border-width: 2px;{% endif %}">
+    <div class="card-header fw-bold d-flex align-items-center gap-2">
+      <span>Servicio y Fecha</span>
+      {% if es_recarga %}
+        <span class="badge" style="background-color: var(--color-primary); font-size: .7rem;">Mantenidos de la orden anterior</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+            Servicio <span class="text-danger">*</span>
+          </label>
+          <select name="servicio" id="id-servicio" class="form-select" required>
+            <option value="">---------</option>
+            {% for servicio in orden_form.fields.servicio.queryset %}
+              <option value="{{ servicio.pk }}"
+                {% if orden_form.servicio.value|stringformat:"s" == servicio.pk|stringformat:"s" %}selected{% endif %}>
+                {{ servicio }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if orden_form.servicio.errors %}
+            <div class="text-danger small mt-1">{{ orden_form.servicio.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+            Fecha programada <span class="text-danger">*</span>
+          </label>
+          <input type="date"
+                 name="fecha_programada"
+                 id="id-fecha-programada"
+                 class="form-control"
+                 value="{{ orden_form.fecha_programada.value|default:'' }}"
+                 required>
+          {% if orden_form.fecha_programada.errors %}
+            <div class="text-danger small mt-1">{{ orden_form.fecha_programada.errors }}</div>
+          {% endif %}
+          <div class="form-text">No puede ser una fecha anterior a hoy.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── PACIENTE (siempre limpio en nueva orden) ── #}
+  <div class="card mb-4">
+    <div class="card-header fw-bold">Paciente</div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label">Buscar por DNI</label>
+        <div class="input-group">
+          <input type="text" id="buscar-dni" class="form-control" placeholder="Ingresá el DNI..."
+                 inputmode="numeric" pattern="[0-9]*"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('btn-buscar').click();}">
+          <button type="button" class="btn btn-outline-primary" id="btn-buscar">Buscar</button>
+        </div>
+      </div>
+      <div id="paciente-encontrado" class="d-none">
+        <div class="alert alert-success mb-2" id="paciente-info"></div>
+        <input type="hidden" name="paciente_id" id="paciente-id-hidden">
+      </div>
+      <div id="paciente-no-encontrado" class="d-none">
+        <div class="rounded-3 p-3 mb-3 d-flex align-items-center gap-2"
+             style="background-color: #ffe0b2; border-left: 4px solid #e65100; color: #bf360c;">
+          <span style="font-size: 1.2rem;">⚠️</span>
+          <span>Paciente no encontrado. Completá los datos para crearlo.</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+              Nombre <span class="text-danger">*</span>
+            </label>
+            {{ paciente_form.nombre }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+              Apellido <span class="text-danger">*</span>
+            </label>
+            {{ paciente_form.apellido }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+              DNI <span class="text-danger">*</span>
+            </label>
+            {{ paciente_form.iden }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+              Fecha de nacimiento <span class="text-danger">*</span>
+            </label>
+            {{ paciente_form.fecha_nacimiento }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+              Sexo <span class="text-danger">*</span>
+            </label>
+            {{ paciente_form.sexo }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+              Teléfono
+            </label>
+            {{ paciente_form.telefono }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+              Email
+            </label>
+            {{ paciente_form.email }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── CAMA / SALA ── #}
+  <div class="card mb-4">
+    <div class="card-header fw-bold">Cama / Sala</div>
+    <div class="card-body">
+      <input type="text" name="sala" class="form-control"
+             placeholder="Ej: Cama 12 - Sala C"
+             value="">
+    </div>
+  </div>
+
+  {# ── DIAGNÓSTICO Y OBSERVACIONES ── #}
+  <div class="card mb-4">
+    <div class="card-header fw-bold">Diagnóstico y/u Observaciones</div>
+    <div class="card-body">
+      <textarea name="observaciones" class="form-control" rows="3"
+                placeholder="Diagnóstico, notas clínicas..."></textarea>
+      <div class="form-text">
+        Este campo se incluirá como nota interna al ingresar la orden.
+      </div>
+    </div>
+  </div>
+
+  {# ── DETERMINACIONES ── #}
+  <div class="card mb-4">
+    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+      <span>Determinaciones</span>
+      <span id="contador-sel" class="badge bg-primary">0 seleccionadas</span>
+    </div>
+    <div class="card-body">
+      <div class="mb-2">
+        <input type="text" id="filtro-det" class="form-control" placeholder="Filtrar determinaciones...">
+      </div>
+      {% if orden_form.non_field_errors %}
+        <div class="alert alert-danger">{{ orden_form.non_field_errors }}</div>
+      {% endif %}
+      <div id="det-grid">
+        {# Vista por sectores — única vista para órdenes programadas #}
+        <div id="vista-sectores">
+          {% for sector in sectores %}
+            <div class="sector-group mb-2" data-sector="{{ sector.nombre }}">
+              <button class="btn btn-sm w-100 text-start d-flex justify-content-between align-items-center px-2 py-1 rounded-2 sector-toggle"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#sector-{{ forloop.counter }}"
+                      aria-expanded="true"
+                      style="background-color: var(--color-mint-light); color: var(--color-text); font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; border: none;">
+                <span>{{ sector.nombre }}</span>
+                <span class="sector-chevron">▲</span>
+              </button>
+              <div id="sector-{{ forloop.counter }}" class="collapse show sector-items">
+                <div class="row row-cols-1 row-cols-md-3 g-2 pt-2">
+                  {% for det in orden_form.determinaciones %}
+                    {% if det.data.value|stringformat:'s' in sector.pks_simples %}
+                      <div class="col det-item" data-nombre="{{ det.choice_label|lower }}">
+                        <div class="form-check">
+                          {{ det.tag }}
+                          <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                            {{ det.choice_label }}
+                          </label>
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                  {% for det in orden_form.determinaciones_complejas %}
+                    {% if det.data.value|stringformat:'s' in sector.pks_complejas %}
+                      <div class="col det-item" data-nombre="{{ det.choice_label|lower }}">
+                        <div class="form-check">
+                          {{ det.tag }}
+                          <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                            {{ det.choice_label }}
+                          </label>
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 justify-content-end">
+    <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary" style="background-color: var(--color-primary); border-color: var(--color-primary);">
+      📅 Crear Orden Programada
+    </button>
+  </div>
+</form>
+
+<script>
+const BUSCAR_URL = "{% url 'ordenes:buscar_paciente' %}";
+
+// ── FECHA MÍNIMA: hoy ─────────────────────────────────────────
+(function() {
+  const fechaInput = document.getElementById('id-fecha-programada');
+  if (fechaInput) {
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dd = String(hoy.getDate()).padStart(2, '0');
+    fechaInput.min = `${yyyy}-${mm}-${dd}`;
+  }
+})();
+
+// ── BÚSQUEDA DE PACIENTE ──────────────────────────────────────
+document.getElementById('btn-buscar')?.addEventListener('click', function() {
+  const dni = document.getElementById('buscar-dni').value.trim();
+  if (!dni) return;
+  fetch(`${BUSCAR_URL}?iden=${encodeURIComponent(dni)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.encontrado) {
+        document.getElementById('paciente-encontrado').classList.remove('d-none');
+        document.getElementById('paciente-no-encontrado').classList.add('d-none');
+        document.getElementById('paciente-info').textContent =
+          `${data.paciente.nombre_completo} — DNI: ${data.paciente.iden}`;
+        document.getElementById('paciente-id-hidden').value = data.paciente.id;
+      } else {
+        document.getElementById('paciente-no-encontrado').classList.remove('d-none');
+        document.getElementById('paciente-encontrado').classList.add('d-none');
+        const idenInput = document.querySelector('#paciente-no-encontrado input[name="iden"]');
+        if (idenInput) idenInput.value = dni;
+      }
+    });
+});
+
+// ── FILTRO DE DETERMINACIONES ─────────────────────────────────
+document.getElementById('filtro-det')?.addEventListener('input', function() {
+  const texto = this.value.toLowerCase();
+  document.querySelectorAll('#vista-sectores .sector-group').forEach(grupo => {
+    let visibles = 0;
+    grupo.querySelectorAll('.det-item').forEach(el => {
+      const coincide = !texto || el.dataset.nombre.includes(texto);
+      el.style.display = coincide ? '' : 'none';
+      if (coincide) visibles++;
+    });
+    grupo.style.display = visibles > 0 ? '' : 'none';
+  });
+});
+
+// ── CONTADOR ──────────────────────────────────────────────────
+function actualizarContador() {
+  const cnt = document.querySelectorAll('#det-grid input[type="checkbox"]:checked').length;
+  document.getElementById('contador-sel').textContent = `${cnt} seleccionada${cnt !== 1 ? 's' : ''}`;
+}
+
+document.getElementById('det-grid')?.addEventListener('change', function(e) {
+  if (e.target.matches('input[type="checkbox"]')) {
+    actualizarContador();
+  }
+});
+
+// ── CHEVRON EN SECTORES PLEGABLES ─────────────────────────────
+document.querySelectorAll('.sector-toggle').forEach(btn => {
+  const target = document.querySelector(btn.dataset.bsTarget);
+  if (!target) return;
+  target.addEventListener('show.bs.collapse', () => {
+    btn.querySelector('.sector-chevron').textContent = '▲';
+  });
+  target.addEventListener('hide.bs.collapse', () => {
+    btn.querySelector('.sector-chevron').textContent = '▼';
+  });
+});
+</script>
+{% endblock %}
