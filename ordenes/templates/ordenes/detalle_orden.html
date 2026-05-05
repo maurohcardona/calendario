@@ -1,8 +1,14 @@
-{% extends "base_medico.html" %}
-{% block medico_content %}
+{% extends base_template %}
+
+{% block content %}{% block medico_content %}
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Orden #{{ orden.pk }}</h2>
-  <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">← Volver</a>
+  {% if tiene_medico %}
+    <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">← Mis órdenes</a>
+  {% else %}
+    <a href="{% url 'ordenes:cola_laboratorio' %}" class="btn btn-outline-secondary">← Cola Lab</a>
+  {% endif %}
 </div>
 
 <div class="row g-4">
@@ -124,4 +130,5 @@
   </div>{# fin col derecha #}
 
 </div>{# fin row #}
-{% endblock %}
+
+{% endblock medico_content %}{% endblock content %}

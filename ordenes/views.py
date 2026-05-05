@@ -422,10 +422,17 @@ def detalle_orden(request, pk):
         pk=pk,
     )
     es_operador_lab = request.user.is_superuser or request.user.groups.filter(name="laboratorio").exists()
+    tiene_medico = hasattr(request.user, "medico") and request.user.medico is not None
+    base_template = "base_medico.html" if tiene_medico else "base.html"
     return render(
         request,
         "ordenes/detalle_orden.html",
-        {"orden": orden, "es_operador_lab": es_operador_lab},
+        {
+            "orden": orden,
+            "es_operador_lab": es_operador_lab,
+            "tiene_medico": tiene_medico,
+            "base_template": base_template,
+        },
     )
 
 
