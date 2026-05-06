@@ -115,6 +115,12 @@
     </li>
   </ul>
 
+  {% if not hay_filtros %}
+  <div class="alert alert-info py-2 px-3 mb-3" style="font-size:.9rem;">
+    📋 Mostrando órdenes de las <strong>últimas 24 horas</strong>. Usá los filtros para ver órdenes anteriores.
+  </div>
+  {% endif %}
+
   {% if grupos %}
     {% for tipo, ordenes_grupo in grupos.items %}
     <div class="card mb-4 grupo-origen">

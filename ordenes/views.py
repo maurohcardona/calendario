@@ -444,8 +444,13 @@ def cola_laboratorio(request):
     origen_filtro = request.GET.get("origen", "").strip()
     fecha_programada_filtro = request.GET.get("fecha_programada", "").strip()
 
-    # Base: todas las órdenes PENDIENTES (sin restricción de fecha de creación)
+    hace_24hs = timezone.now() - timezone.timedelta(hours=24)
+    hay_filtros = bool(origen_filtro or fecha_programada_filtro)
+
+    # Sin filtros: solo últimas 24 hs. Con filtros: toda la base.
     qs = OrdenLaboratorio.objects.filter(estado="PENDIENTE")
+    if not hay_filtros:
+        qs = qs.filter(fecha_creacion__gte=hace_24hs)
 
     if origen_filtro:
         qs = qs.filter(tipo_origen=origen_filtro)
@@ -462,8 +467,10 @@ def cola_laboratorio(request):
             grupos[tipo] = []
         grupos[tipo].append(orden)
 
-    # Contar por origen para los badges de los tabs (sobre base sin filtro de origen)
+    # Contar por origen para los badges (misma restricción de 24hs si no hay filtros)
     base_qs = OrdenLaboratorio.objects.filter(estado="PENDIENTE")
+    if not hay_filtros:
+        base_qs = base_qs.filter(fecha_creacion__gte=hace_24hs)
     if fecha_programada_filtro:
         base_qs = base_qs.filter(fecha_programada=fecha_programada_filtro)
 
@@ -495,6 +502,7 @@ def cola_laboratorio(request):
         "contadores": contadores,
         "total_ordenes": ordenes.count(),
         "proximos_dias": proximos_dias,
+        "hay_filtros": hay_filtros,
     })
 
 
