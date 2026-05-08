@@ -13,6 +13,7 @@ media/
 .venv/
 venv/
 static/vendor/
+.env.docker
 
 
 # Production scripts (locales)
@@ -42,4 +43,4 @@ turnos/tests/
 logs/
 # Configuración de tareas programadas Windows
 tarea_programada_backup.xml
-*.xml
+
