@@ -104,6 +104,8 @@ def eventos_calendario(request: HttpRequest) -> JsonResponse:
                     "agenda_name": c.agenda.name,
                     "fecha": c.fecha.isoformat(),
                     "disponibles": libres,
+                    "total": c.cantidad_total,
+                    "usados": c.cantidad_total - libres,
                     "es_pasado": es_pasado,
                     "completo": libres == 0,
                     "texto_tachado": texto_tachado,
