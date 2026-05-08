@@ -19,6 +19,7 @@ static/vendor/
 deploy.bat
 restart_production.bat
 stop_production.bat
+start_waitress.py
 
 # Generated data
 mensajes/*.pet
