@@ -315,7 +315,7 @@ class PDFService:
         p.drawString(PDFService.MARGEN, y, f"Fecha de retiro: a partir de {fecha_retiro_str}")
         y -= 0.45 * cm
         p.setFont("Helvetica", 11)
-        p.drawString(PDFService.MARGEN, y, "De lunes a viernes de 10 a 17 hs")
+        p.drawString(PDFService.MARGEN, y, "De lunes a viernes de 10 a 16 hs")
         y -= 0.5 * cm
         
         p.line(PDFService.MARGEN, y, PDFService.ANCHO_PAPEL - PDFService.MARGEN, y)
