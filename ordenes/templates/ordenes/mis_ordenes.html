@@ -8,7 +8,10 @@
     <div class="row g-2 align-items-end">
       <div class="col-md-3">
         <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Paciente (nombre o DNI)</label>
-        <input type="text" id="filtro-paciente" class="form-control" placeholder="Buscá por nombre o DNI...">
+        <div class="input-group">
+          <input type="text" id="filtro-paciente" class="form-control" placeholder="Buscá por nombre o DNI...">
+          <button type="button" id="btn-buscar-paciente" class="btn btn-outline-secondary" title="Buscar">🔍</button>
+        </div>
       </div>
       <div class="col-md-2">
         <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Origen</label>
@@ -169,7 +172,6 @@ const ESTADO_LABELS = {
   CANCELADA: '<span class="badge bg-danger">Cancelada</span>',
 };
 
-let debounceTimer = null;
 
 function getParams() {
   return new URLSearchParams({
@@ -240,11 +242,11 @@ function ejecutarFiltro() {
     });
 }
 
-// Texto: debounce 300ms
-document.getElementById('filtro-paciente').addEventListener('input', function() {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(ejecutarFiltro, 300);
+// Texto: solo al presionar Enter o el botón Buscar
+document.getElementById('filtro-paciente').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') ejecutarFiltro();
 });
+document.getElementById('btn-buscar-paciente').addEventListener('click', ejecutarFiltro);
 
 // Selects y radios: inmediato
 ['filtro-origen', 'filtro-estado', 'filtro-fecha-desde', 'filtro-fecha-hasta'].forEach(id => {
