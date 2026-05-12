@@ -277,6 +277,81 @@ let ordenSeleccionada = null;
 let ordenesSeleccionadas = []; // índices seleccionados en modo unificación
 let modoUnificar = false;      // true = modo unificación, false = modo simple
 
+// Sincronizar select tipo_iden con hidden input
+const selectTipoIden = document.getElementById('id_tipo_iden');
+const hiddenTipoIden = document.getElementById('id_tipo_iden_hidden');
+
+/**
+ * Valida si una fecha corresponde a un recién nacido (≤ 90 días de nacido).
+ * @param {string} fechaStr - Fecha en formato 'YYYY-MM-DD'
+ * @returns {boolean}
+ */
+function esRecienNacido(fechaStr) {
+    if (!fechaStr) return false;
+    // Parsear como fecha local evitando desplazamiento por timezone
+    const [anio, mes, dia] = fechaStr.split('-').map(Number);
+    const fecha = new Date(anio, mes - 1, dia);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const diffDias = Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+    return diffDias >= 0 && diffDias <= 90;
+}
+
+/**
+ * Actualiza el estado del input DNI según el tipo de identificación seleccionado.
+ * Si es NEO: deshabilita el input (el número se genera server-side).
+ * Si es otro tipo: habilita el input para ingreso manual.
+ * Solo aplica cuando el select está habilitado (modo paciente no encontrado).
+ */
+function actualizarEstadoInputDNIsegunTipo() {
+    const tipoIden = selectTipoIden ? selectTipoIden.value : '';
+    const inputDni = document.getElementById('id_dni');
+    if (!inputDni || selectTipoIden?.disabled) return;  // Solo en modo editable
+
+    if (tipoIden === 'NEO') {
+        inputDni.disabled = true;
+        inputDni.value = '';
+        inputDni.placeholder = 'Se generará automáticamente';
+    } else {
+        inputDni.disabled = false;
+        inputDni.placeholder = 'Número o apellido...';
+    }
+}
+
+/**
+ * Muestra advertencia si el tipo NEO no corresponde a un recién nacido.
+ */
+function validarEdadParaNEO() {
+    const tipoIden = selectTipoIden ? selectTipoIden.value : '';
+    if (tipoIden !== 'NEO') return;
+
+    const fechaNac = document.getElementById('id_fecha_nacimiento')?.value;
+    const status = document.getElementById('pacienteStatus');
+    if (!status) return;
+
+    if (fechaNac && !esRecienNacido(fechaNac)) {
+        status.innerHTML = '<span class="apple-status-error">⚠ NEO es solo para recién nacidos (hasta 90 días de nacido). Cambiá el tipo de identificación.</span>';
+    } else if (fechaNac) {
+        // Limpiar advertencia de edad si la fecha es válida
+        if (status.innerHTML.includes('90 días')) {
+            status.innerHTML = '';
+        }
+    }
+}
+
+if (selectTipoIden && hiddenTipoIden) {
+    selectTipoIden.addEventListener('change', function() {
+        hiddenTipoIden.value = this.value;
+        actualizarEstadoInputDNIsegunTipo();
+        validarEdadParaNEO();
+    });
+}
+
+// Validar edad al cambiar la fecha de nacimiento (puede cambiar la validez de NEO)
+document.getElementById('id_fecha_nacimiento')?.addEventListener('change', function() {
+    validarEdadParaNEO();
+});
+
 // Buscar paciente por DNI al presionar Enter
 document.getElementById('id_dni')?.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
@@ -288,10 +363,21 @@ document.getElementById('id_dni')?.addEventListener('keypress', function(e) {
 // Buscar paciente por DNI
 document.getElementById('btnBuscarPaciente')?.addEventListener('click', async function() {
     const dni = document.getElementById('id_dni').value.trim();
+    const tipoIden = document.getElementById('id_tipo_iden').value;
     const status = document.getElementById('pacienteStatus');
+
+    // NEO: el número se genera server-side, no requiere búsqueda previa
+    if (tipoIden === 'NEO') {
+        status.innerHTML = '<span class="apple-status-not-found">Recién nacido (NEO): complete los datos del formulario.</span>';
+        document.getElementById('id_tipo_iden').disabled = false;
+        actualizarEstadoInputDNIsegunTipo();
+        habilitarTodosCampos();
+        document.getElementById('id_dni').disabled = true;
+        return;
+    }
     
     if (!dni) {
-        status.innerHTML = '<span class="apple-status-error">Ingrese un DNI</span>';
+        status.innerHTML = '<span class="apple-status-error">Ingrese un número de identificación</span>';
         return;
     }
     
@@ -303,11 +389,17 @@ document.getElementById('btnBuscarPaciente')?.addEventListener('click', async fu
         if (cartelExistente) cartelExistente.remove();
 
         // ── 1. Buscar paciente ──────────────────────────────────────
-        const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${dni}`);
+        const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${encodeURIComponent(dni)}&tipo_iden=${encodeURIComponent(tipoIden)}`);
         const data = await response.json();
 
         if (data.found) {
             status.innerHTML = '<span class="apple-status-found">Paciente encontrado</span>';
+            // Autocompletar tipo_iden con lo que devuelve el servidor y deshabilitarlo
+            if (data.tipo_iden) {
+                document.getElementById('id_tipo_iden').value = data.tipo_iden;
+                if (hiddenTipoIden) hiddenTipoIden.value = data.tipo_iden;
+            }
+            document.getElementById('id_tipo_iden').disabled = true;
             document.getElementById('id_nombre').value = data.nombre;
             document.getElementById('id_apellido').value = data.apellido;
             document.getElementById('id_fecha_nacimiento').value = data.fecha_nacimiento;
@@ -373,6 +465,10 @@ document.getElementById('btnBuscarPaciente')?.addEventListener('click', async fu
 
         } else {
             status.innerHTML = '<span class="apple-status-not-found">Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
+            // Habilitar select de tipo_iden para que pueda elegir el tipo correcto
+            document.getElementById('id_tipo_iden').disabled = false;
+            // Ajustar estado del input DNI según el tipo seleccionado (puede ser NEO)
+            actualizarEstadoInputDNIsegunTipo();
             document.getElementById('id_nombre').value = '';
             document.getElementById('id_apellido').value = '';
             document.getElementById('id_fecha_nacimiento').value = '';
@@ -391,6 +487,103 @@ document.getElementById('btnBuscarPaciente')?.addEventListener('click', async fu
         habilitarTodosCampos();
     }
 });
+
+// ===================================================================
+// AUTOCOMPLETADO DE PACIENTES EN TIEMPO REAL
+// ===================================================================
+
+(function() {
+    const inputDni = document.getElementById('id_dni');
+    const lista = document.getElementById('autocompletePacientes');
+    if (!inputDni || !lista) return;
+
+    let timeout = null;
+
+    inputDni.addEventListener('input', function() {
+        const texto = this.value.trim();
+        clearTimeout(timeout);
+
+        if (texto.length < 2) {
+            lista.style.display = 'none';
+            return;
+        }
+
+        timeout = setTimeout(async function() {
+            try {
+                const resp = await fetch(`/pacientes/api/buscar-pacientes/?q=${encodeURIComponent(texto)}`);
+                if (!resp.ok) return;
+                const pacientes = await resp.json();
+
+                if (!pacientes.length) {
+                    lista.innerHTML = '<div class="apple-autocomplete-empty">Sin resultados</div>';
+                    lista.style.display = 'block';
+                    return;
+                }
+
+                lista.innerHTML = pacientes.map(p => `
+                    <div class="apple-autocomplete-item-paciente"
+                         data-tipo-iden="${p.tipo_iden}"
+                         data-iden="${p.iden}">
+                        <span class="apple-autocomplete-tipo-badge">${p.tipo_iden}</span>
+                        <span class="apple-autocomplete-iden-pac">${p.iden}</span>
+                        <span class="apple-autocomplete-nombre-pac"> — ${p.nombre_completo}</span>
+                    </div>
+                `).join('');
+                lista.style.display = 'block';
+
+                lista.querySelectorAll('.apple-autocomplete-item-paciente').forEach(function(item) {
+                    item.addEventListener('click', function() {
+                        const tipoIden = this.dataset.tipoIden;
+                        const iden = this.dataset.iden;
+                        document.getElementById('id_tipo_iden').value = tipoIden;
+                        if (hiddenTipoIden) hiddenTipoIden.value = tipoIden;
+                        document.getElementById('id_tipo_iden').disabled = true;
+                        inputDni.value = iden;
+                        lista.style.display = 'none';
+                        // Disparar búsqueda completa
+                        document.getElementById('btnBuscarPaciente').click();
+                    });
+                });
+
+            } catch (e) {
+                lista.style.display = 'none';
+            }
+        }, 300);
+    });
+
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (!inputDni.contains(e.target) && !lista.contains(e.target)) {
+            lista.style.display = 'none';
+        }
+    });
+
+    // Navegar con teclado (↑ ↓ Enter Escape)
+    inputDni.addEventListener('keydown', function(e) {
+        const items = lista.querySelectorAll('.apple-autocomplete-item-paciente');
+        if (!items.length || lista.style.display === 'none') return;
+
+        const current = lista.querySelector('.apple-autocomplete-item-paciente.selected');
+        let idx = Array.from(items).indexOf(current);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (current) current.classList.remove('selected');
+            idx = (idx + 1) % items.length;
+            items[idx].classList.add('selected');
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (current) current.classList.remove('selected');
+            idx = (idx - 1 + items.length) % items.length;
+            items[idx].classList.add('selected');
+        } else if (e.key === 'Enter' && current) {
+            e.preventDefault();
+            current.click();
+        } else if (e.key === 'Escape') {
+            lista.style.display = 'none';
+        }
+    });
+})();
 
 // ===================================================================
 // MODAL DE ÓRDENES PENDIENTES

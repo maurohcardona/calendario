@@ -7,9 +7,11 @@ from .models import OrdenLaboratorio, Servicio
 
 
 class PacienteInlineForm(forms.ModelForm):
+    """Formulario inline para crear o identificar un paciente al registrar una orden."""
+
     class Meta:
         model = Paciente
-        fields = ["iden", "apellido", "nombre", "fecha_nacimiento", "sexo", "telefono", "email"]
+        fields = ["tipo_iden", "iden", "apellido", "nombre", "fecha_nacimiento", "sexo", "telefono", "email"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,6 +27,29 @@ class PacienteInlineForm(forms.ModelForm):
             if name in ("nombre", "apellido"):
                 widget.attrs["style"] = "text-transform: uppercase;"
                 widget.attrs["oninput"] = "this.value = this.value.toUpperCase();"
+        # El campo iden tiene id estándar que usará el JS del template
+        self.fields["iden"].widget.attrs["id"] = "id_iden_paciente"
+
+    def clean(self):
+        """Validar reglas para tipo NEO: edad máxima 90 días, iden puede ser vacío."""
+        from turnos.services.turno_service import validar_edad_neo
+
+        cleaned_data = super().clean()
+        tipo_iden = cleaned_data.get("tipo_iden", "DNI")
+        fecha_nacimiento = cleaned_data.get("fecha_nacimiento")
+
+        if tipo_iden == "NEO":
+            # Para NEO el iden se genera server-side; no validar campo iden
+            if fecha_nacimiento:
+                es_valido, mensaje = validar_edad_neo(fecha_nacimiento)
+                if not es_valido:
+                    raise forms.ValidationError(mensaje)
+            else:
+                raise forms.ValidationError(
+                    "La fecha de nacimiento es obligatoria para el tipo de identificación NEO."
+                )
+
+        return cleaned_data
 
 
 class OrdenForm(forms.ModelForm):

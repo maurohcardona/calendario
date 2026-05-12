@@ -5,15 +5,36 @@ from datetime import date
 class Paciente(models.Model):
     """Modelo que representa un paciente del sistema de salud."""
 
+    TIPO_IDEN_CHOICES = [
+        ("DNI", "DNI"),
+        ("CI", "Ci"),
+        ("LC", "LC"),
+        ("LE", "LE"),
+        ("Pasaporte", "Pasaporte"),
+        ("Otro", "Otro"),
+        ("PRO", "PRO"),
+        ("NEO", "NEO"),
+        ("NN", "NN"),
+    ]
+
     SEXO_CHOICES = [
         ("Masculino", "Masculino"),
         ("Femenino", "Femenino"),
         ("Sin asignar", "Sin asignar"),
     ]
 
-    iden = models.CharField(
+    tipo_iden = models.CharField(
         max_length=15,
-        unique=True,
+        choices=TIPO_IDEN_CHOICES,
+        default="DNI",
+        blank=False,
+        null=False,
+        verbose_name="Tipo de Identificación",
+        help_text="Tipo de documento de identidad del paciente",
+    )
+
+    iden = models.CharField(
+        max_length=25,
         verbose_name="Identificación",
         help_text="Número de documento de identidad del paciente",
     )
@@ -47,7 +68,9 @@ class Paciente(models.Model):
         verbose_name = "Paciente"
         verbose_name_plural = "Pacientes"
         ordering = ["apellido", "nombre"]
+        unique_together = [("tipo_iden", "iden")]
         indexes = [
+            models.Index(fields=["tipo_iden", "iden"]),
             models.Index(fields=["iden"]),
             models.Index(fields=["apellido", "nombre"]),
         ]

@@ -93,6 +93,7 @@ def precoordinacion_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
 
         # Actualizar datos personales
         dni_nuevo = request.POST.get("dni", "").strip()
+        tipo_iden_nuevo = request.POST.get("tipo_iden", "DNI").strip() or "DNI"
         apellido_nuevo = request.POST.get("apellido", "").strip()
         nombre_nuevo = request.POST.get("nombre", "").strip()
         fecha_nac_nueva = request.POST.get("fecha_nacimiento", "")
@@ -137,6 +138,7 @@ def precoordinacion_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
 
         # Crear o actualizar Paciente
         paciente_obj, _ = Paciente.objects.update_or_create(
+            tipo_iden=tipo_iden_nuevo,
             iden=dni_nuevo,
             defaults={
                 "nombre": nombre_nuevo,

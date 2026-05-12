@@ -25,15 +25,17 @@
       {% if paciente %}
         <input type="hidden" name="paciente_id" value="{{ paciente.pk }}">
         <p class="mb-1"><strong>{{ paciente.nombre_completo }}</strong></p>
-        <p class="mb-1 text-muted">DNI: {{ paciente.iden }} | Sexo: {{ paciente.sexo }}</p>
+        <p class="mb-1 text-muted">{{ paciente.get_tipo_iden_display }}: {{ paciente.iden }} | Sexo: {{ paciente.sexo }}</p>
         <a href="?paciente_id=" class="btn btn-sm btn-outline-secondary mt-2">Cambiar paciente</a>
       {% else %}
         <div class="mb-3">
-          <label class="form-label">Buscar por DNI</label>
+          <label class="form-label">Buscar paciente</label>
           <div class="input-group">
-            <input type="text" id="buscar-dni" class="form-control" placeholder="Ingresá el DNI..." inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')"
-                   onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('btn-buscar').click();}">            <button type="button" class="btn btn-outline-primary" id="btn-buscar">Buscar</button>
+            <input type="text" id="buscar-iden" class="form-control" placeholder="Ingresá el número de identificación (DNI, NEO, NN)..."
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('btn-buscar').click();}">
+            <button type="button" class="btn btn-outline-primary" id="btn-buscar">🔍 Buscar</button>
           </div>
+          <div class="form-text text-muted">Podés buscar por DNI, NEO o NN.</div>
         </div>
         <div id="paciente-encontrado" class="d-none">
           <div class="alert alert-success mb-2" id="paciente-info"></div>
@@ -60,9 +62,21 @@
             </div>
             <div class="col-md-4">
               <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
-                DNI <span class="text-danger">*</span>
+                Tipo de Identificación <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.tipo_iden }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                <span id="label-iden-orden">DNI</span> <span class="text-danger">*</span>
               </label>
               {{ paciente_form.iden }}
+              <div id="advertencia-neo-orden" class="form-text text-warning d-none">
+                ⚠️ NEO es solo para recién nacidos (hasta 90 días de nacido).
+              </div>
+              <div id="info-neo-orden" class="form-text text-info d-none">
+                ℹ️ El número se generará automáticamente al guardar.
+              </div>
             </div>
             <div class="col-md-4">
               <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
@@ -331,9 +345,9 @@ let pacienteData = {% if paciente %}{
 }{% else %}null{% endif %};
 
 document.getElementById('btn-buscar')?.addEventListener('click', function() {
-  const dni = document.getElementById('buscar-dni').value.trim();
-  if (!dni) return;
-  fetch(`${BUSCAR_URL}?iden=${encodeURIComponent(dni)}`)
+  const iden = document.getElementById('buscar-iden').value.trim();
+  if (!iden) return;
+  fetch(`${BUSCAR_URL}?iden=${encodeURIComponent(iden)}`)
     .then(r => r.json())
     .then(data => {
       if (data.encontrado) {
@@ -345,16 +359,17 @@ document.getElementById('btn-buscar')?.addEventListener('click', function() {
         };
         document.getElementById('paciente-encontrado').classList.remove('d-none');
         document.getElementById('paciente-no-encontrado').classList.add('d-none');
+        const tipoLabel = { DNI: 'DNI', NEO: 'NEO', NN: 'NN' }[data.paciente.tipo_iden] || 'ID';
         document.getElementById('paciente-info').textContent =
-          `${data.paciente.nombre_completo} — DNI: ${data.paciente.iden}`;
+          `${data.paciente.nombre_completo} — ${tipoLabel}: ${data.paciente.iden}`;
         document.getElementById('paciente-id-hidden').value = data.paciente.id;
       } else {
         pacienteData = null;
         document.getElementById('paciente-no-encontrado').classList.remove('d-none');
         document.getElementById('paciente-encontrado').classList.add('d-none');
-        // Pre-completar DNI en el formulario de nuevo paciente
-        const idenInput = document.querySelector('#paciente-no-encontrado input[name="iden"]');
-        if (idenInput) idenInput.value = dni;
+        // Pre-completar identificación en el formulario de nuevo paciente solo si es numérico (DNI)
+        const idenInput = document.getElementById('id_iden_paciente');
+        if (idenInput && /^\d+$/.test(iden)) idenInput.value = iden;
       }
     });
 });
@@ -548,6 +563,87 @@ document.getElementById('orden-form').addEventListener('submit', function() {
   } else {
     vistaGuardia.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = true);
   }
+  // Antes de enviar, habilitar el input iden si está disabled (NEO) para que no bloquee submit
+  // El backend lo ignora de todos modos, pero Bootstrap form-control disabled no envía valor
+  const idenInput = document.getElementById('id_iden_paciente');
+  if (idenInput && idenInput.disabled) idenInput.disabled = false;
 });
+
+// ══════════════════════════════════════════════════════════════
+// MANEJO DE TIPO DE IDENTIFICACIÓN (NEO / NN / DNI)
+// ══════════════════════════════════════════════════════════════
+(function() {
+  const selectTipoIden = document.getElementById('id_tipo_iden');
+  const inputIden      = document.getElementById('id_iden_paciente');
+  const labelIden      = document.getElementById('label-iden-orden');
+  const advertenciaNeo = document.getElementById('advertencia-neo-orden');
+  const infoNeo        = document.getElementById('info-neo-orden');
+  const inputFechaNac  = document.getElementById('id_fecha_nacimiento');
+
+  /**
+   * Valida si una fecha corresponde a un recién nacido (≤ 90 días de nacido).
+   * @param {string} fechaStr - Fecha en formato 'YYYY-MM-DD'
+   * @returns {boolean}
+   */
+  function esRecienNacido(fechaStr) {
+    if (!fechaStr) return false;
+    const [anio, mes, dia] = fechaStr.split('-').map(Number);
+    const fecha = new Date(anio, mes - 1, dia);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const diffDias = Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+    return diffDias >= 0 && diffDias <= 90;
+  }
+
+  /**
+   * Actualiza el estado del input iden según el tipo seleccionado.
+   */
+  function actualizarEstadoIden() {
+    if (!selectTipoIden || !inputIden) return;
+    const tipo = selectTipoIden.value;
+
+    if (tipo === 'NEO') {
+      inputIden.disabled = true;
+      inputIden.value = '';
+      inputIden.placeholder = 'Se generará automáticamente';
+      if (labelIden) labelIden.textContent = 'Número NEO';
+      if (infoNeo) infoNeo.classList.remove('d-none');
+    } else {
+      inputIden.disabled = false;
+      inputIden.placeholder = tipo === 'NN' ? 'Ingresá el número NN' : 'Ingresá el DNI';
+      if (labelIden) labelIden.textContent = tipo === 'NN' ? 'Número NN' : 'DNI';
+      if (infoNeo) infoNeo.classList.add('d-none');
+    }
+  }
+
+  /**
+   * Valida la edad para tipo NEO y muestra advertencia si corresponde.
+   */
+  function validarEdadNeo() {
+    if (!selectTipoIden || !advertenciaNeo) return;
+    const tipo     = selectTipoIden.value;
+    const fechaNac = inputFechaNac ? inputFechaNac.value : '';
+
+    if (tipo === 'NEO' && fechaNac && !esRecienNacido(fechaNac)) {
+      advertenciaNeo.classList.remove('d-none');
+    } else {
+      advertenciaNeo.classList.add('d-none');
+    }
+  }
+
+  if (selectTipoIden) {
+    selectTipoIden.addEventListener('change', function() {
+      actualizarEstadoIden();
+      validarEdadNeo();
+    });
+  }
+
+  if (inputFechaNac) {
+    inputFechaNac.addEventListener('change', validarEdadNeo);
+  }
+
+  // Inicializar al cargar la página
+  actualizarEstadoIden();
+})();
 </script>
 {% endblock %}

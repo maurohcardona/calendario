@@ -62,14 +62,19 @@ def obtener_servicios(request):
 
 @medico_requerido
 def buscar_paciente(request):
-    """Vista AJAX que busca un paciente por DNI."""
-    dni = request.GET.get("iden", "").strip()
-    try:
-        paciente = Paciente.objects.get(iden=dni)
+    """Vista AJAX que busca un paciente por número de identificación (cross-tipo).
+
+    Busca el número ingresado en todos los tipos de identificación (DNI, NEO, NN, etc.)
+    para facilitar la búsqueda sin que el operador deba conocer el tipo previamente.
+    """
+    iden = request.GET.get("iden", "").strip()
+    paciente = Paciente.objects.filter(iden=iden).first()
+    if paciente:
         data = {
             "encontrado": True,
             "paciente": {
                 "id": paciente.pk,
+                "tipo_iden": paciente.tipo_iden,
                 "nombre_completo": paciente.nombre_completo,
                 "apellido": paciente.apellido,
                 "nombre": paciente.nombre,
@@ -78,7 +83,7 @@ def buscar_paciente(request):
                 "sexo": paciente.sexo,
             },
         }
-    except Paciente.DoesNotExist:
+    else:
         data = {"encontrado": False}
     return JsonResponse(data)
 
@@ -99,9 +104,21 @@ def crear_orden(request):
         if not paciente:
             # Intentar crear el paciente
             if paciente_form.is_valid():
+                tipo_iden = paciente_form.cleaned_data.get("tipo_iden") or "DNI"
                 iden = paciente_form.cleaned_data.get("iden")
+
+                if tipo_iden == "NEO":
+                    # Para NEO el número se genera automáticamente server-side
+                    from turnos.services.turno_service import generar_numero_neo_unico
+                    iden = generar_numero_neo_unico(
+                        nombre=paciente_form.cleaned_data.get("nombre", ""),
+                        apellido=paciente_form.cleaned_data.get("apellido", ""),
+                        fecha_nacimiento=paciente_form.cleaned_data.get("fecha_nacimiento"),
+                    )
+
                 if iden:
                     paciente, _ = Paciente.objects.get_or_create(
+                        tipo_iden=tipo_iden,
                         iden=iden,
                         defaults={
                             "apellido": paciente_form.cleaned_data.get("apellido", ""),
@@ -223,9 +240,21 @@ def crear_orden_programada(request):
 
         if not paciente:
             if paciente_form.is_valid():
+                tipo_iden = paciente_form.cleaned_data.get("tipo_iden") or "DNI"
                 iden = paciente_form.cleaned_data.get("iden")
+
+                if tipo_iden == "NEO":
+                    # Para NEO el número se genera automáticamente server-side
+                    from turnos.services.turno_service import generar_numero_neo_unico
+                    iden = generar_numero_neo_unico(
+                        nombre=paciente_form.cleaned_data.get("nombre", ""),
+                        apellido=paciente_form.cleaned_data.get("apellido", ""),
+                        fecha_nacimiento=paciente_form.cleaned_data.get("fecha_nacimiento"),
+                    )
+
                 if iden:
                     paciente, _ = Paciente.objects.get_or_create(
+                        tipo_iden=tipo_iden,
                         iden=iden,
                         defaults={
                             "apellido": paciente_form.cleaned_data.get("apellido", ""),

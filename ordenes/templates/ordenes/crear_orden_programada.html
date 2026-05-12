@@ -72,14 +72,13 @@
     <div class="card-header fw-bold">Paciente</div>
     <div class="card-body">
       <div class="mb-3">
-        <label class="form-label">Buscar por DNI</label>
+        <label class="form-label">Buscar paciente</label>
         <div class="input-group">
-          <input type="text" id="buscar-dni" class="form-control" placeholder="Ingresá el DNI..."
-                 inputmode="numeric" pattern="[0-9]*"
-                 oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+          <input type="text" id="buscar-iden" class="form-control" placeholder="Ingresá el número de identificación (DNI, NEO, NN)..."
                  onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('btn-buscar').click();}">
-          <button type="button" class="btn btn-outline-primary" id="btn-buscar">Buscar</button>
+          <button type="button" class="btn btn-outline-primary" id="btn-buscar">🔍 Buscar</button>
         </div>
+        <div class="form-text text-muted">Podés buscar por DNI, NEO o NN.</div>
       </div>
       <div id="paciente-encontrado" class="d-none">
         <div class="alert alert-success mb-2" id="paciente-info"></div>
@@ -106,9 +105,21 @@
           </div>
           <div class="col-md-4">
             <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
-              DNI <span class="text-danger">*</span>
+              Tipo de Identificación <span class="text-danger">*</span>
+            </label>
+            {{ paciente_form.tipo_iden }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+              <span id="label-iden-orden">DNI</span> <span class="text-danger">*</span>
             </label>
             {{ paciente_form.iden }}
+            <div id="advertencia-neo-orden" class="form-text text-warning d-none">
+              ⚠️ NEO es solo para recién nacidos (hasta 90 días de nacido).
+            </div>
+            <div id="info-neo-orden" class="form-text text-info d-none">
+              ℹ️ El número se generará automáticamente al guardar.
+            </div>
           </div>
           <div class="col-md-4">
             <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
@@ -248,22 +259,24 @@ const BUSCAR_URL = "{% url 'ordenes:buscar_paciente' %}";
 
 // ── BÚSQUEDA DE PACIENTE ──────────────────────────────────────
 document.getElementById('btn-buscar')?.addEventListener('click', function() {
-  const dni = document.getElementById('buscar-dni').value.trim();
-  if (!dni) return;
-  fetch(`${BUSCAR_URL}?iden=${encodeURIComponent(dni)}`)
+  const iden = document.getElementById('buscar-iden').value.trim();
+  if (!iden) return;
+  fetch(`${BUSCAR_URL}?iden=${encodeURIComponent(iden)}`)
     .then(r => r.json())
     .then(data => {
       if (data.encontrado) {
         document.getElementById('paciente-encontrado').classList.remove('d-none');
         document.getElementById('paciente-no-encontrado').classList.add('d-none');
+        const tipoLabel = { DNI: 'DNI', NEO: 'NEO', NN: 'NN' }[data.paciente.tipo_iden] || 'ID';
         document.getElementById('paciente-info').textContent =
-          `${data.paciente.nombre_completo} — DNI: ${data.paciente.iden}`;
+          `${data.paciente.nombre_completo} — ${tipoLabel}: ${data.paciente.iden}`;
         document.getElementById('paciente-id-hidden').value = data.paciente.id;
       } else {
         document.getElementById('paciente-no-encontrado').classList.remove('d-none');
         document.getElementById('paciente-encontrado').classList.add('d-none');
-        const idenInput = document.querySelector('#paciente-no-encontrado input[name="iden"]');
-        if (idenInput) idenInput.value = dni;
+        // Pre-completar solo si es numérico (DNI)
+        const idenInput = document.getElementById('id_iden_paciente');
+        if (idenInput && /^\d+$/.test(iden)) idenInput.value = iden;
       }
     });
 });
@@ -305,5 +318,78 @@ document.querySelectorAll('.sector-toggle').forEach(btn => {
     btn.querySelector('.sector-chevron').textContent = '▼';
   });
 });
+
+// ══════════════════════════════════════════════════════════════
+// MANEJO DE TIPO DE IDENTIFICACIÓN (NEO / NN / DNI)
+// ══════════════════════════════════════════════════════════════
+(function() {
+  const selectTipoIden = document.getElementById('id_tipo_iden');
+  const inputIden      = document.getElementById('id_iden_paciente');
+  const labelIden      = document.getElementById('label-iden-orden');
+  const advertenciaNeo = document.getElementById('advertencia-neo-orden');
+  const infoNeo        = document.getElementById('info-neo-orden');
+  const inputFechaNac  = document.getElementById('id_fecha_nacimiento');
+
+  function esRecienNacido(fechaStr) {
+    if (!fechaStr) return false;
+    const [anio, mes, dia] = fechaStr.split('-').map(Number);
+    const fecha = new Date(anio, mes - 1, dia);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const diffDias = Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+    return diffDias >= 0 && diffDias <= 90;
+  }
+
+  function actualizarEstadoIden() {
+    if (!selectTipoIden || !inputIden) return;
+    const tipo = selectTipoIden.value;
+
+    if (tipo === 'NEO') {
+      inputIden.disabled = true;
+      inputIden.value = '';
+      inputIden.placeholder = 'Se generará automáticamente';
+      if (labelIden) labelIden.textContent = 'Número NEO';
+      if (infoNeo) infoNeo.classList.remove('d-none');
+    } else {
+      inputIden.disabled = false;
+      inputIden.placeholder = tipo === 'NN' ? 'Ingresá el número NN' : 'Ingresá el DNI';
+      if (labelIden) labelIden.textContent = tipo === 'NN' ? 'Número NN' : 'DNI';
+      if (infoNeo) infoNeo.classList.add('d-none');
+    }
+  }
+
+  function validarEdadNeo() {
+    if (!selectTipoIden || !advertenciaNeo) return;
+    const tipo     = selectTipoIden.value;
+    const fechaNac = inputFechaNac ? inputFechaNac.value : '';
+
+    if (tipo === 'NEO' && fechaNac && !esRecienNacido(fechaNac)) {
+      advertenciaNeo.classList.remove('d-none');
+    } else {
+      advertenciaNeo.classList.add('d-none');
+    }
+  }
+
+  if (selectTipoIden) {
+    selectTipoIden.addEventListener('change', function() {
+      actualizarEstadoIden();
+      validarEdadNeo();
+    });
+  }
+
+  if (inputFechaNac) {
+    inputFechaNac.addEventListener('change', validarEdadNeo);
+  }
+
+  // Habilitar iden antes de submit para que el campo llegue al servidor
+  const form = document.getElementById('orden-programada-form');
+  if (form) {
+    form.addEventListener('submit', function() {
+      if (inputIden && inputIden.disabled) inputIden.disabled = false;
+    });
+  }
+
+  actualizarEstadoIden();
+})();
 </script>
 {% endblock %}

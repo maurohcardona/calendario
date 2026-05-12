@@ -12,9 +12,16 @@ class TurnoForm(forms.ModelForm):
     """
 
     # Campos del paciente
+    tipo_iden = forms.ChoiceField(
+        choices=Paciente.TIPO_IDEN_CHOICES,
+        required=True,
+        initial="DNI",
+        label="Tipo de Identificación",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
     dni = forms.CharField(
         required=True,
-        max_length=15,
+        max_length=25,
         label="DNI",
         widget=forms.TextInput(
             attrs={"class": "form-control", "placeholder": "Ingrese DNI del paciente"}
@@ -155,8 +162,13 @@ class TurnoForm(forms.ModelForm):
         return fecha
 
     def clean_dni(self):
-        """Valida y normaliza el DNI."""
+        """Valida y normaliza el DNI. Para NEO, puede venir vacío (se genera server-side)."""
         dni = self.cleaned_data.get("dni", "").strip()
+        tipo_iden = self.data.get("tipo_iden", "")
+
+        # Para NEO el número se genera automáticamente en el backend
+        if tipo_iden == "NEO":
+            return dni  # Puede venir vacío; el servicio lo genera
 
         if not dni:
             raise ValidationError("El DNI es obligatorio.")
@@ -168,6 +180,20 @@ class TurnoForm(forms.ModelForm):
             raise ValidationError("El DNI debe tener al menos 6 caracteres.")
 
         return dni
+
+    def clean(self):
+        """Validación global: si tipo_iden es NEO, valida que la fecha sea de recién nacido."""
+        cleaned_data = super().clean()
+        tipo_iden = cleaned_data.get("tipo_iden")
+        fecha_nacimiento = cleaned_data.get("fecha_nacimiento")
+
+        if tipo_iden == "NEO" and fecha_nacimiento:
+            from turnos.services.turno_service import validar_edad_neo
+            es_valido, mensaje_error = validar_edad_neo(fecha_nacimiento)
+            if not es_valido:
+                self.add_error("fecha_nacimiento", mensaje_error)
+
+        return cleaned_data
 
     def clean_email(self):
         """Normaliza el email si está presente."""

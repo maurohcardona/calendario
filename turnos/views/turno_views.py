@@ -226,6 +226,7 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                     else:
                         # Extraer datos del formulario
                         agenda_form = form.cleaned_data.get("agenda")
+                        tipo_iden = form.cleaned_data.get("tipo_iden", "DNI")
                         dni = form.cleaned_data.get("dni")
                         nombre = form.cleaned_data.get("nombre")
                         apellido = form.cleaned_data.get("apellido")
@@ -271,6 +272,7 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                         exito, turno_nuevo, mensaje_error = TurnoService.crear_turno(
                             fecha=fecha,
                             agenda=agenda_form,
+                            tipo_iden=tipo_iden,
                             dni=dni,
                             nombre=nombre,
                             apellido=apellido,
