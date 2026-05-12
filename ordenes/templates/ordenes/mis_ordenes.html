@@ -191,14 +191,20 @@ function hayFiltrosActivos() {
 }
 
 function renderFila(o) {
-  let celdaCama;
+  // Columna Servicio / Cama
+  let servicioCama = o.servicio_nombre || '—';
+  if (o.sala) servicioCama += `<br><small class="text-muted">Cama: ${o.sala}</small>`;
+
+  // Columna Fecha Prog.
+  let fechaProg;
   if (o.tipo_origen === 'ORDENES_PROGRAMADAS') {
-    celdaCama = o.fecha_programada
+    fechaProg = o.fecha_programada
       ? `<span class="badge bg-light text-dark border">📅 ${o.fecha_programada}</span>`
       : '—';
   } else {
-    celdaCama = o.sala || '—';
+    fechaProg = '—';
   }
+
   const obsCell = o.tiene_observaciones
     ? `<span title="${o.observaciones.replace(/"/g,'&quot;')}" style="color: var(--color-teal-dark); font-size: 1.1rem;">💬</span>`
     : '—';
@@ -207,7 +213,8 @@ function renderFila(o) {
       <td><span class="badge" style="background-color: var(--color-primary);">${o.numero_orden_lab}</span></td>
       <td><strong>${o.paciente_nombre}</strong><br><small class="text-muted">DNI: ${o.paciente_dni}</small></td>
       <td>${o.origen}</td>
-      <td>${celdaCama}</td>
+      <td>${servicioCama}</td>
+      <td>${fechaProg}</td>
       <td>${obsCell}</td>
       <td>${ESTADO_LABELS[o.estado] || o.estado_display}</td>
       <td>${o.fecha_creacion}</td>
