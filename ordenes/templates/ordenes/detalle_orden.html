@@ -76,7 +76,7 @@
       <div class="card-header fw-bold">Datos de Laboratorio</div>
       <div class="card-body">
         {% if orden.numero_orden_lab %}<p class="mb-1"><strong>N° Orden Lab:</strong> {{ orden.numero_orden_lab }}</p>{% endif %}
-        {% if orden.observaciones_lab %}<p class="mb-0"><strong>Obs. Lab:</strong> {{ orden.observaciones_lab }}</p>{% endif %}
+        {% if orden.observaciones_lab %}<p class="mb-0"><span style="color: hsl(0, 98%, 54%); font-weight: bold;">Obs. Lab:</span>{{ orden.observaciones_lab }}</p>{% endif %}
       </div>
     </div>
     {% endif %}
