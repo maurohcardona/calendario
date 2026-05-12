@@ -68,6 +68,7 @@ class TurnoService:
         email: str = "",
         observaciones_paciente: str = "",
         medico_nombre: str = "",
+        medico_id: Optional[int] = None,
         institucion_nombre: str = "",
         nota_interna: str = "",
         determinaciones: str = "",
@@ -103,14 +104,15 @@ class TurnoService:
                 )
 
                 # Obtener médico si se especificó
+                # Priorizar búsqueda por ID para evitar MultipleObjectsReturned.
                 medico_obj = None
-                if medico_nombre:
+                if medico_id:
                     try:
-                        medico_obj = Medico.objects.get(nombre=medico_nombre)
-                    except Medico.DoesNotExist:
-                        medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
-                        if medicos.exists():
-                            medico_obj = medicos.first()
+                        medico_obj = Medico.objects.get(id=medico_id)
+                    except (Medico.DoesNotExist, ValueError):
+                        pass
+                if medico_obj is None and medico_nombre:
+                    medico_obj = Medico.objects.filter(nombre=medico_nombre).first()
 
                 # Obtener institución si se especificó
                 institucion_obj = None
@@ -144,6 +146,7 @@ class TurnoService:
         fecha: date = None,
         determinaciones: str = None,
         medico_nombre: str = None,
+        medico_id: int = None,
         institucion_nombre: str = None,
         nota_interna: str = None,
         telefono: str = None,
@@ -168,18 +171,16 @@ class TurnoService:
                 turno.nota_interna = nota_interna
 
             # Actualizar médico
-            if medico_nombre is not None:
-                if medico_nombre:
+            # Priorizar búsqueda por ID para evitar MultipleObjectsReturned.
+            if medico_id is not None or medico_nombre is not None:
+                turno.medico = None
+                if medico_id:
                     try:
-                        turno.medico = Medico.objects.get(nombre=medico_nombre)
-                    except Medico.DoesNotExist:
-                        medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
-                        if medicos.exists():
-                            turno.medico = medicos.first()
-                        else:
-                            turno.medico = None
-                else:
-                    turno.medico = None
+                        turno.medico = Medico.objects.get(id=medico_id)
+                    except (Medico.DoesNotExist, ValueError):
+                        pass
+                if turno.medico is None and medico_nombre:
+                    turno.medico = Medico.objects.filter(nombre=medico_nombre).first()
 
             # Actualizar institución
             if institucion_nombre is not None:

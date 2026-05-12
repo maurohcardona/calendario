@@ -156,6 +156,10 @@ Contextos de uso:
                                autocomplete="off" 
                                placeholder="Buscar médico..." 
                                class="apple-form-text-input" />
+                        <input type="hidden"
+                               id="id_medico_id"
+                               name="medico_id"
+                               value="{% if turno.medico %}{{ turno.medico.id }}{% endif %}" />
                         <div id="autocompleteMedicos" class="apple-autocomplete"></div>
                     </div>
                     <button type="button" 
@@ -382,6 +386,9 @@ document.getElementById('id_medico').addEventListener('input', async function() 
     const texto = this.value.trim().toLowerCase();
     const lista = document.getElementById('autocompleteMedicos');
     
+    // Si el usuario edita a mano, invalidar el ID guardado
+    document.getElementById('id_medico_id').value = '';
+    
     if (texto.length < 2) {
         lista.style.display = 'none';
         return;
@@ -399,7 +406,7 @@ document.getElementById('id_medico').addEventListener('input', async function() 
     
     lista.innerHTML = coincidencias.map(medico => {
         return `
-            <div class="apple-autocomplete-item" data-nombre="${medico.nombre_apellido}">
+            <div class="apple-autocomplete-item" data-nombre="${medico.nombre_apellido}" data-id="${medico.id}">
                 <span class="apple-autocomplete-medico-nombre">${medico.nombre_apellido}</span>
                 <span class="apple-autocomplete-medico-matricula">Mat: ${medico.matricula_provincial}</span>
             </div>
@@ -411,6 +418,7 @@ document.getElementById('id_medico').addEventListener('input', async function() 
     lista.querySelectorAll('.apple-autocomplete-item').forEach(item => {
         item.addEventListener('click', function() {
             document.getElementById('id_medico').value = this.dataset.nombre;
+            document.getElementById('id_medico_id').value = this.dataset.id;
             lista.style.display = 'none';
         });
     });

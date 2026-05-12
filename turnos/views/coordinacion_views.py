@@ -158,18 +158,20 @@ def precoordinacion_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
         turno.determinaciones = request.POST.get("determinaciones", "")
 
         # Manejar el médico
-        medico_nombre = request.POST.get("medico", "")
-        if medico_nombre:
+        # Preferir búsqueda por ID (único) para evitar MultipleObjectsReturned
+        # cuando existen médicos con el mismo nombre.
+        medico_id = request.POST.get("medico_id", "").strip()
+        medico_nombre = request.POST.get("medico", "").strip()
+        turno.medico = None
+        if medico_id:
             try:
-                turno.medico = Medico.objects.get(nombre=medico_nombre)
-            except Medico.DoesNotExist:
-                medicos = Medico.objects.filter(nombre__icontains=medico_nombre)
-                if medicos.exists():
-                    turno.medico = medicos.first()
-                else:
-                    turno.medico = None
-        else:
-            turno.medico = None
+                turno.medico = Medico.objects.get(id=medico_id)
+            except (Medico.DoesNotExist, ValueError):
+                pass
+        if turno.medico is None and medico_nombre:
+            # Fallback: buscar por nombre exacto (puede fallar con duplicados)
+            medicos = Medico.objects.filter(nombre=medico_nombre)
+            turno.medico = medicos.first()
 
         # Manejar la institución
         institucion_nombre = request.POST.get("institucion", "")
