@@ -170,3 +170,9 @@ TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
 TWILIO_WHATSAPP_FROM = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
 # Prefijo internacional para los números del paciente (Argentina móvil = +549)
 WHATSAPP_CODIGO_PAIS = os.getenv("WHATSAPP_CODIGO_PAIS", "+549")
+
+# ── Mensajería con el Laboratorio ─────────────────────────────────────────────
+# USAR_HL7=True  → se generan archivos .hl7 (OML^O21) usando HL7Service
+# USAR_HL7=False → comportamiento legacy ASTM (ASTMService)
+USAR_HL7 = os.getenv("USAR_HL7", "True").lower() in ("true", "1", "yes")
+

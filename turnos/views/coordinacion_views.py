@@ -14,7 +14,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.urls import reverse
 from turnos.models import Turno, Coordinados
-from turnos.services import ASTMService, PDFService, DeterminacionService
+from django.conf import settings
+from turnos.services import ASTMService, HL7Service, PDFService, DeterminacionService
 from datetime import date
 
 
@@ -373,10 +374,15 @@ def coordinar_turno(request: HttpRequest, turno_id: int) -> JsonResponse:
         nombre_impresora = nombre_impresora.strip()
         usuario = request.user.username if request.user.is_authenticated else ""
 
-        # Generar archivo ASTM usando el servicio
-        exito, ruta_archivo, mensaje_error = ASTMService.generar_archivo_astm(
-            turno, nombre_impresora, usuario
-        )
+        # Generar mensaje usando HL7 o ASTM según feature flag
+        if getattr(settings, "USAR_HL7", False):
+            exito, ruta_archivo, mensaje_error = HL7Service.generar_mensaje_oml(
+                turno, nombre_impresora, usuario
+            )
+        else:
+            exito, ruta_archivo, mensaje_error = ASTMService.generar_archivo_astm(
+                turno, nombre_impresora, usuario
+            )
 
         if exito:
             return JsonResponse(

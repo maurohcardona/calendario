@@ -283,6 +283,39 @@ class Coordinados(models.Model):
         help_text="Institucion de origen de la orden medica",
     )
 
+    # ── Campos de mensajería con el laboratorio ───────────────────────────────
+    mensaje_tipo = models.CharField(
+        max_length=10,
+        choices=[("ASTM", "ASTM (legacy)"), ("HL7", "HL7 v2.5")],
+        default="HL7",
+        verbose_name="Tipo de mensaje",
+        help_text="HL7 o ASTM según el protocolo utilizado para coordinar",
+    )
+    mensaje_hl7 = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Mensaje HL7",
+        help_text="Contenido del mensaje OML^O21 enviado al LIS",
+    )
+    ack_recibido = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="ACK recibido",
+        help_text="Contenido ER7 del ACK recibido del LIS",
+    )
+    ack_estado = models.CharField(
+        max_length=2,
+        blank=True,
+        default="",
+        choices=[
+            ("AA", "Aceptado (AA)"),
+            ("AE", "Error de Aplicación (AE)"),
+            ("AR", "Rechazado (AR)"),
+        ],
+        verbose_name="Estado ACK",
+        help_text="AA=Aceptado, AE=Error, AR=Rechazado",
+    )
+
     class Meta:
         verbose_name = "Turno Coordinado"
         verbose_name_plural = "Turnos Coordinados"

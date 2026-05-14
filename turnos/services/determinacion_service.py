@@ -183,6 +183,95 @@ class DeterminacionService:
         return determinaciones_astm
     
     @staticmethod
+    def mapear_determinaciones_a_hl7(determinaciones_texto: str) -> List[Dict[str, Any]]:
+        """
+        Expande determinaciones para formato HL7 OML^O21.
+
+        Sigue la misma lógica de expansión que expandir_determinaciones_para_astm,
+        pero retorna dicts con 'codigo' y 'nombre' para construir segmentos OBR.
+
+        Perfiles y complejas se expanden a sus determinaciones atómicas.
+
+        Args:
+            determinaciones_texto: String con códigos separados por coma
+
+        Returns:
+            Lista de dicts: [{"codigo": str, "nombre": str}, ...]
+        """
+        if not determinaciones_texto:
+            return []
+
+        det_codes, codigos_con_slash = DeterminacionService.parsear_codigos(determinaciones_texto)
+        resultado: List[Dict[str, Any]] = []
+
+        # ── Determinaciones simples ───────────────────────────────────────────
+        if det_codes:
+            det_map = {
+                d.codigo: d
+                for d in Determinacion.objects.filter(codigo__in=det_codes)
+            }
+            for codigo in det_codes:
+                det = det_map.get(codigo)
+                resultado.append({
+                    "codigo": codigo,
+                    "nombre": det.nombre if det else codigo,
+                })
+
+        # ── Complejas y perfiles ──────────────────────────────────────────────
+        for codigo_slash in codigos_con_slash:
+            code_sin_slash = codigo_slash.lstrip("/")
+
+            # Determinación compleja (/XXXX)
+            compleja = DeterminacionCompleja.objects.filter(codigo=codigo_slash).first()
+            if compleja:
+                sub_codes = compleja.determinaciones or []
+                sub_map = {
+                    d.codigo: d
+                    for d in Determinacion.objects.filter(codigo__in=sub_codes)
+                }
+                for sub_code in sub_codes:
+                    sub = sub_map.get(sub_code)
+                    resultado.append({
+                        "codigo": sub_code,
+                        "nombre": sub.nombre if sub else sub_code,
+                    })
+                continue
+
+            # Perfil (/XXXX)
+            perfil = PerfilDeterminacion.objects.filter(codigo=code_sin_slash).first()
+            if perfil:
+                for det_code in perfil.determinaciones or []:
+                    if det_code.startswith("/"):
+                        # Compleja dentro del perfil
+                        compleja_en_perfil = DeterminacionCompleja.objects.filter(
+                            codigo=det_code
+                        ).first()
+                        if compleja_en_perfil:
+                            sub_codes = compleja_en_perfil.determinaciones or []
+                            sub_map = {
+                                d.codigo: d
+                                for d in Determinacion.objects.filter(codigo__in=sub_codes)
+                            }
+                            for sub_code in sub_codes:
+                                sub = sub_map.get(sub_code)
+                                resultado.append({
+                                    "codigo": sub_code,
+                                    "nombre": sub.nombre if sub else sub_code,
+                                })
+                    else:
+                        det = Determinacion.objects.filter(codigo=det_code).first()
+                        resultado.append({
+                            "codigo": det_code,
+                            "nombre": det.nombre if det else det_code,
+                        })
+                continue
+
+            # No encontrado: incluir tal cual
+            resultado.append({"codigo": codigo_slash, "nombre": codigo_slash})
+
+        return resultado
+
+    @staticmethod
     def calcular_max_tiempo(determinaciones_texto: str) -> int:
         """
         Calcula el tiempo máximo (en días) entre todas las determinaciones.
