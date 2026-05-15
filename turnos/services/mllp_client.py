@@ -220,13 +220,19 @@ class MLLPClient:
 
         Formato: VT (0x0B) + mensaje_utf8 + FS (0x1C) + CR (0x0D)
 
+        Normaliza separadores de segmento a CR (0x0D) antes de enviar.
+        hl7apy puede generar \\n (LF) en lugar de \\r (CR); el estándar
+        HL7 v2 exige CR como separador de segmentos.
+
         Args:
             mensaje: Mensaje HL7 en formato ER7 (texto plano)
 
         Returns:
             Bytes listos para enviar por socket
         """
-        return MLLPClient.VT + mensaje.encode("utf-8") + MLLPClient.FS + MLLPClient.CR
+        # Normalizar: reemplazar LF sueltos por CR (sin tocar CRLF existentes)
+        mensaje_normalizado = mensaje.replace("\r\n", "\r").replace("\n", "\r")
+        return MLLPClient.VT + mensaje_normalizado.encode("utf-8") + MLLPClient.FS + MLLPClient.CR
 
     @staticmethod
     def _unwrap_mllp(data: bytes) -> str:
