@@ -99,7 +99,7 @@ class MLLPClient:
         host = getattr(settings, "LIS_HOST", "192.168.211.128")
         puerto = _settings_int("LIS_PORT", 50000)
         timeout_conexion = _settings_int("LIS_TIMEOUT_CONEXION", 5)
-        timeout_ack = _settings_int("LIS_TIMEOUT_ACK", 10)
+        timeout_ack = _settings_int("LIS_TIMEOUT_ACK", 30)
         timeout_oru = _settings_int("LIS_TIMEOUT_ORU", 30)
 
         sock: Optional[socket.socket] = None

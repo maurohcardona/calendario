@@ -24,6 +24,7 @@ start_waitress.py
 
 # Generated data
 mensajes/*.pet
+mensajes/*
 
 # Informes PDF
 informes/enviados/

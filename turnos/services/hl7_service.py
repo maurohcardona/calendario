@@ -189,10 +189,13 @@ class HL7Service:
         msg.msh.msh_3 = _SISTEMA_ORIGEN
         msg.msh.msh_4 = _INSTITUCION
         msg.msh.msh_5 = _SISTEMA_DESTINO
+        msg.msh.msh_6 = "ROCHE"
         msg.msh.msh_7 = ts
         msg.msh.msh_9 = "OML^O21^OML_O21"
         msg.msh.msh_10 = _control_id()
         msg.msh.msh_11 = "P"  # P=Production, T=Test
+        msg.msh.msh_15 = "AL"
+        msg.msh.msh_16 = "ER"
 
     @staticmethod
     def _construir_pid(msg: Message, paciente: Paciente) -> None:
