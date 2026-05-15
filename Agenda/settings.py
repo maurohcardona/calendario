@@ -176,3 +176,21 @@ WHATSAPP_CODIGO_PAIS = os.getenv("WHATSAPP_CODIGO_PAIS", "+549")
 # USAR_HL7=False → comportamiento legacy ASTM (ASTMService)
 USAR_HL7 = os.getenv("USAR_HL7", "True").lower() in ("true", "1", "yes")
 
+# ── Configuración LIS (servidor MLLP) ─────────────────────────────────────────
+# El LIS actúa como servidor TCP; Django se conecta como cliente para enviar
+# mensajes OML^O21 y recibir ACK + ORU^R01 en la misma conexión.
+#
+# Variables de entorno disponibles en .env:
+#   LIS_HOST              IP del LIS (default: 192.168.211.128)
+#   LIS_PORT              Puerto TCP del LIS (default: 50000)
+#   LIS_TIMEOUT_CONEXION  Segundos máx para abrir conexión TCP (default: 5)
+#   LIS_TIMEOUT_ACK       Segundos máx esperando ACK tras enviar OML (default: 10)
+#   LIS_TIMEOUT_ORU       Segundos listener post-ACK esperando ORU (default: 30)
+#   LIS_MAX_REINTENTOS    Intentos antes de marcar error permanente (default: 3)
+LIS_HOST = os.getenv("LIS_HOST", "192.168.211.128")
+LIS_PORT = int(os.getenv("LIS_PORT", "50000"))
+LIS_TIMEOUT_CONEXION = int(os.getenv("LIS_TIMEOUT_CONEXION", "5"))
+LIS_TIMEOUT_ACK = int(os.getenv("LIS_TIMEOUT_ACK", "10"))
+LIS_TIMEOUT_ORU = int(os.getenv("LIS_TIMEOUT_ORU", "30"))
+LIS_MAX_REINTENTOS = int(os.getenv("LIS_MAX_REINTENTOS", "3"))
+

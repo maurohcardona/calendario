@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Cupo, Turno, Agenda, Coordinados, Feriados
+from .models import Cupo, Turno, Agenda, Coordinados, Feriados, ColaReintentos
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as DefaultUserAdmin
 
@@ -42,11 +42,38 @@ class CoordinadosAdmin(admin.ModelAdmin):
         "get_apellido",
         "get_nombre",
         "fecha_coordinacion",
+        "mensaje_tipo",
+        "get_ack_estado_display",
     )
-    list_filter = ("fecha_coordinacion",)
+    list_filter = ("mensaje_tipo", "ack_estado", "fecha_coordinacion")
     search_fields = ("dni__iden", "dni__apellido", "dni__nombre")
-    readonly_fields = ("fecha_coordinacion",)
+    readonly_fields = (
+        "fecha_coordinacion",
+        "get_mensaje_hl7_preview",
+        "get_ack_recibido_preview",
+    )
     ordering = ("-fecha_coordinacion", "id_turno")
+
+    fieldsets = (
+        (
+            "Datos del Turno",
+            {"fields": ("id_turno", "dni", "fecha_coordinacion", "determinaciones", "usuario")},
+        ),
+        (
+            "Mensaje HL7 enviado",
+            {
+                "fields": ("mensaje_tipo", "get_mensaje_hl7_preview"),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "ACK recibido del LIS",
+            {
+                "fields": ("ack_estado", "get_ack_recibido_preview"),
+                "classes": ("collapse",),
+            },
+        ),
+    )
 
     def get_dni(self, obj):
         return obj.dni.iden if obj.dni else "-"
@@ -65,6 +92,39 @@ class CoordinadosAdmin(admin.ModelAdmin):
 
     get_nombre.short_description = "Nombre"
     get_nombre.admin_order_field = "dni__nombre"
+
+    def get_ack_estado_display(self, obj):
+        """Muestra el estado ACK con color semántico."""
+        colores = {"AA": "green", "AE": "orange", "AR": "red"}
+        if not obj.ack_estado:
+            return format_html('<span style="color: gray;">Pendiente</span>')
+        color = colores.get(obj.ack_estado, "gray")
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_ack_estado_display(),
+        )
+
+    get_ack_estado_display.short_description = "Estado ACK"
+    get_ack_estado_display.admin_order_field = "ack_estado"
+
+    def get_mensaje_hl7_preview(self, obj):
+        """Muestra los primeros 300 caracteres del mensaje HL7."""
+        if not obj.mensaje_hl7:
+            return "-"
+        preview = obj.mensaje_hl7[:300]
+        return format_html('<pre style="font-size: 11px;">{}</pre>', preview)
+
+    get_mensaje_hl7_preview.short_description = "Mensaje HL7 (preview)"
+
+    def get_ack_recibido_preview(self, obj):
+        """Muestra los primeros 300 caracteres del ACK recibido."""
+        if not obj.ack_recibido:
+            return "-"
+        preview = obj.ack_recibido[:300]
+        return format_html('<pre style="font-size: 11px;">{}</pre>', preview)
+
+    get_ack_recibido_preview.short_description = "ACK recibido (preview)"
 
 
 @admin.register(Cupo)
@@ -225,6 +285,74 @@ class FeriadosAdmin(admin.ModelAdmin):
     list_filter = ("fecha",)
     search_fields = ("descripcion",)
     ordering = ("-fecha",)
+
+
+@admin.register(ColaReintentos)
+class ColaReintentosAdmin(admin.ModelAdmin):
+    """Admin para monitorear y gestionar mensajes HL7 pendientes de reenvío."""
+
+    list_display = (
+        "turno_id",
+        "intentos",
+        "fecha_creacion",
+        "fecha_ultimo_intento",
+        "get_error_truncado",
+        "get_estado_visual",
+    )
+    list_filter = ("intentos", "fecha_creacion")
+    search_fields = ("turno_id", "ultimo_error")
+    readonly_fields = (
+        "fecha_creacion",
+        "fecha_ultimo_intento",
+        "get_mensaje_hl7_preview",
+    )
+    ordering = ("-fecha_creacion",)
+
+    fieldsets = (
+        (
+            "Identificación",
+            {"fields": ("turno_id", "intentos", "fecha_creacion", "fecha_ultimo_intento")},
+        ),
+        (
+            "Error",
+            {"fields": ("ultimo_error",)},
+        ),
+        (
+            "Mensaje HL7",
+            {"fields": ("get_mensaje_hl7_preview",), "classes": ("collapse",)},
+        ),
+    )
+
+    def get_error_truncado(self, obj):
+        if not obj.ultimo_error:
+            return "-"
+        return obj.ultimo_error[:60] + ("..." if len(obj.ultimo_error) > 60 else "")
+
+    get_error_truncado.short_description = "Último error"
+
+    def get_estado_visual(self, obj):
+        """Semáforo visual según cantidad de intentos."""
+        from django.conf import settings as s
+        max_r = getattr(s, "LIS_MAX_REINTENTOS", 3)
+        if obj.intentos >= max_r - 1:
+            return format_html(
+                '<span style="color: red; font-weight: bold;">CRÍTICO ({}/{})</span>',
+                obj.intentos,
+                max_r,
+            )
+        return format_html(
+            '<span style="color: orange;">{}/{}</span>',
+            obj.intentos,
+            max_r,
+        )
+
+    get_estado_visual.short_description = "Estado"
+
+    def get_mensaje_hl7_preview(self, obj):
+        preview = obj.mensaje_hl7[:300] if obj.mensaje_hl7 else "-"
+        return format_html('<pre style="font-size: 11px;">{}</pre>', preview)
+
+    get_mensaje_hl7_preview.short_description = "Mensaje HL7 (preview)"
 
 
 # Mostrar nombre y apellido en el admin de usuarios

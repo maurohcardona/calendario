@@ -332,3 +332,59 @@ class Coordinados(models.Model):
                 f"{self.fecha_coordinacion.strftime('%Y-%m-%d %H:%M')}"
             )
         return f"Turno #{self.id_turno} - {self.fecha_coordinacion.strftime('%Y-%m-%d %H:%M')}"
+
+
+class ColaReintentos(models.Model):
+    """
+    Cola de mensajes HL7 OML^O21 que fallaron al enviarse al LIS por MLLP.
+
+    Los registros son procesados por:
+        python manage.py procesar_cola_hl7
+
+    Configurar en cron para ejecución automática cada 5 minutos:
+        */5 * * * * cd /ruta/proyecto && .venv/bin/python manage.py procesar_cola_hl7
+
+    Un mensaje se descarta definitivamente cuando intentos >= LIS_MAX_REINTENTOS
+    (default=3); en ese caso se mueve a mensajes/hl7/error/.
+    """
+
+    turno_id = models.IntegerField(
+        db_index=True,
+        verbose_name="ID Turno",
+        help_text="ID del turno que no pudo coordinarse",
+    )
+    mensaje_hl7 = models.TextField(
+        verbose_name="Mensaje HL7",
+        help_text="Mensaje OML^O21 completo en formato ER7 (para reenvío)",
+    )
+    intentos = models.IntegerField(
+        default=0,
+        verbose_name="Intentos",
+        help_text="Cantidad de intentos de envío realizados",
+    )
+    ultimo_error = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Último error",
+        help_text="Descripción del último error al intentar enviar",
+    )
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de creación",
+        help_text="Momento en que se registró el fallo inicial",
+    )
+    fecha_ultimo_intento = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Último intento",
+        help_text="Momento del último intento de reenvío",
+    )
+
+    class Meta:
+        db_table = "turnos_cola_reintentos"
+        ordering = ["fecha_creacion"]
+        verbose_name = "Mensaje HL7 en cola"
+        verbose_name_plural = "Cola de reintentos HL7"
+
+    def __str__(self) -> str:
+        return f"Turno {self.turno_id} — Intentos: {self.intentos}"

@@ -8,6 +8,7 @@ from .turno_service import TurnoService
 from .astm_service import ASTMService
 from .hl7_service import HL7Service
 from .hl7_parser import HL7Parser
+from .mllp_client import MLLPClient
 from .pdf_service import PDFService
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     'ASTMService',
     'HL7Service',
     'HL7Parser',
+    'MLLPClient',
     'PDFService',
 ]

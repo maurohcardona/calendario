@@ -15,7 +15,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.urls import reverse
 from turnos.models import Turno, Coordinados
 from django.conf import settings
-from turnos.services import ASTMService, HL7Service, PDFService, DeterminacionService
+from turnos.services import ASTMService, HL7Service, MLLPClient, PDFService, DeterminacionService
 from datetime import date
 
 
@@ -376,23 +376,56 @@ def coordinar_turno(request: HttpRequest, turno_id: int) -> JsonResponse:
 
         # Generar mensaje usando HL7 o ASTM según feature flag
         if getattr(settings, "USAR_HL7", False):
-            exito, ruta_archivo, mensaje_error = HL7Service.generar_mensaje_oml(
+            # Paso 1: Generar mensaje OML^O21 y guardar archivo .hl7
+            exito_gen, ruta_archivo, mensaje_error = HL7Service.generar_mensaje_oml(
                 turno, nombre_impresora, usuario
             )
+            if not exito_gen:
+                return JsonResponse({"success": False, "error": mensaje_error})
+
+            # Paso 2: Leer el mensaje generado para enviarlo por MLLP
+            with open(ruta_archivo, "r", encoding="utf-8") as f:
+                mensaje_er7 = f.read()
+
+            # Paso 3: Enviar al LIS por MLLP y esperar ACK
+            enviado, ack_texto, error_envio = MLLPClient.enviar_y_esperar_ack(
+                mensaje_er7, turno.id
+            )
+
+            if enviado:
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "message": "Turno coordinado y enviado al LIS correctamente.",
+                    }
+                )
+            else:
+                # Mensaje quedó guardado en ColaReintentos; el cron lo reintentará
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": (
+                            f"Orden generada pero no se pudo enviar al LIS: {error_envio}. "
+                            "Se reintentará automáticamente."
+                        ),
+                    }
+                )
+
         else:
+            # Comportamiento legacy ASTM
             exito, ruta_archivo, mensaje_error = ASTMService.generar_archivo_astm(
                 turno, nombre_impresora, usuario
             )
 
-        if exito:
-            return JsonResponse(
-                {
-                    "success": True,
-                    "message": f"Turno coordinado exitosamente. Archivo: {ruta_archivo}",
-                }
-            )
-        else:
-            return JsonResponse({"success": False, "error": mensaje_error})
+            if exito:
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "message": f"Turno coordinado exitosamente. Archivo: {ruta_archivo}",
+                    }
+                )
+            else:
+                return JsonResponse({"success": False, "error": mensaje_error})
 
     except Exception as e:
         return JsonResponse({"success": False, "error": f"Error inesperado: {str(e)}"})
