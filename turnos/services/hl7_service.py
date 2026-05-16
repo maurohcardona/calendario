@@ -126,8 +126,8 @@ class HL7Service:
                 determinaciones=determinaciones,
             )
 
-            # Serializar a ER7
-            er7 = msg.to_er7()
+            # Serializar a ER7 y post-procesar
+            er7 = HL7Service._limpiar_er7(msg.to_er7())
 
             # Guardar archivo
             ruta = HL7Service._guardar_archivo(er7, turno.id)
@@ -326,15 +326,21 @@ class HL7Service:
                 msg.add(obr)
 
         # ── NTE (Notes and Comments) ──────────────────────────────────────────
-        # hl7apy serializa segmentos completamente vacíos sin pipes.
-        # Forzamos NTE| asignando el nombre del segmento como valor mínimo.
+        # Asignamos hasta campo 4 vacío para forzar NTE||||
         nte = Segment("NTE", version=_VERSION_HL7)
-        nte.nte_1 = ""   # fuerza serialización con pipes → NTE||||
+        nte.nte_1 = ""
+        nte.nte_2 = ""
+        nte.nte_3 = ""
+        nte.nte_4 = ""
         msg.add(nte)
 
         # ── DG1 (Diagnosis) ───────────────────────────────────────────────────
+        # Asignamos hasta campo 4 vacío para forzar DG1||||
         dg1 = Segment("DG1", version=_VERSION_HL7)
-        dg1.dg1_1 = ""   # fuerza serialización con pipes → DG1||||
+        dg1.dg1_1 = ""
+        dg1.dg1_2 = ""
+        dg1.dg1_3 = ""
+        dg1.dg1_4 = ""
         msg.add(dg1)
 
         # ── SPM (Specimen) ────────────────────────────────────────────────────
@@ -379,6 +385,32 @@ class HL7Service:
             return ""
         matricula = medico.matricula or ""
         return f"{matricula}^{medico.nombre}"
+
+    @staticmethod
+    def _limpiar_er7(er7: str) -> str:
+        """
+        Post-procesa el ER7 generado por hl7apy para ajustarlo al formato Navify:
+
+        1. MSH: recorta todo lo que hl7apy agrega automáticamente después de MSH-10
+           (campos 11=ProcessingID, 12=VersionID, etc.)
+           Resultado: MSH|^~\\&|TURNOS|HTAL_BALESTRINI|LIS|ROCHE|ts||OML^O21|control_id
+
+        2. NTE/DG1: hl7apy puede colapsar segmentos vacíos — no necesita corrección
+           porque los campos se asignan explícitamente hasta el campo 4.
+        """
+        separador = "\r" if "\r" in er7 else "\n"
+        lineas = er7.split(separador)
+
+        resultado = []
+        for linea in lineas:
+            if linea.startswith("MSH|"):
+                campos = linea.split("|")
+                # MSH tiene campos 0-10 (índices): MSH + ^~\& + 9 campos de datos
+                # campo 10 = MSH-10 (Message Control ID) → índice 10
+                linea = "|".join(campos[:11]).rstrip("|")
+            resultado.append(linea)
+
+        return separador.join(resultado)
 
     @staticmethod
     def _guardar_archivo(er7: str, turno_id: int) -> str:
