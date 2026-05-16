@@ -5,9 +5,18 @@ Reemplaza ASTMService para la coordinación de turnos con el laboratorio.
 
 Mapeo ASTM → HL7:
   Header (H)  → MSH (Message Header)
-  Patient (P) → PID (Patient Identification) + NTE (notas)
-  Order (O)   → ORC (Common Order) + OBR por cada determinación
+  Patient (P) → PID (Patient Identification)
+  Patient Visit → PV1
+  Order (O)   → ORC + TQ1 + OBR por cada determinación
   Terminator  → implícito en el formato HL7
+
+Estructura del mensaje (formato Navify):
+  MSH  → Cabecera del mensaje
+  PID  → Identificación del paciente
+  PV1  → Visita del paciente (ambulatorio)
+  ORC  → Orden común (UN solo segmento por mensaje)
+  TQ1  → Timing/Prioridad (UN solo segmento, prioridad Routine)
+  OBR  → Un segmento por cada determinación (solo campo 4: codigo^nombre)
 
 Formato de archivo: .hl7 (ER7, separado por \\r)
 Carpeta de destino: mensajes/hl7/enviados/
@@ -37,9 +46,6 @@ _SISTEMA_ORIGEN = "TURNOS"
 _INSTITUCION = "HTAL_BALESTRINI"
 _SISTEMA_DESTINO = "LIS"
 _VERSION_HL7 = "2.5"
-
-# Sistema de codificación para determinaciones locales
-_SISTEMA_CODIGOS = "99LOCAL"
 
 
 def _sexo_hl7(sexo: str) -> str:
@@ -87,8 +93,8 @@ class HL7Service:
 
         Args:
             turno: Instancia del Turno a coordinar
-            nombre_impresora: Nombre de la impresora de destino (va en OBR-18)
-            usuario: Username del operador que coordina (va en ORC-10)
+            nombre_impresora: Nombre de la impresora de destino (reservado para uso futuro)
+            usuario: Username del operador que coordina (reservado para uso futuro)
 
         Returns:
             Tupla (exito, ruta_archivo, mensaje_error)
@@ -115,8 +121,6 @@ class HL7Service:
                 turno=turno,
                 paciente=paciente,
                 determinaciones=determinaciones,
-                nombre_impresora=nombre_impresora,
-                usuario=usuario,
             )
 
             # Serializar a ER7
@@ -158,17 +162,20 @@ class HL7Service:
         turno: Turno,
         paciente: Paciente,
         determinaciones: list[dict],
-        nombre_impresora: str,
-        usuario: str,
     ) -> Message:
-        """Construye y retorna el objeto Message HL7 OML^O21 completo."""
+        """
+        Construye y retorna el objeto Message HL7 OML^O21 completo.
+
+        Estructura del mensaje (formato Navify):
+          MSH → PID → PV1 → ORC → TQ1 → OBR(s)
+        """
         ts = _timestamp()
         msg = Message("OML_O21", version=_VERSION_HL7, validation_level=_VALIDATION)
 
         HL7Service._construir_msh(msg, ts)
         HL7Service._construir_pid(msg, paciente)
-        HL7Service._construir_nte_paciente(msg, turno, paciente)
-        HL7Service._construir_ordenes(msg, turno, determinaciones, nombre_impresora, usuario, ts)
+        HL7Service._construir_pv1(msg, turno)
+        HL7Service._construir_ordenes(msg, turno, determinaciones, ts)
 
         return msg
 
@@ -182,7 +189,7 @@ class HL7Service:
           MSH-4: Sending Facility
           MSH-5: Receiving Application
           MSH-7: Date/Time of Message
-          MSH-9: Message Type
+          MSH-9: Message Type (simplificado: OML^O21)
           MSH-10: Message Control ID
           MSH-11: Processing ID
         """
@@ -191,7 +198,7 @@ class HL7Service:
         msg.msh.msh_5 = _SISTEMA_DESTINO
         msg.msh.msh_6 = "ROCHE"
         msg.msh.msh_7 = ts
-        msg.msh.msh_9 = "OML^O21^OML_O21"
+        msg.msh.msh_9 = "OML^O21"
         msg.msh.msh_10 = _control_id()
         msg.msh.msh_11 = "P"  # P=Production, T=Test
         msg.msh.msh_15 = "AL"
@@ -220,10 +227,8 @@ class HL7Service:
         if paciente.telefono:
             pid.pid_13 = f"^PRN^PH^^^{paciente.telefono}"
 
-        # Email (segundo repetidor de PID-13)
+        # Email (PID-14)
         if paciente.email:
-            # hl7apy en modo TOLERANT acepta el campo completo como string
-            # El email va en un segundo repetidor de PID-13
             try:
                 pid.pid_14 = f"^NET^Internet^{paciente.email}"
             except Exception:
@@ -232,120 +237,102 @@ class HL7Service:
         msg.add(pid)
 
     @staticmethod
-    def _construir_nte_paciente(msg: Message, turno: Turno, paciente: Paciente) -> None:
+    def _construir_pv1(msg: Message, turno: Turno) -> None:
         """
-        NTE – Notes and Comments (después de PID)
+        PV1 – Patient Visit
 
-        Se generan hasta dos segmentos NTE:
-        - Uno para nota_interna del turno
-        - Uno para observaciones del paciente
+        Requerido por el LIS Navify entre PID y ORC.
+
+        PV1-2:  Patient Class → O (Outpatient/Ambulatorio)
+                Valores posibles para el futuro:
+                  O = Outpatient (Ambulatorio)
+                  I = Inpatient (Internación)
+                  E = Emergency (Guardia)
+        PV1-3:  Assigned Patient Location → ^^69 (código de ubicación fijo)
+        PV1-19: Visit Number → {turno_id}^^^^^^^^{institucion}
         """
-        notas = [
-            (turno.nota_interna or "").strip(),
-            (paciente.observaciones or "").strip(),
-        ]
-        for idx, nota in enumerate(notas, start=1):
-            if nota:
-                nte = Segment("NTE", version=_VERSION_HL7)
-                nte.nte_1 = str(idx)
-                nte.nte_2 = "P"   # Comment type: P = Patient
-                nte.nte_3 = nota
-                msg.add(nte)
+        pv1 = Segment("PV1", version=_VERSION_HL7)
+        pv1.pv1_2 = "O"                                       # Outpatient (ambulatorio)
+        pv1.pv1_3 = "^^69"                                    # Código de ubicación
+        pv1.pv1_19 = f"{turno.id}^^^^^^^^{_INSTITUCION}"      # Visit Number
+        msg.add(pv1)
 
     @staticmethod
     def _construir_ordenes(
         msg: Message,
         turno: Turno,
         determinaciones: list[dict],
-        nombre_impresora: str,
-        usuario: str,
         ts: str,
     ) -> None:
         """
-        ORC + OBR(s) – Common Order + Observation Request
+        ORC + TQ1 + OBR(s) – Common Order + Timing/Quantity + Observation Request
 
-        Se genera un único ORC y un OBR por cada determinación.
-        Si no hay determinaciones, se genera un OBR vacío para preservar
-        la estructura mínima del mensaje.
+        Estructura según formato Navify:
+          - UN solo ORC con la info general de la orden
+          - UN solo TQ1 con prioridad Routine
+          - Múltiples OBRs (uno por cada determinación) con SOLO campo 4
 
         ORC:
-          ORC-1:  Order Control → NW (New Order)
+          ORC-1:  Order Control → OR (Order/service request)
           ORC-2:  Placer Order Number → ID del turno
-          ORC-5:  Order Status → SC (Scheduled)
-          ORC-10: Entered By → usuario coordinador
+          ORC-9:  Date/Time of Transaction → timestamp
           ORC-12: Ordering Provider → médico
 
+        TQ1:
+          TQ1-10: Priority → R (Routine)
+
         OBR:
-          OBR-1:  Set ID
-          OBR-2:  Placer Order Number (igual que ORC-2)
-          OBR-4:  Universal Service ID → CODIGO^NOMBRE^99LOCAL
-          OBR-16: Ordering Provider → médico (mismo que ORC-12)
-          OBR-18: Placer Field 1 → nombre impresora destino
+          OBR-4:  Universal Service ID → codigo^nombre
+                  (campos 1, 2, 3 vacíos según formato Navify)
         """
         turno_id = str(turno.id)
         medico_hl7 = HL7Service._formatear_medico(turno)
-        usuario_hl7 = f"^{usuario}" if usuario else ""
 
-        # ── ORC ──────────────────────────────────────────────────────────────
+        # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
-        orc.orc_1 = "NW"          # New Order
-        orc.orc_2 = turno_id
-        orc.orc_5 = "SC"          # Scheduled
-        if usuario_hl7:
-            orc.orc_10 = usuario_hl7
+        orc.orc_1 = "OR"       # Order/service request (según Navify)
+        orc.orc_2 = turno_id   # Placer Order Number
+        orc.orc_9 = ts         # Date/Time of Transaction
         if medico_hl7:
-            orc.orc_12 = medico_hl7
+            orc.orc_12 = medico_hl7  # Ordering Provider
         msg.add(orc)
 
-        # ── OBR(s) ────────────────────────────────────────────────────────────
+        # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
+        tq1 = Segment("TQ1", version=_VERSION_HL7)
+        tq1.tq1_10 = "R"       # Priority: R (Routine)
+        msg.add(tq1)
+
+        # ── OBR(s) (Observation Request) ──────────────────────────────────────
         if not determinaciones:
-            # Mensaje válido con OBR mínimo (sin determinación específica)
-            obr = HL7Service._construir_obr(
-                set_id=1,
-                turno_id=turno_id,
-                codigo="",
-                nombre="SIN DETERMINACIONES",
-                medico_hl7=medico_hl7,
-                nombre_impresora=nombre_impresora,
-                ts=ts,
-            )
+            # Caso sin determinaciones: OBR mínimo para preservar estructura válida
+            obr = HL7Service._construir_obr(codigo="", nombre="SIN DETERMINACIONES")
             msg.add(obr)
         else:
-            for idx, det in enumerate(determinaciones, start=1):
+            for det in determinaciones:
                 obr = HL7Service._construir_obr(
-                    set_id=idx,
-                    turno_id=turno_id,
                     codigo=det["codigo"],
                     nombre=det["nombre"],
-                    medico_hl7=medico_hl7,
-                    nombre_impresora=nombre_impresora,
-                    ts=ts,
                 )
                 msg.add(obr)
 
     @staticmethod
-    def _construir_obr(
-        set_id: int,
-        turno_id: str,
-        codigo: str,
-        nombre: str,
-        medico_hl7: str,
-        nombre_impresora: str,
-        ts: str,
-    ) -> Segment:
-        """Construye un segmento OBR para una determinación."""
+    def _construir_obr(codigo: str, nombre: str) -> Segment:
+        """
+        Construye un segmento OBR para una determinación (formato Navify minimalista).
+
+        Según Navify, OBR solo contiene el campo 4 (Universal Service ID):
+          OBR||||codigo^nombre
+
+        Campos 1, 2, 3 están vacíos intencionalmente.
+        El sistema de codificación (^99LOCAL) se omite — Navify usa solo código^nombre.
+        """
         obr = Segment("OBR", version=_VERSION_HL7)
-        obr.obr_1 = str(set_id)
-        obr.obr_2 = turno_id
+        # OBR-1, OBR-2, OBR-3: vacíos (según formato Navify)
+        # OBR-4: Universal Service ID → codigo^nombre
         if codigo:
-            obr.obr_4 = f"{codigo}^{nombre}^{_SISTEMA_CODIGOS}"
+            obr.obr_4 = f"{codigo}^{nombre}"
         else:
             obr.obr_4 = nombre
-        obr.obr_6 = ts  # Requested Date/Time
-        if medico_hl7:
-            obr.obr_16 = medico_hl7
-        if nombre_impresora:
-            obr.obr_18 = nombre_impresora  # Placer Field 1 → impresora destino
         return obr
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -356,16 +343,18 @@ class HL7Service:
     def _formatear_medico(turno: Turno) -> str:
         """
         Retorna el médico en formato HL7 XCN:
-        ID^APELLIDO^NOMBRE^^^MATRICULA
+        ^NOMBRE^^^MATRICULA
+
+        El campo 'nombre' del modelo Medico contiene el nombre completo.
+        Lo usamos como apellido HL7 para no depender de un split frágil.
 
         Retorna cadena vacía si el turno no tiene médico.
         """
         medico = turno.medico
         if not medico:
             return ""
-        # El campo 'nombre' del modelo Medico contiene "Nombre Apellido" completo.
-        # Lo usamos como apellido HL7 para no depender de un split frágil.
-        return f"^{medico.nombre}^^^{medico.matricula or ''}"
+        matricula = medico.matricula or ""
+        return f"^{medico.nombre}^^^{matricula}"
 
     @staticmethod
     def _guardar_archivo(er7: str, turno_id: int) -> str:
