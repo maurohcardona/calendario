@@ -291,7 +291,7 @@ class HL7Service:
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
         orc.orc_1 = "NW"       # New Order — Navify requiere NW para crear órdenes nuevas
-        orc.orc_2 = turno_id   # Placer Order Number
+        orc.orc_2 = f"{turno_id}^{_INSTITUCION}"  # Placer Order Number — formato numero^sistema según manual
         orc.orc_9 = ts         # Date/Time of Transaction
         if medico_hl7:
             orc.orc_12 = medico_hl7  # Ordering Provider
@@ -305,32 +305,36 @@ class HL7Service:
         # ── OBR(s) (Observation Request) ──────────────────────────────────────
         if not determinaciones:
             # Caso sin determinaciones: OBR mínimo para preservar estructura válida
-            obr = HL7Service._construir_obr(codigo="", nombre="SIN DETERMINACIONES")
+            obr = HL7Service._construir_obr(set_id=1, codigo="", nombre="SIN DETERMINACIONES")
             msg.add(obr)
         else:
-            for det in determinaciones:
+            for idx, det in enumerate(determinaciones, start=1):
                 obr = HL7Service._construir_obr(
+                    set_id=idx,
                     codigo=det["codigo"],
                     nombre=det["nombre"],
                 )
                 msg.add(obr)
 
     @staticmethod
-    def _construir_obr(codigo: str, nombre: str) -> Segment:
+    def _construir_obr(set_id: int, codigo: str, nombre: str) -> Segment:
         """
-        Construye un segmento OBR para una determinación (formato Navify minimalista).
+        Construye un segmento OBR para una determinación.
 
-        Según Navify, OBR solo contiene el campo 4 (Universal Service ID):
-          OBR||||codigo^nombre
+        Según el manual de Navify (ejemplo real):
+          OBR|1|||100E|Glucose
+          OBR-1: Set ID (número de orden del OBR)
+          OBR-4: Universal Service ID → solo el código
+          OBR-5: Priority/Service Name → nombre de la determinación
 
-        Campos 1, 2, 3 están vacíos intencionalmente.
-        El sistema de codificación (^99LOCAL) se omite — Navify usa solo código^nombre.
+        Campos 2 y 3 vacíos intencionalmente (no se usan en este contexto).
         """
         obr = Segment("OBR", version=_VERSION_HL7)
-        # OBR-1, OBR-2, OBR-3: vacíos (según formato Navify)
-        # OBR-4: Universal Service ID → codigo^nombre
+        obr.obr_1 = str(set_id)  # Set ID — posición del OBR en el mensaje
+        # OBR-2, OBR-3: vacíos
         if codigo:
-            obr.obr_4 = f"{codigo}^{nombre}"
+            obr.obr_4 = codigo   # Universal Service ID — solo el código
+            obr.obr_5 = nombre   # Service Name — nombre descriptivo separado
         else:
             obr.obr_4 = nombre
         return obr
