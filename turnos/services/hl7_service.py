@@ -291,7 +291,7 @@ class HL7Service:
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
         orc.orc_1 = "NW"       # New Order — Navify requiere NW para crear órdenes nuevas
-        orc.orc_2 = f"{turno_id}^{_INSTITUCION}"  # Placer Order Number — formato numero^sistema según manual
+        orc.orc_2 = turno_id   # Placer Order Number — solo el numero (ExtSampleID)
         orc.orc_9 = ts         # Date/Time of Transaction
         if medico_hl7:
             orc.orc_12 = medico_hl7  # Ordering Provider
@@ -321,20 +321,17 @@ class HL7Service:
         """
         Construye un segmento OBR para una determinación.
 
-        Según el manual de Navify (ejemplo real):
-          OBR|1|||100E|Glucose
-          OBR-1: Set ID (número de orden del OBR)
-          OBR-4: Universal Service ID → solo el código
-          OBR-5: Priority/Service Name → nombre de la determinación
+        Formato: OBR|set_id|||codigo^nombre
+          OBR-1: Set ID
+          OBR-4: Universal Service ID → codigo^nombre (ambos en campo 4)
 
-        Campos 2 y 3 vacíos intencionalmente (no se usan en este contexto).
+        Nota: separar código y nombre en campos 4 y 5 hace que Navify
+        pierda el TestName en su XML interno. Se mantiene codigo^nombre en campo 4.
         """
         obr = Segment("OBR", version=_VERSION_HL7)
-        obr.obr_1 = str(set_id)  # Set ID — posición del OBR en el mensaje
-        # OBR-2, OBR-3: vacíos
+        obr.obr_1 = str(set_id)
         if codigo:
-            obr.obr_4 = codigo   # Universal Service ID — solo el código
-            obr.obr_5 = nombre   # Service Name — nombre descriptivo separado
+            obr.obr_4 = f"{codigo}^{nombre}"
         else:
             obr.obr_4 = nombre
         return obr
