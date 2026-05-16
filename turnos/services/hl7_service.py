@@ -290,7 +290,7 @@ class HL7Service:
 
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
-        orc.orc_1 = "OR"       # Order/service request (según Navify)
+        orc.orc_1 = "NW"       # New Order — Navify requiere NW para crear órdenes nuevas
         orc.orc_2 = turno_id   # Placer Order Number
         orc.orc_9 = ts         # Date/Time of Transaction
         if medico_hl7:
