@@ -295,7 +295,7 @@ class HL7Service:
 
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
-        orc.orc_1 = "OR"                              # OR = Order Request (según ejemplo Navify)
+        orc.orc_1 = "NW"                              # OR = Order Request (según ejemplo Navify)
         orc.orc_2 = f"{turno_id}^{_INSTITUCION}"      # Placer Order Number: id^nombre_institución
         orc.orc_9 = ts                                 # Date/Time of Transaction
         # ORC-12 → vacío
