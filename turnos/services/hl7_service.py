@@ -246,7 +246,8 @@ class HL7Service:
         pv1 = Segment("PV1", version=_VERSION_HL7)
         pv1.pv1_2 = "O"                                       # Outpatient (ambulatorio)
         # PV1-3, PV1-4, PV1-20 → vacíos (no asignar)
-        pv1.pv1_19 = f"{turno.id}^^^^^^^^{_INSTITUCION}"      # Visit Number
+        #pv1.pv1_19 = f"{turno.id}^^^^^^^^{_INSTITUCION}"      # Visit Number
+        pv1.pv1_19 = ""                             # Visit Number (solo id para evitar problemas de formato)
         msg.add(pv1)
 
     @staticmethod
@@ -295,21 +296,22 @@ class HL7Service:
 
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
-        orc.orc_1 = "NW"                              # OR = Order Request (según ejemplo Navify)
-        orc.orc_2 = f"{turno_id}^{_INSTITUCION}"      # Placer Order Number: id^nombre_institución
+        orc.orc_1 = "OR"                              # OR = Order Request (según ejemplo Navify)
+        orc.orc_2 = f"{turno_id}^{_INSTITUCION}"
+         # Placer Order Number: id^nombre_institución
         orc.orc_9 = ts                                 # Date/Time of Transaction
-        # ORC-12 → vacío
         if medico_hl7:
-            orc.orc_13 = medico_hl7                   # Ordering Provider: matricula^nombre
-        orc.orc_14 = "1"                              # Hardcodeado
+            orc.orc_12 = medico_hl7
+        orc.orc_13 = ""                   # Ordering Provider: matricula^nombre
+        orc.orc_14 = ""                              # Hardcodeado
         # ORC-17 → vacío
-        orc.orc_18 = "1^Consultorios Externos-Ambulatorio"
+        orc.orc_17 = ""
         msg.add(orc)
 
         # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
         # Ejemplo del manual: TQ1|||||||||R  → prioridad en campo 9
         tq1 = Segment("TQ1", version=_VERSION_HL7)
-        tq1.tq1_9 = "R"        # Priority: R (Routine) — campo 9 según ejemplo
+        tq1.tq1_9 = ""        # Priority: R (Routine) — campo 9 según ejemplo
         msg.add(tq1)
 
         # ── OBR(s) (Observation Request) ──────────────────────────────────────
