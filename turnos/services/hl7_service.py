@@ -264,54 +264,53 @@ class HL7Service:
           - UN solo ORC con la info general de la orden
           - UN solo TQ1 con prioridad Routine
           - Múltiples OBRs (uno por cada determinación) con SOLO campo 4
-          - NTE → comentario de la orden (opcional)
-          - DG1 → diagnóstico (opcional)
-          - SPM → tipo de muestra (opcional, fijo: suero)
+          - NTE → vacío (NTE||||)
+          - DG1 → vacío (DG1||||)
+          - SPM → tipo de muestra (1^SUERO)
 
         ORC:
           ORC-1:  Order Control → OR (según ejemplo Navify)
-          ORC-2:  Placer Order Number → turno_id^HTAL_BALESTRINI
+          ORC-2:  Placer Order Number → turno_id solo numérico
+                  (Navify valida formato estricto: solo acepta numérico)
           ORC-9:  Date/Time of Transaction → timestamp
-          ORC-12: Ordering Provider → médico
+          ORC-12: vacío
+          ORC-13: Ordering Provider → matricula^nombre
+          ORC-14: hardcodeado 1
+          ORC-17: vacío
+          ORC-18: 1^Consultorios Externos-Ambulatorio
 
         TQ1:
           TQ1-9: Priority → R (Routine)
-            (campo 9, no 10, según ejemplo: TQ1|||||||||R)
+                 (campo 9, no 10, según ejemplo: TQ1|||||||||R)
 
         OBR:
-          OBR-4:  Universal Service ID → codigo^nombre
-                  (campos 1, 2, 3 vacíos según formato Navify)
+          OBR-1: Set ID
+          OBR-4: Universal Service ID → codigo^nombre
 
-        NTE:
-          NTE-3: Comment text
-
-        DG1:
-          DG1-3: Diagnosis Code → 1^Diagnostic (mínimo)
-
-        SPM:
-          SPM-4: Specimen Type → 01^serum
+        NTE: todos los campos vacíos → NTE||||
+        DG1: todos los campos vacíos → DG1||||
+        SPM: SPM-1 → 1^SUERO
         """
         turno_id = str(turno.id)
         medico_hl7 = HL7Service._formatear_medico(turno)
 
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
-        orc.orc_1 = "OR"                              # OR = Order Request (según ejemplo Navify)
-        orc.orc_2 = f"{turno_id}^{_INSTITUCION}"
-         # Placer Order Number: id^nombre_institución
-        orc.orc_9 = ts                                 # Date/Time of Transaction
+        orc.orc_1 = "OR"       # OR = Order Request (según ejemplo Navify)
+        orc.orc_2 = turno_id   # Solo numérico — Navify rechaza cualquier otro formato
+        orc.orc_9 = ts         # Date/Time of Transaction
+        # ORC-12 → vacío
         if medico_hl7:
-            orc.orc_12 = medico_hl7
-        orc.orc_13 = ""                   # Ordering Provider: matricula^nombre
-        orc.orc_14 = ""                              # Hardcodeado
+            orc.orc_13 = medico_hl7   # Ordering Provider: matricula^nombre
+        orc.orc_14 = "1"
         # ORC-17 → vacío
-        orc.orc_17 = ""
+        orc.orc_18 = "1^Consultorios Externos-Ambulatorio"
         msg.add(orc)
 
         # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
-        # Ejemplo del manual: TQ1|||||||||R  → prioridad en campo 9
+        # Ejemplo del manual: TQ1|||||||||R → prioridad en campo 9
         tq1 = Segment("TQ1", version=_VERSION_HL7)
-        tq1.tq1_9 = ""        # Priority: R (Routine) — campo 9 según ejemplo
+        tq1.tq1_9 = "R"       # Priority: R (Routine)
         msg.add(tq1)
 
         # ── OBR(s) (Observation Request) ──────────────────────────────────────
