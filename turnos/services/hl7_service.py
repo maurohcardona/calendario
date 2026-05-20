@@ -224,7 +224,7 @@ class HL7Service:
         pid.pid_8 = _sexo_hl7(paciente.sexo)
 
         if paciente.telefono:
-            pid.pid_13 = f"^^^{paciente.telefono}"                         # Solo ^^^telefono
+            pid.pid_13 = f"^^^^^^^^^^^{paciente.telefono}"                         # Solo ^^^telefono
 
         msg.add(pid)
 
@@ -244,10 +244,11 @@ class HL7Service:
         PV1-19: Visit Number → {turno_id}^^^^^^^^{institucion}
         """
         pv1 = Segment("PV1", version=_VERSION_HL7)
-        pv1.pv1_2 = "O"                                       # Outpatient (ambulatorio)
+        pv1.pv1_2 = "O" 
+        pv1.pv1_3 = "^^69"                                      # Outpatient (ambulatorio)
         # PV1-3, PV1-4, PV1-20 → vacíos (no asignar)
-        #pv1.pv1_19 = f"{turno.id}^^^^^^^^{_INSTITUCION}"      # Visit Number
-        pv1.pv1_19 = ""                             # Visit Number (solo id para evitar problemas de formato)
+        pv1.pv1_19 = f"{turno.id}^^^^^^^^{_INSTITUCION}"      # Visit Number
+        #pv1.pv1_19 = ""                             # Visit Number (solo id para evitar problemas de formato)
         msg.add(pv1)
 
     @staticmethod
@@ -297,14 +298,14 @@ class HL7Service:
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
         orc.orc_1 = "OR"       # OR = Order Request (según ejemplo Navify)
-        orc.orc_2 = turno_id   # Solo numérico — Navify rechaza cualquier otro formato
+        orc.orc_2 = f"{turno.id}^{_INSTITUCION}"   # Solo numérico — Navify rechaza cualquier otro formato
         orc.orc_9 = ts         # Date/Time of Transaction
         # ORC-12 → vacío
         if medico_hl7:
-            orc.orc_13 = medico_hl7   # Ordering Provider: matricula^nombre
-        orc.orc_14 = "1"
+            orc.orc_12 = medico_hl7   # Ordering Provider: matricula^nombre
+        orc.orc_13 = "1^^^^^^^^"
         # ORC-17 → vacío
-        orc.orc_18 = "1^Consultorios Externos-Ambulatorio"
+        orc.orc_17 = "1^Consultorios Externos-Ambulatorio"
         msg.add(orc)
 
         # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
