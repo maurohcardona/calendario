@@ -194,3 +194,29 @@ LIS_TIMEOUT_ACK = int(os.getenv("LIS_TIMEOUT_ACK", "10"))
 LIS_TIMEOUT_ORU = int(os.getenv("LIS_TIMEOUT_ORU", "30"))
 LIS_MAX_REINTENTOS = int(os.getenv("LIS_MAX_REINTENTOS", "3"))
 
+# ── Logging ────────────────────────────────────────────────────────────────────
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "mllp": {
+            "format": "[{levelname}] {asctime} {name} | {message}",
+            "style": "{",
+            "datefmt": "%H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "mllp",
+        },
+    },
+    "loggers": {
+        "turnos.services": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}
+
