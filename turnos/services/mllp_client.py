@@ -417,8 +417,10 @@ class MLLPClient:
                             turno_id,
                             resultado_orl.error_parsing,
                         )
-                    # CRÍTICO: enviar ACK^O22 — sin esto Navify rechaza la orden con error ID=90
-                    MLLPClient._enviar_ack_orl(sock, oru_texto)
+                    # ACK^O22 deshabilitado: Navify no tiene canal de entrada configurado
+                    # para este mensaje (error 42114). Se omite el envío hasta confirmar
+                    # si Navify lo requiere o no.
+                    # MLLPClient._enviar_ack_orl(sock, oru_texto)
                     # Cerrar listener después del ORL (opción A: flujo síncrono)
                     logger.info(
                         "MLLP | Cerrando listener tras recibir ORL^O22 para turno_id=%d",
