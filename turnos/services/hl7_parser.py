@@ -90,6 +90,17 @@ class ResultadoORU:
     error_parsing: str = ""
 
 
+@dataclass
+class ResultadoORL:
+    """Resultado del parsing de un mensaje ORL^O22 (Laboratory Order Response)."""
+    valido: bool
+    turno_id: str
+    orden_estado: str        # ORC-1: UA/IP/CM/SC
+    orden_estado_desc: str   # Descripción legible del estado
+    mensaje_control_id: str  # MSH-10 del ORL (para construir ACK)
+    error_parsing: str
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Parser principal
 # ──────────────────────────────────────────────────────────────────────────────
@@ -234,6 +245,94 @@ class HL7Parser:
             resultado.error_parsing = str(exc)
 
         return resultado
+
+    @staticmethod
+    def parsear_orl(mensaje: str) -> "ResultadoORL":
+        """
+        Parsea un mensaje ORL^O22 (Laboratory Order Response) del LIS.
+
+        Extrae el estado de la orden (ORC-1), el ID del turno (ORC-2)
+        y el Message Control ID (MSH-10) necesario para construir el ACK.
+
+        Estados posibles en ORC-1:
+          UA → Unable to Accept (orden rechazada)
+          IP → In Progress (orden en proceso)
+          CM → Complete (orden completada)
+          SC → Status Changed (estado modificado)
+
+        Args:
+            mensaje: Texto HL7 ER7 del ORL^O22
+
+        Returns:
+            ResultadoORL con los campos extraídos o error_parsing si falla
+        """
+        _ESTADOS = {
+            "UA": "Unable to Accept - Orden rechazada",
+            "IP": "In Progress - Orden en proceso",
+            "CM": "Complete - Orden completada",
+            "SC": "Status Changed - Estado modificado",
+        }
+
+        try:
+            segmentos = HL7Parser._segmentar(mensaje)
+            if not segmentos:
+                return ResultadoORL(
+                    valido=False,
+                    turno_id="",
+                    orden_estado="",
+                    orden_estado_desc="",
+                    mensaje_control_id="",
+                    error_parsing="Mensaje vacío",
+                )
+
+            msh = HL7Parser._buscar_segmento(segmentos, "MSH")
+            if not msh:
+                return ResultadoORL(
+                    valido=False,
+                    turno_id="",
+                    orden_estado="",
+                    orden_estado_desc="",
+                    mensaje_control_id="",
+                    error_parsing="Falta segmento MSH",
+                )
+
+            # MSH-10 está en índice 9 (contando desde 0)
+            control_id = HL7Parser._campo(msh, 9)
+
+            # ORC puede no estar presente en todos los ORL
+            try:
+                orc = HL7Parser._buscar_segmento(segmentos, "ORC")
+                if orc:
+                    orden_estado = HL7Parser._campo(orc, 1)
+                    turno_id_raw = HL7Parser._campo(orc, 2)
+                    turno_id = turno_id_raw.split("^")[0]
+                else:
+                    orden_estado = ""
+                    turno_id = ""
+            except Exception:
+                orden_estado = ""
+                turno_id = ""
+
+            return ResultadoORL(
+                valido=True,
+                turno_id=turno_id,
+                orden_estado=orden_estado,
+                orden_estado_desc=_ESTADOS.get(
+                    orden_estado, f"Estado desconocido: {orden_estado}"
+                ),
+                mensaje_control_id=control_id,
+                error_parsing="",
+            )
+
+        except Exception as exc:
+            return ResultadoORL(
+                valido=False,
+                turno_id="",
+                orden_estado="",
+                orden_estado_desc="",
+                mensaje_control_id="",
+                error_parsing=str(exc),
+            )
 
     # ──────────────────────────────────────────────────────────────────────────
     # Helpers de parsing

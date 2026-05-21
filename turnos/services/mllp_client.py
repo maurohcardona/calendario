@@ -37,7 +37,7 @@ from typing import Optional, Tuple
 from django.conf import settings
 from django.utils import timezone
 
-from .hl7_parser import HL7Parser
+from .hl7_parser import HL7Parser, ResultadoORL
 
 logger = logging.getLogger(__name__)
 
@@ -367,7 +367,13 @@ class MLLPClient:
                     continue
 
                 # Determinar tipo de mensaje recibido
-                tipo = "ORU" if "ORU" in oru_texto[:20] else "MSG"
+                # Detectar tipo de mensaje en los primeros 40 caracteres del ER7
+                if "ORL^O22" in oru_texto[:80]:
+                    tipo = "ORL"
+                elif "ORU^R01" in oru_texto[:80]:
+                    tipo = "ORU"
+                else:
+                    tipo = "MSG"
 
                 # Guardar auditoría
                 MLLPClient._guardar_recibido(oru_texto, turno_id, tipo)
@@ -393,6 +399,31 @@ class MLLPClient:
 
                     # Enviar ACK de confirmación al LIS
                     MLLPClient._enviar_ack_oru(sock, oru_texto)
+
+                elif tipo == "ORL":
+                    resultado_orl = HL7Parser.parsear_orl(oru_texto)
+                    if resultado_orl.valido:
+                        logger.info(
+                            "MLLP | ORL^O22 recibido para turno_id=%d: estado=%s (%s)",
+                            turno_id,
+                            resultado_orl.orden_estado,
+                            resultado_orl.orden_estado_desc,
+                        )
+                        MLLPClient._actualizar_estado_orl(turno_id, resultado_orl)
+                    else:
+                        logger.warning(
+                            "MLLP | ORL^O22 con error de parseo para turno_id=%d: %s",
+                            turno_id,
+                            resultado_orl.error_parsing,
+                        )
+                    # CRÍTICO: enviar ACK^O22 — sin esto Navify rechaza la orden con error ID=90
+                    MLLPClient._enviar_ack_orl(sock, oru_texto)
+                    # Cerrar listener después del ORL (opción A: flujo síncrono)
+                    logger.info(
+                        "MLLP | Cerrando listener tras recibir ORL^O22 para turno_id=%d",
+                        turno_id,
+                    )
+                    break
 
         except Exception as exc:
             logger.exception(
@@ -436,6 +467,74 @@ class MLLPClient:
 
         except Exception as exc:
             logger.warning("MLLP | No se pudo enviar ACK de ORU: %s", exc)
+
+    @staticmethod
+    def _enviar_ack_orl(sock: socket.socket, orl_texto: str) -> None:
+        """
+        Envía ACK^O22 al LIS para confirmar recepción del ORL^O22.
+
+        CRÍTICO: Sin este ACK, Navify marca timeout y rechaza la orden
+        con error ID=90 (action defined).
+
+        Args:
+            sock: Socket TCP conectado al LIS
+            orl_texto: Mensaje ORL^O22 recibido (para extraer control ID)
+        """
+        try:
+            control_id = MLLPClient._extraer_control_id(orl_texto)
+            ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            ack = (
+                f"MSH|^~\\&|TURNOS|HTAL_BALESTRINI|LIS|ROCHE|{ts}||ACK^O22|ACK{ts}|P|2.5\r"
+                f"MSA|AA|{control_id}\r"
+            )
+            ack_wrapped = MLLPClient._wrap_mllp(ack)
+            sock.sendall(ack_wrapped)
+            logger.info(
+                "MLLP | ACK^O22 enviado al LIS (control_id=%s)", control_id
+            )
+        except Exception as exc:
+            logger.warning(
+                "MLLP | Falló envío de ACK^O22: %s"
+                " (no crítico, orden puede quedar en estado UA)",
+                exc,
+            )
+
+    @staticmethod
+    def _actualizar_estado_orl(turno_id: int, resultado: ResultadoORL) -> None:
+        """
+        Actualiza el registro Coordinados con el estado de la orden del ORL^O22.
+
+        Guarda el control_id del ORL y el estado de la orden (UA/IP/CM/SC).
+
+        Args:
+            turno_id: ID del turno coordinado
+            resultado: ResultadoORL parseado con estado y control_id
+        """
+        try:
+            from turnos.models import Coordinados
+
+            coord = Coordinados.objects.filter(id_turno=turno_id).first()
+            if coord:
+                coord.orl_recibido = resultado.mensaje_control_id
+                coord.orden_estado = resultado.orden_estado
+                coord.save(update_fields=["orl_recibido", "orden_estado"])
+                logger.info(
+                    "MLLP | Coordinados actualizado turno_id=%d: orden_estado=%s",
+                    turno_id,
+                    resultado.orden_estado,
+                )
+            else:
+                logger.warning(
+                    "MLLP | No se encontró Coordinados con id_turno=%d"
+                    " para actualizar estado ORL",
+                    turno_id,
+                )
+        except Exception as exc:
+            logger.warning(
+                "MLLP | Error al actualizar estado ORL para turno_id=%d: %s",
+                turno_id,
+                exc,
+            )
 
     @staticmethod
     def _extraer_control_id(mensaje: str) -> str:

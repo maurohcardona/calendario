@@ -315,6 +315,17 @@ class Coordinados(models.Model):
         verbose_name="Estado ACK",
         help_text="AA=Aceptado, AE=Error, AR=Rechazado",
     )
+    orl_recibido = models.TextField(
+        blank=True,
+        default="",
+        help_text="Mensaje ORL^O22 completo recibido del LIS"
+    )
+    orden_estado = models.CharField(
+        max_length=5,
+        blank=True,
+        default="",
+        help_text="Estado de la orden según ORL^O22: UA/IP/CM/SC"
+    )
 
     class Meta:
         verbose_name = "Turno Coordinado"
