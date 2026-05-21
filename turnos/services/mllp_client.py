@@ -367,10 +367,11 @@ class MLLPClient:
                     continue
 
                 # Determinar tipo de mensaje recibido
-                # Detectar tipo de mensaje en los primeros 40 caracteres del ER7
-                if "ORL^O22" in oru_texto[:80]:
+                # Detectar tipo de mensaje — buscar en los primeros 200 chars del ER7
+                # El MSH de Navify es largo (~130 chars) por lo que [:80] no alcanza
+                if "ORL" in oru_texto[:200]:
                     tipo = "ORL"
-                elif "ORU^R01" in oru_texto[:80]:
+                elif "ORU^R01" in oru_texto[:200]:
                     tipo = "ORU"
                 else:
                     tipo = "MSG"

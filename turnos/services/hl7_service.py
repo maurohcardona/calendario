@@ -298,7 +298,7 @@ class HL7Service:
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
         orc.orc_1 = "OR"       # OR = Order Request (según ejemplo Navify)
-        orc.orc_2 = f"{turno.id}^{_INSTITUCION}"   # Solo numérico — Navify rechaza cualquier otro formato
+        orc.orc_2 = str(turno.id)  # Solo numérico — Navify rechaza cualquier otro formato (error 42263)
         orc.orc_9 = ts         # Date/Time of Transaction
         # ORC-12 → vacío
         if medico_hl7:
