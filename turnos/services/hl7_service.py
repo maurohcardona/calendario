@@ -64,7 +64,7 @@ def _timestamp() -> str:
 
 def _control_id() -> str:
     """Genera un Message Control ID único (MSH-10)."""
-    return f"MSG{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}"
+    return f"{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}"
 
 
 class HL7Service:
