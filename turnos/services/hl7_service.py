@@ -45,7 +45,7 @@ from .determinacion_service import DeterminacionService
 _VALIDATION = consts.VALIDATION_LEVEL.TOLERANT
 
 # Identificadores fijos del sistema emisor
-_SISTEMA_ORIGEN = "TURNOS"
+_SISTEMA_ORIGEN = "HOST"
 _INSTITUCION = "HTAL_BALESTRINI"
 _SISTEMA_DESTINO = "LIS"
 _VERSION_HL7 = "2.5"
@@ -303,7 +303,7 @@ class HL7Service:
         # ORC-12 → vacío
         if medico_hl7:
             orc.orc_12 = medico_hl7   # Ordering Provider: matricula^nombre
-        orc.orc_13 = "1^^^^^^^^"
+        orc.orc_13 = "Consultorios"
         # ORC-17 → vacío
         orc.orc_17 = "1^Consultorios Externos-Ambulatorio"
         msg.add(orc)
@@ -347,7 +347,7 @@ class HL7Service:
 
         # ── SPM (Specimen) ────────────────────────────────────────────────────
         spm = Segment("SPM", version=_VERSION_HL7)
-        spm.spm_1 = "1^SUERO"
+        spm.spm_4 = "1^SUERO"
         msg.add(spm)
 
     @staticmethod
