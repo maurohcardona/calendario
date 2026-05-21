@@ -247,7 +247,7 @@ class HL7Service:
         pv1.pv1_2 = "O" 
         pv1.pv1_3 = "^^69"                                      # Outpatient (ambulatorio)
         # PV1-3, PV1-4, PV1-20 → vacíos (no asignar)
-        pv1.pv1_19 = f"{turno.id}^^^^^^^^{_INSTITUCION}"      # Visit Number
+        pv1.pv1_19 = f"{turno.id}"      # Visit Number
         #pv1.pv1_19 = ""                             # Visit Number (solo id para evitar problemas de formato)
         msg.add(pv1)
 
