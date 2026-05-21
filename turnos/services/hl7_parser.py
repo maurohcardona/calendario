@@ -46,13 +46,18 @@ class ResultadoACK:
 
     @property
     def aceptado(self) -> bool:
-        """True si el LIS aceptó la orden (AA)."""
-        return self.estado == "AA"
+        """True si el LIS aceptó la orden.
+
+        Navify usa enhanced acknowledgment mode y responde CA (Commit Accept)
+        en lugar del AA (Application Accept) del modo original.
+        Ambos son respuestas de aceptación válidas.
+        """
+        return self.estado in ("AA", "CA")
 
     @property
     def rechazado(self) -> bool:
-        """True si el LIS rechazó la orden (AE o AR)."""
-        return self.estado in ("AE", "AR")
+        """True si el LIS rechazó la orden (AE / AR / CE / CR)."""
+        return self.estado in ("AE", "AR", "CE", "CR")
 
 
 @dataclass
