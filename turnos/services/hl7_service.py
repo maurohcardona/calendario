@@ -220,6 +220,7 @@ class HL7Service:
         pid.pid_1 = "1"
         pid.pid_3 = paciente.iden                                          # Solo número DNI
         pid.pid_5 = f"{paciente.apellido.upper()}^{paciente.nombre.upper()}"
+        pid.pid_6 = paciente.email
         pid.pid_7 = paciente.fecha_nacimiento.strftime("%Y%m%d")
         pid.pid_8 = _sexo_hl7(paciente.sexo)
 
