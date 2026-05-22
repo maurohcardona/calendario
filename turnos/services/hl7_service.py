@@ -298,8 +298,8 @@ class HL7Service:
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
         orc.orc_1 = "NW"       # NW = New Order
-        orc.orc_2 = "1"        # ActionCode → Navify transforma: "1" → "O1" (nueva orden)
-        orc.orc_3 = f"{turno.id}^{_INSTITUCION}"  # ExtSampleID ^ SystemName
+        #orc.orc_2 = "1"        # ActionCode → Navify transforma: "1" → "O1" (nueva orden)
+        orc.orc_2 = f"{turno.id}^{_INSTITUCION}"  # ExtSampleID ^ SystemName
         orc.orc_9 = ts         # Date/Time of Transaction
         # ORC-12 → vacío
         if medico_hl7:
