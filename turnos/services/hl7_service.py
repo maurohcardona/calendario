@@ -313,7 +313,7 @@ class HL7Service:
         # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
         # Ejemplo del manual: TQ1|||||||||R → prioridad en campo 9
         tq1 = Segment("TQ1", version=_VERSION_HL7)
-        tq1.tq1_9 = "R"       # Priority: R (Routine)
+        tq1.tq1_9 = "S"       # Priority: R (Routine)
         msg.add(tq1)
 
         # ── OBR(s) (Observation Request) ──────────────────────────────────────
