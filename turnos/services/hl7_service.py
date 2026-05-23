@@ -245,7 +245,7 @@ class HL7Service:
         PV1-19: Visit Number → {turno_id}^^^^^^^^{institucion}
         """
         pv1 = Segment("PV1", version=_VERSION_HL7)
-        pv1.pv1_2 = "O" 
+        pv1.pv1_2 = "I" 
         pv1.pv1_3 = "^^69"                                      # Outpatient (ambulatorio)
         # PV1-3, PV1-4, PV1-20 → vacíos (no asignar)
         pv1.pv1_19 = f"{turno.id}"      # Visit Number
@@ -284,6 +284,7 @@ class HL7Service:
         TQ1:
           TQ1-9: Priority → R (Routine)
                  (campo 9, no 10, según ejemplo: TQ1|||||||||R)
+                 R = Modulo General S = Modulo de Emergencia
 
         OBR:
           OBR-1: Set ID
@@ -307,13 +308,13 @@ class HL7Service:
             orc.orc_12 = medico_hl7   # Ordering Provider: matricula^nombre
         orc.orc_13 = "Consultorios"
         # ORC-17 → vacío
-        orc.orc_17 = "1^Consultorios Externos-Ambulatorio"
+        orc.orc_17 = "2^Adultos-Guardia"
         msg.add(orc)
 
         # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
         # Ejemplo del manual: TQ1|||||||||R → prioridad en campo 9
         tq1 = Segment("TQ1", version=_VERSION_HL7)
-        tq1.tq1_9 = "S"       # Priority: R (Routine)
+        tq1.tq1_9 = "R"       # Priority: R (Routine)
         msg.add(tq1)
 
         # ── OBR(s) (Observation Request) ──────────────────────────────────────
@@ -349,7 +350,7 @@ class HL7Service:
 
         # ── SPM (Specimen) ────────────────────────────────────────────────────
         spm = Segment("SPM", version=_VERSION_HL7)
-        spm.spm_4 = "1^SUERO"
+        spm.spm_4 = ""
         msg.add(spm)
 
     @staticmethod
