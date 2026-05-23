@@ -336,7 +336,7 @@ class HL7Service:
         nte.nte_1 = ""
         nte.nte_2 = ""
         nte.nte_3 = ""
-        nte.nte_4 = ""
+        nte.nte_4 = "Nota de Prueba"
         msg.add(nte)
 
         # ── DG1 (Diagnosis) ───────────────────────────────────────────────────
