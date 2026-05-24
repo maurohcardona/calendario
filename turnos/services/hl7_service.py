@@ -220,9 +220,10 @@ class HL7Service:
         pid.pid_1 = "1"
         pid.pid_3 = paciente.iden                                          # Solo número DNI
         pid.pid_5 = f"{paciente.apellido.upper()}^{paciente.nombre.upper()}"
-        pid.pid_6 = paciente.email
+        pid.pid_6 = ""
         pid.pid_7 = paciente.fecha_nacimiento.strftime("%Y%m%d")
         pid.pid_8 = _sexo_hl7(paciente.sexo)
+        pid.pid_11 = paciente.email
 
         if paciente.telefono:
             pid.pid_13 = f"^^^^^^^^^^^{paciente.telefono}"                         # Solo ^^^telefono
@@ -306,7 +307,7 @@ class HL7Service:
         # ORC-12 → vacío
         if medico_hl7:
             orc.orc_12 = medico_hl7   # Ordering Provider: matricula^nombre
-        orc.orc_13 = "Consultorios"
+        orc.orc_13 = turno.nota_interna
         # ORC-17 → vacío
         orc.orc_17 = "2^Adultos-Guardia"
         msg.add(orc)
