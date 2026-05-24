@@ -307,7 +307,7 @@ class HL7Service:
         # ORC-12 → vacío
         if medico_hl7:
             orc.orc_12 = medico_hl7   # Ordering Provider: matricula^nombre
-        orc.orc_13 = turno.nota_interna
+        orc.orc_16 = f"1^{turno.nota_interna}"
         # ORC-17 → vacío
         orc.orc_17 = "2^Adultos-Guardia"
         msg.add(orc)
