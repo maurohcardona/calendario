@@ -320,6 +320,31 @@ def _extraer_filler_order_number(mensaje_er7: str) -> str:
     return ""
 
 
+def _extraer_orc3(mensaje_er7: str) -> str:
+    """
+    Extrae ORC-3 (Filler Order Number) de un mensaje HL7.
+
+    En el ORL^O22 de Navify, ORC-3 contiene el número de protocolo
+    interno asignado por el LIS a la orden.
+
+    Args:
+        mensaje_er7: Mensaje HL7 en formato ER7
+
+    Returns:
+        Filler Order Number (primer componente) o cadena vacía
+    """
+    try:
+        for linea in mensaje_er7.split("\r"):
+            if linea.startswith("ORC"):
+                campos = linea.split("|")
+                # ORC-3 está en índice 3
+                orc3 = campos[3] if len(campos) > 3 else ""
+                return orc3.split("^")[0].strip()
+    except Exception:
+        pass
+    return ""
+
+
 def _procesar_orl(mensaje_er7: str) -> None:
     """
     Procesa un ORL^O22 recibido del LIS (Laboratory Order Response).
@@ -353,9 +378,18 @@ def _procesar_orl(mensaje_er7: str) -> None:
             )
             return
 
-        actualizado = Coordinados.objects.filter(id_turno=turno_id).update(
+        # Extraer Filler Order Number (ORC-3) — número de protocolo del LIS
+        numero_protocolo_lis = _extraer_orc3(mensaje_er7)
+
+        campos_update = dict(
             orl_recibido=mensaje_er7,
             orden_estado=resultado.orden_estado,
+        )
+        if numero_protocolo_lis:
+            campos_update["numero_protocolo_lis"] = numero_protocolo_lis
+
+        actualizado = Coordinados.objects.filter(id_turno=turno_id).update(
+            **campos_update
         )
 
         if actualizado == 0:
@@ -365,10 +399,12 @@ def _procesar_orl(mensaje_er7: str) -> None:
             )
         else:
             logger.info(
-                "MLLP-SRV | ORL^O22 procesado: turno_id=%d estado=%s (%s)",
+                "MLLP-SRV | ORL^O22 procesado: turno_id=%d estado=%s (%s) "
+                "numero_protocolo_lis=%r",
                 turno_id,
                 resultado.orden_estado,
                 resultado.orden_estado_desc,
+                numero_protocolo_lis,
             )
 
     except Exception as exc:
