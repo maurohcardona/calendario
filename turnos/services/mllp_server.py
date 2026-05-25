@@ -518,7 +518,7 @@ class MLLPServer:
         if puerto is not None:
             self.puerto = puerto
         else:
-            self.puerto = int(getattr(settings, "MLLP_SERVER_PORT", 50001))
+            self.puerto = int(getattr(settings, "MLLP_SERVER_PORT", 50000))
 
         self._servidor_socket: Optional[socket.socket] = None
         self._thread: Optional[threading.Thread] = None
