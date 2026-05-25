@@ -194,6 +194,12 @@ LIS_TIMEOUT_ACK = int(os.getenv("LIS_TIMEOUT_ACK", "10"))
 LIS_TIMEOUT_ORU = int(os.getenv("LIS_TIMEOUT_ORU", "30"))
 LIS_MAX_REINTENTOS = int(os.getenv("LIS_MAX_REINTENTOS", "3"))
 
+# ── Servidor MLLP (modo servidor — escucha conexiones entrantes del LIS) ───────
+# El servidor MLLP escucha en este puerto para recibir mensajes HL7 del LIS
+# directamente (ORU^R01, ORL^O22, etc.) sin necesidad de polling.
+# Iniciar con: python manage.py iniciar_servidor_mllp
+MLLP_SERVER_PORT = int(os.getenv("MLLP_SERVER_PORT", "50001"))
+
 # ── Logging ────────────────────────────────────────────────────────────────────
 LOGGING = {
     "version": 1,

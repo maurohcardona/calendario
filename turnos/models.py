@@ -326,6 +326,19 @@ class Coordinados(models.Model):
         default="",
         help_text="Estado de la orden según ORL^O22: UA/IP/CM/SC"
     )
+    oru_recibido = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="ORU recibido",
+        help_text="Mensaje ORU^R01 completo recibido del LIS (resultado de laboratorio)",
+    )
+    numero_protocolo_lis = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Número de protocolo LIS",
+        help_text="Filler Order Number asignado por el LIS (Navify) en el ORU^R01",
+    )
 
     class Meta:
         verbose_name = "Turno Coordinado"
