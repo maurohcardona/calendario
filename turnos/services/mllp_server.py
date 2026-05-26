@@ -252,39 +252,30 @@ def _procesar_oru(mensaje_er7: str) -> None:
             )
             return
 
-        # Extraer turno_id (Placer Order Number, OBR-2)
-        turno_id_raw = resultado.turno_id
-        if not turno_id_raw:
-            logger.warning("MLLP-SRV | ORU^R01 sin Placer Order Number (OBR-2)")
-            return
-
-        try:
-            turno_id = int(turno_id_raw.split("^")[0])
-        except (ValueError, TypeError):
-            logger.warning(
-                "MLLP-SRV | ORU^R01 con turno_id no numérico: %r", turno_id_raw
-            )
-            return
-
         # Extraer Filler Order Number (OBR-3) — número de protocolo del LIS
+        # Navify no devuelve el Placer Order Number (OBR-2) en el ORU,
+        # por lo que buscamos por numero_protocolo_lis guardado desde el ORL.
         numero_protocolo_lis = _extraer_filler_order_number(mensaje_er7)
 
-        # Actualizar Coordinados
-        actualizado = Coordinados.objects.filter(id_turno=turno_id).update(
-            oru_recibido=mensaje_er7,
-            numero_protocolo_lis=numero_protocolo_lis,
-        )
+        if not numero_protocolo_lis:
+            logger.warning("MLLP-SRV | ORU^R01 sin Filler Order Number (OBR-3)")
+            return
+
+        # Buscar por numero_protocolo_lis (guardado al recibir el ORL^O22)
+        actualizado = Coordinados.objects.filter(
+            numero_protocolo_lis=numero_protocolo_lis
+        ).update(oru_recibido=mensaje_er7)
 
         if actualizado == 0:
             logger.warning(
-                "MLLP-SRV | ORU^R01: no se encontró Coordinados con id_turno=%d",
-                turno_id,
+                "MLLP-SRV | ORU^R01: no se encontró Coordinados con "
+                "numero_protocolo_lis=%r",
+                numero_protocolo_lis,
             )
         else:
             logger.info(
-                "MLLP-SRV | ORU^R01 procesado: turno_id=%d "
-                "numero_protocolo_lis=%r paciente=%s observaciones=%d",
-                turno_id,
+                "MLLP-SRV | ORU^R01 procesado: numero_protocolo_lis=%r "
+                "paciente=%s observaciones=%d",
                 numero_protocolo_lis,
                 resultado.nombre_paciente,
                 len(resultado.observaciones),
