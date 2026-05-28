@@ -26,6 +26,10 @@ start_waitress.py
 mensajes/*.pet
 mensajes/*
 
+# Backups de base de datos (pueden contener datos sensibles)
+*.sql
+backup_docker.sql
+
 # Informes PDF
 informes/enviados/
 informes/pendientes/
