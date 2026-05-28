@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Iniciar sesion - Agendador</title>
+    <title>Iniciar sesion - Laboratorio Hospital Balestrini</title>
 
     <!-- Bootstrap CDN -->
     <link rel="stylesheet" 
@@ -96,7 +96,7 @@
         .btn-login {
             width: 100%;
             padding: 0.75rem;
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-teal) 100%);
+            background: var(--color-primary);
             color: var(--color-white);
             border: none;
             border-radius: var(--border-radius-sm);
@@ -107,6 +107,7 @@
             margin-top: 1.5rem;
         }
         .btn-login:hover {
+            background: var(--color-teal-dark, #1a6866);
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(36, 143, 141, 0.3);
         }
@@ -122,14 +123,23 @@
             text-align: center;
             margin-bottom: 2rem;
         }
+        .logo-section img {
+            max-width: 170px;
+            height: auto;
+            display: block;
+            margin: 0 auto 1.2rem auto;
+        }
         .logo-section h1 {
             color: var(--color-primary);
-            font-size: 2.5rem;
-            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0 0 0.3rem 0;
         }
         .logo-section p {
-            color: var(--color-gray);
-            margin-top: 0.5rem;
+            color: var(--color-primary);
+            font-size: 1rem;
+            font-weight: 500;
+            margin: 0;
         }
     </style>
 </head>
@@ -138,8 +148,9 @@
     <div class="login-container">
         <div class="login-card">
             <div class="logo-section">
-                <h1>Agendador</h1>
-                <p style="font-weight: 600; color: var(--color-text);">Sistema de citas y turnos</p>
+                <img src="{% static 'icons/LOGO OFICIAL HTAL.BALESTRINI.jpg' %}" alt="Logo Hospital Balestrini">
+                <h1>Hospital Balestrini</h1>
+                <p>Laboratorio</p>
             </div>
 
             <!-- Mensajes de error -->

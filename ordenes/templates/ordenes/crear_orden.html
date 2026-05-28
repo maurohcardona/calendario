@@ -1,0 +1,649 @@
+{% extends "base_medico.html" %}
+{% block medico_content %}
+<div class="row mb-3">
+  <div class="col">
+    <h2>Nueva Orden de Laboratorio</h2>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<form method="post" id="orden-form">
+  {% csrf_token %}
+
+  {# ── PACIENTE ── #}
+  <div class="card mb-4">
+    <div class="card-header fw-bold">Paciente</div>
+    <div class="card-body">
+      {% if paciente %}
+        <input type="hidden" name="paciente_id" value="{{ paciente.pk }}">
+        <p class="mb-1"><strong>{{ paciente.nombre_completo }}</strong></p>
+        <p class="mb-1 text-muted">{{ paciente.get_tipo_iden_display }}: {{ paciente.iden }} | Sexo: {{ paciente.sexo }}</p>
+        <a href="?paciente_id=" class="btn btn-sm btn-outline-secondary mt-2">Cambiar paciente</a>
+      {% else %}
+        <div class="mb-3">
+          <label class="form-label">Buscar paciente</label>
+          <div class="input-group">
+            <input type="text" id="buscar-iden" class="form-control" placeholder="Ingresá el número de identificación (DNI, NEO, NN)..."
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('btn-buscar').click();}">
+            <button type="button" class="btn btn-outline-primary" id="btn-buscar">🔍 Buscar</button>
+          </div>
+          <div class="form-text text-muted">Podés buscar por DNI, NEO o NN.</div>
+        </div>
+        <div id="paciente-encontrado" class="d-none">
+          <div class="alert alert-success mb-2" id="paciente-info"></div>
+          <input type="hidden" name="paciente_id" id="paciente-id-hidden">
+        </div>
+        <div id="paciente-no-encontrado" class="d-none">
+          <div class="rounded-3 p-3 mb-3 d-flex align-items-center gap-2"
+               style="background-color: #ffe0b2; border-left: 4px solid #e65100; color: #bf360c;">
+            <span style="font-size: 1.2rem;">⚠️</span>
+            <span>Paciente no encontrado. Completá los datos para crearlo.</span>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Nombre <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.nombre }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Apellido <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.apellido }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Tipo de Identificación <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.tipo_iden }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                <span id="label-iden-orden">DNI</span> <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.iden }}
+              <div id="advertencia-neo-orden" class="form-text text-warning d-none">
+                ⚠️ NEO es solo para recién nacidos (hasta 90 días de nacido).
+              </div>
+              <div id="info-neo-orden" class="form-text text-info d-none">
+                ℹ️ El número se generará automáticamente al guardar.
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Fecha de nacimiento <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.fecha_nacimiento }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Sexo <span class="text-danger">*</span>
+              </label>
+              {{ paciente_form.sexo }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Teléfono
+              </label>
+              {{ paciente_form.telefono }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">
+                Email
+              </label>
+              {{ paciente_form.email }}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── TIPO DE ORIGEN ── #}
+  <div class="card mb-4">
+    <div class="card-header fw-bold">Tipo de origen</div>
+    <div class="card-body">
+      <div class="d-flex gap-3 flex-wrap" id="tipo-origen-group">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="tipo_origen" id="tipo-guardia" value="GUARDIA">
+          <label class="form-check-label" for="tipo-guardia">🚨 Guardia</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="tipo_origen" id="tipo-internacion" value="INTERNACION">
+          <label class="form-check-label" for="tipo-internacion">🏥 Internación</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="tipo_origen" id="tipo-ambulatorio" value="AMBULATORIO">
+          <label class="form-check-label" for="tipo-ambulatorio">📅 Ambulatorio</label>
+        </div>
+      </div>
+
+      <div id="campo-servicio" class="mt-3 d-none">
+        <label class="form-label">Servicio <span class="text-danger">*</span></label>
+        <select name="servicio" id="id-servicio" class="form-select">
+          <option value="">---------</option>
+        </select>
+      </div>
+
+      <div id="campo-sala" class="mt-3 d-none">
+        <label class="form-label">Cama / Sala</label>
+        <input type="text" name="sala" class="form-control" placeholder="Ej: Cama 12 UCO">
+      </div>
+    </div>
+  </div>
+
+  {# ── OBSERVACIONES ── #}
+  <div class="card mb-4">
+    <div class="card-header fw-bold">Diagnóstico y/u Observaciones</div>
+    <div class="card-body">
+      <textarea name="observaciones" class="form-control" rows="3" placeholder="Diagnóstico, notas clínicas..."></textarea>
+    </div>
+  </div>
+
+  {# ── DETERMINACIONES ── #}
+  <div class="card mb-4">
+    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+      <span>Determinaciones</span>
+      <span id="contador-sel" class="badge bg-primary">0 seleccionadas</span>
+    </div>
+    <div class="card-body">
+      <div class="mb-2">
+        <input type="text" id="filtro-det" class="form-control" placeholder="Filtrar determinaciones...">
+      </div>
+      {% if orden_form.non_field_errors %}
+        <div class="alert alert-danger">{{ orden_form.non_field_errors }}</div>
+      {% endif %}
+      <div id="det-grid">
+        {# ── VISTA GUARDIA: grilla plana sin sectores ── #}
+        <div id="vista-guardia" class="row row-cols-1 row-cols-md-3 g-2 d-none">
+          {% for det in orden_form.determinaciones %}
+            <div class="col det-item det-guardia-simple"
+                 data-nombre="{{ det.choice_label|lower }}"
+                 data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_simples %}1{% else %}0{% endif %}">
+              <div class="form-check">
+                {{ det.tag }}
+                <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                  {{ det.choice_label }}
+                </label>
+              </div>
+            </div>
+          {% endfor %}
+          {% for det in orden_form.determinaciones_complejas %}
+            <div class="col det-item det-guardia-compleja"
+                 data-nombre="{{ det.choice_label|lower }}"
+                 data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_complejas %}1{% else %}0{% endif %}">
+              <div class="form-check">
+                {{ det.tag }}
+                <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                  {{ det.choice_label }}
+                </label>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        {# ── VISTA SECTORES: agrupada por sector, con collapse ── #}
+        <div id="vista-sectores">
+          {% for sector in sectores %}
+            <div class="sector-group mb-2" data-sector="{{ sector.nombre }}">
+              <button class="btn btn-sm w-100 text-start d-flex justify-content-between align-items-center px-2 py-1 rounded-2 sector-toggle"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#sector-{{ forloop.counter }}"
+                      aria-expanded="true"
+                      style="background-color: var(--color-mint-light); color: var(--color-text); font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; border: none;">
+                <span>{{ sector.nombre }}</span>
+                <span class="sector-chevron">▲</span>
+              </button>
+              <div id="sector-{{ forloop.counter }}" class="collapse show sector-items">
+                <div class="row row-cols-1 row-cols-md-3 g-2 pt-2">
+                  {% for det in orden_form.determinaciones %}
+                    {% if det.data.value|stringformat:'s' in sector.pks_simples %}
+                      <div class="col det-item"
+                           data-nombre="{{ det.choice_label|lower }}"
+                           data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_simples %}1{% else %}0{% endif %}">
+                        <div class="form-check">
+                          {{ det.tag }}
+                          <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                            {{ det.choice_label }}
+                          </label>
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                  {% for det in orden_form.determinaciones_complejas %}
+                    {% if det.data.value|stringformat:'s' in sector.pks_complejas %}
+                      <div class="col det-item"
+                           data-nombre="{{ det.choice_label|lower }}"
+                           data-guardia="{% if det.data.value|stringformat:'s' in guardia_pks_complejas %}1{% else %}0{% endif %}">
+                        <div class="form-check">
+                          {{ det.tag }}
+                          <label class="form-check-label text-uppercase" for="{{ det.id_for_label }}">
+                            {{ det.choice_label }}
+                          </label>
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 justify-content-end">
+    <button type="button" class="btn btn-outline-secondary" id="btn-vista-previa">Vista previa</button>
+    <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">Crear Orden</button>
+  </div>
+</form>
+
+{# ── MODAL VISTA PREVIA ── #}
+<div class="modal fade" id="modal-vista-previa" tabindex="-1" aria-labelledby="modal-vista-previa-label" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: var(--color-primary); color: white;">
+        <h5 class="modal-title" id="modal-vista-previa-label">Vista previa — Orden de Laboratorio</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        {# Previsualización de la orden #}
+        <div id="orden-preview" style="font-family: 'Georgia', serif; background: #fff; padding: 2rem 2.5rem; min-height: 500px;">
+
+          {# Encabezado institución #}
+          <div class="text-center mb-3" style="border-bottom: 2px solid var(--color-primary); padding-bottom: .75rem;">
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--color-primary); letter-spacing: .02em;">ORDEN DE LABORATORIO</div>
+            <div style="font-size: .8rem; color: var(--color-text-light);">Hospital Balestrini</div>
+          </div>
+
+          {# Datos del médico #}
+          <div class="row mb-3">
+            <div class="col">
+              <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter);">Médico solicitante</div>
+              <div style="font-size: 1rem; font-weight: 600; color: var(--color-text);">
+                {% if request.user.medico %}{{ request.user.medico.nombre }}{% else %}—{% endif %}
+              </div>
+              <div style="font-size: .85rem; color: var(--color-text-light);">
+                Mat. {% if request.user.medico %}{{ request.user.medico.matricula }}{% else %}—{% endif %}
+              </div>
+            </div>
+            <div class="col text-end">
+              <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter);">Fecha</div>
+              <div style="font-size: .9rem; color: var(--color-text);" id="preview-fecha">—</div>
+              <div style="font-size: .8rem; color: var(--color-text-light);" id="preview-origen-label">—</div>
+            </div>
+          </div>
+
+          {# Datos del paciente #}
+          <div class="mb-3 p-3 rounded-2" style="background-color: var(--color-bg); border: 1px solid var(--color-gray-lighter);">
+            <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter); margin-bottom: .4rem;">Paciente</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: var(--color-text);" id="preview-paciente-nombre">
+              {% if paciente %}{{ paciente.nombre_completo }}{% else %}—{% endif %}
+            </div>
+            <div style="font-size: .85rem; color: var(--color-text-light);">
+              DNI: <span id="preview-paciente-dni">{% if paciente %}{{ paciente.iden }}{% else %}—{% endif %}</span>
+              &nbsp;|&nbsp; Sexo: <span id="preview-paciente-sexo">{% if paciente %}{{ paciente.sexo }}{% else %}—{% endif %}</span>
+              &nbsp;|&nbsp; Fecha Nac.: <span id="preview-paciente-fnac">{% if paciente %}{{ paciente.fecha_nacimiento|date:"d/m/Y" }}{% else %}—{% endif %}</span>
+            </div>
+          </div>
+
+          {# Diagnóstico / Observaciones #}
+          <div class="mb-3">
+            <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter); margin-bottom: .3rem;">Diagnóstico / Observaciones</div>
+            <div style="font-size: .9rem; color: var(--color-text); min-height: 1.5rem; font-style: italic;" id="preview-observaciones">—</div>
+          </div>
+
+          {# Determinaciones #}
+          <div>
+            <div style="font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-lighter); margin-bottom: .5rem;">Determinaciones solicitadas</div>
+            <div id="preview-determinaciones" style="font-size: .9rem; color: var(--color-text);">
+              <em style="color: var(--color-text-lighter);">Ninguna seleccionada.</em>
+            </div>
+          </div>
+
+          {# Firma #}
+          <div class="mt-5 pt-3" style="border-top: 1px solid var(--color-gray-lighter); display: flex; justify-content: flex-end;">
+            <div class="text-center" style="width: 200px;">
+              <div style="border-top: 1px solid var(--color-text); padding-top: .3rem; font-size: .8rem; color: var(--color-text-light);">
+                Firma y sello del médico
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GUARDIA_ORDEN = {{ guardia_orden|safe }};
+const BUSCAR_URL = "{% url 'ordenes:buscar_paciente' %}";
+const SERVICIOS_URL = "{% url 'ordenes:obtener_servicios' %}";
+
+// ── BÚSQUEDA DE PACIENTE ──────────────────────────────────────
+let pacienteData = {% if paciente %}{
+  nombre: "{{ paciente.nombre_completo }}",
+  dni: "{{ paciente.iden }}",
+  sexo: "{{ paciente.sexo }}",
+  fnac: "{{ paciente.fecha_nacimiento|date:'d/m/Y' }}"
+}{% else %}null{% endif %};
+
+document.getElementById('btn-buscar')?.addEventListener('click', function() {
+  const iden = document.getElementById('buscar-iden').value.trim();
+  if (!iden) return;
+  fetch(`${BUSCAR_URL}?iden=${encodeURIComponent(iden)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.encontrado) {
+        pacienteData = {
+          nombre: data.paciente.nombre_completo,
+          dni: data.paciente.iden,
+          sexo: data.paciente.sexo || '—',
+          fnac: data.paciente.fecha_nacimiento || '—',
+        };
+        document.getElementById('paciente-encontrado').classList.remove('d-none');
+        document.getElementById('paciente-no-encontrado').classList.add('d-none');
+        const tipoLabel = { DNI: 'DNI', NEO: 'NEO', NN: 'NN' }[data.paciente.tipo_iden] || 'ID';
+        document.getElementById('paciente-info').textContent =
+          `${data.paciente.nombre_completo} — ${tipoLabel}: ${data.paciente.iden}`;
+        document.getElementById('paciente-id-hidden').value = data.paciente.id;
+      } else {
+        pacienteData = null;
+        document.getElementById('paciente-no-encontrado').classList.remove('d-none');
+        document.getElementById('paciente-encontrado').classList.add('d-none');
+        // Pre-completar identificación en el formulario de nuevo paciente solo si es numérico (DNI)
+        const idenInput = document.getElementById('id_iden_paciente');
+        if (idenInput && /^\d+$/.test(iden)) idenInput.value = iden;
+      }
+    });
+});
+
+// ── TIPO ORIGEN ───────────────────────────────────────────────
+function cargarServicios(origen) {
+  const sel = document.getElementById('id-servicio');
+  fetch(`${SERVICIOS_URL}?origen=${origen}`)
+    .then(r => r.json())
+    .then(data => {
+      sel.innerHTML = '<option value="">---------</option>';
+      data.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.nombre;
+        sel.appendChild(opt);
+      });
+    });
+}
+
+function onTipoChange(valor) {
+  const campoServicio = document.getElementById('campo-servicio');
+  const campoSala = document.getElementById('campo-sala');
+
+  campoServicio.classList.remove('d-none');
+  cargarServicios(valor);
+
+  if (valor === 'INTERNACION') {
+    campoSala.classList.remove('d-none');
+  } else {
+    campoSala.classList.add('d-none');
+  }
+
+  filtrarDeterminaciones(document.getElementById('filtro-det').value);
+}
+
+document.querySelectorAll('input[name="tipo_origen"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    onTipoChange(this.value);
+  });
+});
+
+// ── DETERMINACIONES ───────────────────────────────────────────
+const vistaGuardia = document.getElementById('vista-guardia');
+const vistaSectores = document.getElementById('vista-sectores');
+
+function reordenarParaGuardia() {
+  const grid = vistaGuardia;
+  const items = Array.from(grid.querySelectorAll('.det-item'));
+  const guardiaItems = items.filter(el => el.dataset.guardia === '1');
+  const restoItems = items.filter(el => el.dataset.guardia !== '1');
+
+  guardiaItems.sort((a, b) => {
+    const nombreA = a.dataset.nombre;
+    const nombreB = b.dataset.nombre;
+    const idxA = GUARDIA_ORDEN.findIndex(g => nombreA.includes(g));
+    const idxB = GUARDIA_ORDEN.findIndex(g => nombreB.includes(g));
+    const posA = idxA === -1 ? 999 : idxA;
+    const posB = idxB === -1 ? 999 : idxB;
+    return posA - posB;
+  });
+
+  // Reordenar en el DOM
+  [...guardiaItems, ...restoItems].forEach(el => grid.appendChild(el));
+}
+
+function filtrarDeterminaciones(q) {
+  const tipoSeleccionado = document.querySelector('input[name="tipo_origen"]:checked')?.value;
+  const esGuardia = tipoSeleccionado === 'GUARDIA';
+  const texto = q.toLowerCase();
+
+  if (esGuardia) {
+    vistaGuardia.classList.remove('d-none');
+    vistaSectores.classList.add('d-none');
+    reordenarParaGuardia();
+    vistaGuardia.querySelectorAll('.det-item').forEach(el => {
+      const esDeGuardia = el.dataset.guardia === '1';
+      const coincideTexto = !texto || el.dataset.nombre.includes(texto);
+      el.style.display = (esDeGuardia && coincideTexto) ? '' : 'none';
+    });
+  } else {
+    vistaGuardia.classList.add('d-none');
+    vistaSectores.classList.remove('d-none');
+    vistaSectores.querySelectorAll('.sector-group').forEach(grupo => {
+      let visibles = 0;
+      grupo.querySelectorAll('.det-item').forEach(el => {
+        const coincideTexto = !texto || el.dataset.nombre.includes(texto);
+        el.style.display = coincideTexto ? '' : 'none';
+        if (coincideTexto) visibles++;
+      });
+      // Ocultar el grupo entero si no tiene items visibles
+      grupo.style.display = visibles > 0 ? '' : 'none';
+    });
+  }
+}
+
+document.getElementById('filtro-det')?.addEventListener('input', function() {
+  filtrarDeterminaciones(this.value);
+});
+
+// ── SINCRONIZAR CHECKS ENTRE VISTAS ──────────────────────────
+document.getElementById('det-grid').addEventListener('change', function(e) {
+  if (!e.target.matches('input[type="checkbox"]')) return;
+  const name = e.target.name;
+  const value = e.target.value;
+  const checked = e.target.checked;
+  document.querySelectorAll(`#det-grid input[name="${name}"][value="${value}"]`).forEach(cb => {
+    cb.checked = checked;
+  });
+  actualizarContador();
+});
+
+// ── CONTADOR ──────────────────────────────────────────────────
+function actualizarContador() {
+  // Contar solo en la vista visible para no duplicar
+  const vistaActiva = vistaGuardia.classList.contains('d-none') ? vistaSectores : vistaGuardia;
+  const cnt = vistaActiva.querySelectorAll('input:checked').length;
+  document.getElementById('contador-sel').textContent = `${cnt} seleccionada${cnt !== 1 ? 's' : ''}`;
+}
+
+// ── VISTA PREVIA ──────────────────────────────────────────────
+document.getElementById('btn-vista-previa')?.addEventListener('click', function() {
+  // Fecha de hoy
+  const hoy = new Date();
+  const fechaHoy = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
+  document.getElementById('preview-fecha').textContent = fechaHoy;
+
+  // Paciente
+  if (pacienteData) {
+    document.getElementById('preview-paciente-nombre').textContent = pacienteData.nombre;
+    document.getElementById('preview-paciente-dni').textContent = pacienteData.dni;
+    document.getElementById('preview-paciente-sexo').textContent = pacienteData.sexo || '—';
+    // Convertir YYYY-MM-DD a DD/MM/YYYY si hace falta
+    let fnac = pacienteData.fnac || '—';
+    if (fnac && fnac.includes('-') && fnac.length === 10) {
+      const [y, m, d] = fnac.split('-');
+      fnac = `${d}/${m}/${y}`;
+    }
+    document.getElementById('preview-paciente-fnac').textContent = fnac;
+  } else {
+    document.getElementById('preview-paciente-nombre').textContent = '—';
+    document.getElementById('preview-paciente-dni').textContent = '—';
+    document.getElementById('preview-paciente-sexo').textContent = '—';
+    document.getElementById('preview-paciente-fnac').textContent = '—';
+  }
+
+  // Origen
+  const origenVal = document.querySelector('input[name="tipo_origen"]:checked')?.value || '—';
+  const origenLabels = { GUARDIA: '🚨 Guardia', INTERNACION: '🏥 Internación', AMBULATORIO: '📅 Ambulatorio' };
+  document.getElementById('preview-origen-label').textContent = origenLabels[origenVal] || '—';
+
+  // Observaciones
+  const obs = document.querySelector('textarea[name="observaciones"]')?.value.trim() || '—';
+  document.getElementById('preview-observaciones').textContent = obs;
+
+  // Determinaciones — tomar de la vista activa, en mayúsculas
+  const vistaActiva = vistaGuardia.classList.contains('d-none') ? vistaSectores : vistaGuardia;
+  const checkeados = Array.from(vistaActiva.querySelectorAll('input[type="checkbox"]:checked'))
+    .map(cb => cb.closest('.det-item')?.querySelector('label')?.textContent.trim().toUpperCase())
+    .filter(Boolean);
+
+  const previewDets = document.getElementById('preview-determinaciones');
+  if (checkeados.length === 0) {
+    previewDets.innerHTML = '<em style="color: var(--color-text-lighter);">Ninguna seleccionada.</em>';
+  } else {
+    previewDets.innerHTML = checkeados
+      .map(n => `<div style="padding: .2rem 0; border-bottom: 1px dotted var(--color-gray-lighter);">• ${n}</div>`)
+      .join('');
+  }
+
+  new bootstrap.Modal(document.getElementById('modal-vista-previa')).show();
+});
+
+// ── CHEVRON EN SECTORES PLEGABLES ────────────────────────────
+document.querySelectorAll('.sector-toggle').forEach(btn => {
+  const target = document.querySelector(btn.dataset.bsTarget);
+  if (!target) return;
+  target.addEventListener('show.bs.collapse', () => {
+    btn.querySelector('.sector-chevron').textContent = '▲';
+  });
+  target.addEventListener('hide.bs.collapse', () => {
+    btn.querySelector('.sector-chevron').textContent = '▼';
+  });
+});
+
+// ── DESHABILITAR VISTA OCULTA ANTES DE SUBMIT ─────────────────
+document.getElementById('orden-form').addEventListener('submit', function() {
+  const tipoSeleccionado = document.querySelector('input[name="tipo_origen"]:checked')?.value;
+  if (tipoSeleccionado === 'GUARDIA') {
+    vistaSectores.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = true);
+  } else {
+    vistaGuardia.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = true);
+  }
+  // Antes de enviar, habilitar el input iden si está disabled (NEO) para que no bloquee submit
+  // El backend lo ignora de todos modos, pero Bootstrap form-control disabled no envía valor
+  const idenInput = document.getElementById('id_iden_paciente');
+  if (idenInput && idenInput.disabled) idenInput.disabled = false;
+});
+
+// ══════════════════════════════════════════════════════════════
+// MANEJO DE TIPO DE IDENTIFICACIÓN (NEO / NN / DNI)
+// ══════════════════════════════════════════════════════════════
+(function() {
+  const selectTipoIden = document.getElementById('id_tipo_iden');
+  const inputIden      = document.getElementById('id_iden_paciente');
+  const labelIden      = document.getElementById('label-iden-orden');
+  const advertenciaNeo = document.getElementById('advertencia-neo-orden');
+  const infoNeo        = document.getElementById('info-neo-orden');
+  const inputFechaNac  = document.getElementById('id_fecha_nacimiento');
+
+  /**
+   * Valida si una fecha corresponde a un recién nacido (≤ 90 días de nacido).
+   * @param {string} fechaStr - Fecha en formato 'YYYY-MM-DD'
+   * @returns {boolean}
+   */
+  function esRecienNacido(fechaStr) {
+    if (!fechaStr) return false;
+    const [anio, mes, dia] = fechaStr.split('-').map(Number);
+    const fecha = new Date(anio, mes - 1, dia);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const diffDias = Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+    return diffDias >= 0 && diffDias <= 90;
+  }
+
+  /**
+   * Actualiza el estado del input iden según el tipo seleccionado.
+   */
+  function actualizarEstadoIden() {
+    if (!selectTipoIden || !inputIden) return;
+    const tipo = selectTipoIden.value;
+
+    if (tipo === 'NEO') {
+      inputIden.disabled = true;
+      inputIden.value = '';
+      inputIden.placeholder = 'Se generará automáticamente';
+      if (labelIden) labelIden.textContent = 'Número NEO';
+      if (infoNeo) infoNeo.classList.remove('d-none');
+    } else {
+      inputIden.disabled = false;
+      inputIden.placeholder = tipo === 'NN' ? 'Ingresá el número NN' : 'Ingresá el DNI';
+      if (labelIden) labelIden.textContent = tipo === 'NN' ? 'Número NN' : 'DNI';
+      if (infoNeo) infoNeo.classList.add('d-none');
+    }
+  }
+
+  /**
+   * Valida la edad para tipo NEO y muestra advertencia si corresponde.
+   */
+  function validarEdadNeo() {
+    if (!selectTipoIden || !advertenciaNeo) return;
+    const tipo     = selectTipoIden.value;
+    const fechaNac = inputFechaNac ? inputFechaNac.value : '';
+
+    if (tipo === 'NEO' && fechaNac && !esRecienNacido(fechaNac)) {
+      advertenciaNeo.classList.remove('d-none');
+    } else {
+      advertenciaNeo.classList.add('d-none');
+    }
+  }
+
+  if (selectTipoIden) {
+    selectTipoIden.addEventListener('change', function() {
+      actualizarEstadoIden();
+      validarEdadNeo();
+    });
+  }
+
+  if (inputFechaNac) {
+    inputFechaNac.addEventListener('change', validarEdadNeo);
+  }
+
+  // Inicializar al cargar la página
+  actualizarEstadoIden();
+})();
+</script>
+{% endblock %}

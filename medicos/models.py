@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Medico(models.Model):
@@ -12,6 +13,15 @@ class Medico(models.Model):
         unique=True,
         verbose_name="Matrícula",
         help_text="Número de matrícula profesional",
+    )
+    usuario = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="medico",
+        verbose_name="Usuario del sistema",
+        help_text="Usuario de Django asociado a este médico",
     )
 
     class Meta:

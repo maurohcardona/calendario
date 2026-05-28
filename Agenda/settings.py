@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "dotenv",
     # Tu app
     "turnos",
+    "ordenes",
 ]
 
 # Middleware
@@ -49,6 +50,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "ordenes.middleware.BloquearAdminMedicosMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditlog.middleware.AuditlogMiddleware",  # Registra el usuario en cada cambio
@@ -127,6 +129,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles_collected"  # Para producción
 
 # WhiteNoise (storage SIN manifest)
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+
+# WhiteNoise: MIME type correcto para manifest.json (PWA)
+WHITENOISE_MIMETYPES = {
+    ".json": "application/manifest+json",
+}
 
 # Archivos subidos (si los usás)
 MEDIA_URL = "/media/"

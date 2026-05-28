@@ -11,9 +11,9 @@ media/
 # Environment
 .env
 .venv/
+.env.docker
 venv/
 static/vendor/
-.env.docker
 
 
 # Production scripts (locales)
@@ -45,4 +45,8 @@ turnos/tests/
 logs/
 # Configuración de tareas programadas Windows
 tarea_programada_backup.xml
+*.xml
 
+# Certificados SSL (no versionar claves privadas)
+certs/*.crt
+certs/*.key

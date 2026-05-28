@@ -3822,3 +3822,88 @@ body {
         width: 100%;
     }
 }
+
+/* ========================================
+   MODAL ÓRDENES PENDIENTES
+   ======================================== */
+.apple-modal-content-large {
+    max-width: 700px;
+}
+
+.apple-orden-card {
+    background: var(--apple-gray-lightest);
+    border: 1px solid var(--apple-gray-lighter);
+    border-radius: var(--border-radius-md);
+    padding: var(--space-md);
+    margin-top: var(--space-md);
+}
+
+.apple-orden-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--apple-gray-lighter);
+}
+
+.apple-orden-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--space-sm);
+}
+
+.apple-orden-row strong {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--apple-gray);
+    margin-bottom: .2rem;
+}
+
+.apple-orden-row span {
+    font-size: .95rem;
+    color: var(--apple-gray-darkest);
+}
+
+.apple-det-list-modal {
+    list-style: none;
+    padding: 0;
+    margin: .4rem 0 0 0;
+}
+
+.apple-det-list-modal li {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem .6rem;
+    background: white;
+    border-left: 3px solid var(--color-primary);
+    border-radius: 3px;
+    margin-bottom: .35rem;
+    font-size: .9rem;
+}
+
+.apple-orden-det-codigo {
+    background: var(--color-primary);
+    color: white;
+    padding: .1rem .4rem;
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: .8rem;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.apple-orden-det-codigo-compleja {
+    background: var(--apple-purple, #7c3aed);
+}
+
+.apple-modal-actions-ordenes {
+    display: flex;
+    gap: .75rem;
+    justify-content: flex-end;
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--apple-gray-lighter);
+}

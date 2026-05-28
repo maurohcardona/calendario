@@ -1,20 +1,32 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Determinacion, PerfilDeterminacion, DeterminacionCompleja
+from .models import Determinacion, PerfilDeterminacion, DeterminacionCompleja, Sector
+
+
+@admin.register(Sector)
+class SectorAdmin(admin.ModelAdmin):
+    """Configuración del panel de administración para Sector."""
+
+    list_display = ("nombre",)
+    search_fields = ("nombre",)
+    ordering = ("nombre",)
 
 
 @admin.register(Determinacion)
 class DeterminacionAdmin(admin.ModelAdmin):
     """Configuración del panel de administración para Determinación."""
 
-    list_display = ("codigo", "nombre", "tiempo", "get_estado", "get_disponibilidad")
-    list_filter = ("visible", "activa", "stock")
+    list_display = ("codigo", "nombre", "sector", "tiempo", "guardia", "get_estado", "get_disponibilidad")
+    list_filter = ("sector", "visible", "activa", "stock", "guardia")
     search_fields = ("codigo", "nombre")
     ordering = ("codigo",)
 
     fieldsets = (
-        ("Información Básica", {"fields": ("codigo", "nombre", "tiempo")}),
-        ("Estado y Disponibilidad", {"fields": ("visible", "activa", "stock")}),
+        ("Información Básica", {"fields": ("codigo", "nombre", "sector", "tiempo")}),
+        (
+            "Estado y Disponibilidad",
+            {"fields": ("visible", "activa", "stock", "guardia")},
+        ),
     )
 
     def get_estado(self, obj):
@@ -109,18 +121,23 @@ class DeterminacionComplejaAdmin(admin.ModelAdmin):
     list_display = (
         "codigo",
         "nombre",
+        "sector",
         "tiempo",
+        "guardia",
         "get_estado",
         "get_disponibilidad",
         "get_cantidad_determinaciones",
     )
-    list_filter = ("visible", "activa", "stock")
+    list_filter = ("sector", "visible", "activa", "stock", "guardia")
     search_fields = ("codigo", "nombre")
     ordering = ("codigo",)
 
     fieldsets = (
-        ("Información Básica", {"fields": ("codigo", "nombre", "tiempo")}),
-        ("Estado y Disponibilidad", {"fields": ("visible", "activa", "stock")}),
+        ("Información Básica", {"fields": ("codigo", "nombre", "sector", "tiempo")}),
+        (
+            "Estado y Disponibilidad",
+            {"fields": ("visible", "activa", "stock", "guardia")},
+        ),
         (
             "Determinaciones Incluidas",
             {

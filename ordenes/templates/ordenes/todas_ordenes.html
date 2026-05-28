@@ -1,0 +1,124 @@
+{% extends "base_medico.html" %}
+{% block medico_content %}
+<h2 class="mb-3">Todas las Órdenes</h2>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" id="form-filtros">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">DNI del paciente</label>
+          <input type="text" name="dni" class="form-control" placeholder="Ingresá el DNI..." value="{{ filtros.dni }}" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Servicio</label>
+          <select name="servicio" class="form-select">
+            <option value="">Todos los servicios</option>
+            {% for s in servicios %}
+              <option value="{{ s.pk }}" {% if filtros.servicio == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Fecha desde</label>
+          <input type="date" name="fecha_desde" class="form-control" value="{{ filtros.fecha_desde }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-uppercase" style="color: var(--color-text-light); letter-spacing: .04em;">Fecha hasta</label>
+          <input type="date" name="fecha_hasta" class="form-control" value="{{ filtros.fecha_hasta }}">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary w-100">Buscar</button>
+          <a href="{% url 'ordenes:todas_ordenes' %}" class="btn btn-outline-secondary">✕</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if ordenes %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>N° Orden</th>
+        <th>Paciente</th>
+        <th>Origen</th>
+        <th>Servicio / Cama</th>
+        <th>Médico</th>
+        <th>Estado</th>
+        <th>Fecha</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for orden in ordenes %}
+      <tr style="cursor:pointer;" onclick="window.location='{% url 'ordenes:detalle_orden' orden.pk %}'">
+        <td><span class="badge" style="background-color: var(--color-primary);">{{ orden.numero_orden_lab }}</span></td>
+        <td>
+          <strong>{{ orden.paciente.nombre_completo }}</strong><br>
+          <small class="text-muted">DNI: {{ orden.paciente.iden }}</small>
+        </td>
+        <td>
+          {{ orden.get_tipo_origen_display }}
+          {% if orden.tipo_origen == 'ORDENES_PROGRAMADAS' and orden.fecha_programada %}
+            <br><small class="text-muted">📅 {{ orden.fecha_programada|date:"d/m/Y" }}</small>
+          {% endif %}
+        </td>
+        <td>
+          {% if orden.servicio %}{{ orden.servicio.nombre }}{% else %}—{% endif %}
+          {% if orden.sala %}<br><small class="text-muted">Cama: {{ orden.sala }}</small>{% endif %}
+        </td>
+        <td>{{ orden.medico }}</td>
+        <td>
+          {% if orden.estado == 'PENDIENTE' %}
+            <span class="badge bg-warning text-dark">Pendiente</span>
+          {% elif orden.estado == 'TURNO' %}
+            <span class="badge" style="background-color:#fd7e14;color:white;">Turno Asignado</span>
+          {% elif orden.estado == 'INGRESADA' %}
+            <span class="badge bg-info text-dark">Ingresada</span>
+          {% elif orden.estado == 'COMPLETADA' %}
+            <span class="badge bg-success">Completada</span>
+          {% elif orden.estado == 'CANCELADA' %}
+            <span class="badge bg-danger">Cancelada</span>
+          {% endif %}
+        </td>
+        <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── PAGINACIÓN con preservación de filtros ── #}
+{% if ordenes.has_other_pages %}
+{% with dni=filtros.dni srv=filtros.servicio fde=filtros.fecha_desde fha=filtros.fecha_hasta %}
+<nav aria-label="Paginación de órdenes" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if ordenes.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ ordenes.previous_page_number }}{% if dni %}&dni={{ dni }}{% endif %}{% if srv %}&servicio={{ srv }}{% endif %}{% if fde %}&fecha_desde={{ fde }}{% endif %}{% if fha %}&fecha_hasta={{ fha }}{% endif %}">← Anterior</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">← Anterior</span></li>
+    {% endif %}
+    <li class="page-item disabled">
+      <span class="page-link">Página {{ ordenes.number }} de {{ ordenes.paginator.num_pages }}</span>
+    </li>
+    {% if ordenes.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ ordenes.next_page_number }}{% if dni %}&dni={{ dni }}{% endif %}{% if srv %}&servicio={{ srv }}{% endif %}{% if fde %}&fecha_desde={{ fde }}{% endif %}{% if fha %}&fecha_hasta={{ fha }}{% endif %}">Siguiente →</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Siguiente →</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endwith %}
+{% endif %}
+
+{% elif filtros.dni or filtros.servicio or filtros.fecha_desde or filtros.fecha_hasta %}
+  <div class="alert alert-warning">No se encontraron órdenes con los filtros aplicados.</div>
+{% else %}
+  <div class="alert alert-info">Usá los filtros para buscar órdenes.</div>
+{% endif %}
+{% endblock %}

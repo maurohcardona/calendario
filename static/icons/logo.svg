@@ -1,0 +1,25 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo blanco con bordes redondeados -->
+  <rect width="512" height="512" fill="#ffffff" rx="80"/>
+
+  <!-- Borde sutil turquesa -->
+  <rect width="512" height="512" fill="none" stroke="#248f8d" stroke-width="6" rx="80"/>
+
+  <!-- Texto "LBH" centrado en turquesa -->
+  <text x="256" y="320"
+        font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="180"
+        font-weight="700"
+        fill="#248f8d"
+        text-anchor="middle"
+        letter-spacing="-8">LBH</text>
+
+  <!-- Subtítulo "LABORATORIO" -->
+  <text x="256" y="400"
+        font-family="Inter, -apple-system, sans-serif"
+        font-size="36"
+        font-weight="500"
+        fill="#1a7270"
+        text-anchor="middle"
+        letter-spacing="4">LABORATORIO</text>
+</svg>

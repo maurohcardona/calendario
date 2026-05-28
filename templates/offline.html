@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sin conexión - Lab Balestrini{% endblock %}
+
+{% block content %}
+<div style="max-width:700px; margin:4rem auto; padding:2rem; text-align:center;">
+
+  <div style="font-size:6rem; margin-bottom:1.5rem; opacity:0.6;">📡</div>
+
+  <h1 style="color: var(--color-primary); margin-bottom:1rem; font-size:2rem;">
+    Sin conexión al servidor
+  </h1>
+
+  <p style="font-size:1.15rem; color:var(--color-text); margin-bottom:2.5rem; line-height:1.6;">
+    No se puede conectar al servidor del laboratorio.
+    <br>Verificá tu conexión a la red interna del hospital.
+  </p>
+
+  <div style="background: var(--color-bg); padding:2rem; border-radius:16px; text-align:left; border: 1px solid var(--color-gray-lighter);">
+    <h3 style="margin-top:0; color:var(--color-primary-dark); font-size:1.2rem; margin-bottom:1rem;">
+      🔧 Pasos para solucionar
+    </h3>
+    <ul style="line-height:2; font-size:1rem; color:var(--color-text);">
+      <li>Verificá que tu dispositivo esté conectado a la <strong>red del hospital</strong></li>
+      <li>Comprobá que el <strong>servidor esté encendido</strong> (IP: <code>192.168.0.86</code>)</li>
+      <li>Intentá acceder a otras aplicaciones internas para verificar la red</li>
+      <li>Si el problema persiste, contactá a <strong>sistemas</strong></li>
+    </ul>
+  </div>
+
+  <button onclick="location.reload()"
+          class="apple-btn apple-btn-primary"
+          style="margin-top:2rem; padding:0.9rem 2.5rem; font-size:1.1rem; font-weight:600;">
+    🔄 Reintentar conexión
+  </button>
+
+  <p style="margin-top:2rem; font-size:0.9rem; color:var(--color-gray-dark); opacity:0.8;">
+    Esta página se muestra porque la aplicación está instalada en tu dispositivo
+    pero no puede conectarse al servidor.
+  </p>
+
+</div>
+{% endblock %}

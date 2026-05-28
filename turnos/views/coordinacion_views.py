@@ -94,6 +94,7 @@ def precoordinacion_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
 
         # Actualizar datos personales
         dni_nuevo = request.POST.get("dni", "").strip()
+        tipo_iden_nuevo = request.POST.get("tipo_iden", "DNI").strip() or "DNI"
         apellido_nuevo = request.POST.get("apellido", "").strip()
         nombre_nuevo = request.POST.get("nombre", "").strip()
         fecha_nac_nueva = request.POST.get("fecha_nacimiento", "")
@@ -138,6 +139,7 @@ def precoordinacion_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
 
         # Crear o actualizar Paciente
         paciente_obj, _ = Paciente.objects.update_or_create(
+            tipo_iden=tipo_iden_nuevo,
             iden=dni_nuevo,
             defaults={
                 "nombre": nombre_nuevo,
@@ -393,6 +395,15 @@ def coordinar_turno(request: HttpRequest, turno_id: int) -> JsonResponse:
             )
 
             if enviado:
+                # Actualizar orden vinculada a INGRESADA
+                try:
+                    orden_vinculada = turno.orden.first()
+                    if orden_vinculada and orden_vinculada.estado == "TURNO":
+                        orden_vinculada.estado = "INGRESADA"
+                        orden_vinculada.save(update_fields=["estado"])
+                except Exception:
+                    pass  # No interrumpir coordinación si falla la actualización
+
                 return JsonResponse(
                     {
                         "success": True,
@@ -418,6 +429,15 @@ def coordinar_turno(request: HttpRequest, turno_id: int) -> JsonResponse:
             )
 
             if exito:
+                # Actualizar orden vinculada a INGRESADA
+                try:
+                    orden_vinculada = turno.orden.first()
+                    if orden_vinculada and orden_vinculada.estado == "TURNO":
+                        orden_vinculada.estado = "INGRESADA"
+                        orden_vinculada.save(update_fields=["estado"])
+                except Exception:
+                    pass  # No interrumpir coordinación si falla la actualización
+
                 return JsonResponse(
                     {
                         "success": True,

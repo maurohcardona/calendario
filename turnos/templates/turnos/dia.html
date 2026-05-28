@@ -164,10 +164,193 @@
   </div>
 </div>
 
+<!-- Modal de órdenes pendientes -->
+<div id="modalOrdenesPendientes" class="apple-modal">
+  <div class="apple-modal-content apple-modal-content-relative apple-modal-content-large">
+    <button id="cerrarModalOrdenes" class="apple-modal-close">&times;</button>
+    <h3 class="apple-modal-title" style="color: var(--apple-blue);">Órdenes de Laboratorio Pendientes</h3>
+
+    <!-- Barra de modo: título dinámico + botón toggle unificar -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+      <span id="textoModoOrden" class="apple-label" style="margin:0;">Seleccionar una orden</span>
+      <button id="btnToggleUnificar" class="apple-btn apple-btn-light apple-btn-sm" style="display:none;">
+        🔗 Unificar órdenes
+      </button>
+    </div>
+
+    <!-- Selector simple (modo normal - una sola orden) -->
+    <div class="apple-form-group" id="selectorOrdenesGroup">
+      <label class="apple-label">Orden a cargar</label>
+      <select id="selectOrdenPendiente" class="apple-select"></select>
+    </div>
+
+    <!-- Lista con checkboxes (modo unificación) -->
+    <div id="listaOrdenesCheckbox" style="display:none;">
+      <label class="apple-label">Órdenes a unificar <small style="font-weight:400;">(seleccione 2 o más)</small></label>
+      <div id="checkboxOrdenesContainer" class="apple-ordenes-checkbox-list"></div>
+      <p id="contadorSeleccionadas" class="apple-hint" style="margin-top:0.5rem; color:var(--apple-gray-dark);">
+        0 órdenes seleccionadas
+      </p>
+    </div>
+
+    <!-- Detalles de la orden seleccionada (modo simple) -->
+    <div id="detallesOrdenModal"></div>
+
+    <!-- Botones -->
+    <div class="apple-modal-actions-ordenes">
+      <button id="btnCancelarModalOrdenes" class="apple-btn apple-btn-light">Cancelar</button>
+      <button id="btnIngresarOrden" class="apple-btn apple-btn-success">
+        <span id="textoBotonIngresar">Ingresar datos al turno</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Checkboxes para modo unificación de órdenes ── */
+.apple-ordenes-checkbox-list {
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--apple-gray-light, #e0e0e0);
+    border-radius: 8px;
+    padding: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+.apple-orden-checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--apple-gray-light, #e0e0e0);
+    border-radius: 6px;
+    transition: background-color 0.15s;
+    cursor: pointer;
+}
+.apple-orden-checkbox-item:last-child { border-bottom: none; }
+.apple-orden-checkbox-item:hover { background-color: var(--apple-gray-bg, #f5f5f7); }
+.apple-orden-checkbox-item input[type="checkbox"] {
+    margin-top: 0.2rem;
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    accent-color: var(--color-primary, #248f8d);
+    flex-shrink: 0;
+}
+.apple-orden-checkbox-label { flex: 1; cursor: pointer; }
+.apple-orden-checkbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.2rem;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+.apple-orden-checkbox-numero {
+    background-color: var(--color-primary, #248f8d);
+    color: white;
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+.apple-orden-checkbox-fecha {
+    font-size: 0.82rem;
+    color: var(--apple-gray-dark, #666);
+}
+.apple-orden-checkbox-detalles {
+    font-size: 0.82rem;
+    color: var(--apple-gray-dark, #666);
+    margin-top: 0.15rem;
+}
+</style>
+
 <script>
 // ===================================================================
 // JAVASCRIPT ESPECÍFICO DE DIA.HTML (buscar paciente, validación, etc.)
 // ===================================================================
+
+const BUSCAR_ORDEN_PENDIENTE_URL = "/ordenes/ajax/buscar-orden-pendiente/";
+
+// Variables globales para órdenes pendientes
+let ordenesPendientes = [];
+let ordenSeleccionada = null;
+let ordenesSeleccionadas = []; // índices seleccionados en modo unificación
+let modoUnificar = false;      // true = modo unificación, false = modo simple
+
+// Sincronizar select tipo_iden con hidden input
+const selectTipoIden = document.getElementById('id_tipo_iden');
+const hiddenTipoIden = document.getElementById('id_tipo_iden_hidden');
+
+/**
+ * Valida si una fecha corresponde a un recién nacido (≤ 90 días de nacido).
+ * @param {string} fechaStr - Fecha en formato 'YYYY-MM-DD'
+ * @returns {boolean}
+ */
+function esRecienNacido(fechaStr) {
+    if (!fechaStr) return false;
+    // Parsear como fecha local evitando desplazamiento por timezone
+    const [anio, mes, dia] = fechaStr.split('-').map(Number);
+    const fecha = new Date(anio, mes - 1, dia);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const diffDias = Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+    return diffDias >= 0 && diffDias <= 90;
+}
+
+/**
+ * Actualiza el estado del input DNI según el tipo de identificación seleccionado.
+ * Si es NEO: deshabilita el input (el número se genera server-side).
+ * Si es otro tipo: habilita el input para ingreso manual.
+ * Solo aplica cuando el select está habilitado (modo paciente no encontrado).
+ */
+function actualizarEstadoInputDNIsegunTipo() {
+    const tipoIden = selectTipoIden ? selectTipoIden.value : '';
+    const inputDni = document.getElementById('id_dni');
+    if (!inputDni || selectTipoIden?.disabled) return;  // Solo en modo editable
+
+    if (tipoIden === 'NEO') {
+        inputDni.disabled = true;
+        inputDni.value = '';
+        inputDni.placeholder = 'Se generará automáticamente';
+    } else {
+        inputDni.disabled = false;
+        inputDni.placeholder = 'Número o apellido...';
+    }
+}
+
+/**
+ * Muestra advertencia si el tipo NEO no corresponde a un recién nacido.
+ */
+function validarEdadParaNEO() {
+    const tipoIden = selectTipoIden ? selectTipoIden.value : '';
+    if (tipoIden !== 'NEO') return;
+
+    const fechaNac = document.getElementById('id_fecha_nacimiento')?.value;
+    const status = document.getElementById('pacienteStatus');
+    if (!status) return;
+
+    if (fechaNac && !esRecienNacido(fechaNac)) {
+        status.innerHTML = '<span class="apple-status-error">⚠ NEO es solo para recién nacidos (hasta 90 días de nacido). Cambiá el tipo de identificación.</span>';
+    } else if (fechaNac) {
+        // Limpiar advertencia de edad si la fecha es válida
+        if (status.innerHTML.includes('90 días')) {
+            status.innerHTML = '';
+        }
+    }
+}
+
+if (selectTipoIden && hiddenTipoIden) {
+    selectTipoIden.addEventListener('change', function() {
+        hiddenTipoIden.value = this.value;
+        actualizarEstadoInputDNIsegunTipo();
+        validarEdadParaNEO();
+    });
+}
+
+// Validar edad al cambiar la fecha de nacimiento (puede cambiar la validez de NEO)
+document.getElementById('id_fecha_nacimiento')?.addEventListener('change', function() {
+    validarEdadParaNEO();
+});
 
 // Buscar paciente por DNI al presionar Enter
 document.getElementById('id_dni')?.addEventListener('keypress', function(e) {
@@ -180,23 +363,43 @@ document.getElementById('id_dni')?.addEventListener('keypress', function(e) {
 // Buscar paciente por DNI
 document.getElementById('btnBuscarPaciente')?.addEventListener('click', async function() {
     const dni = document.getElementById('id_dni').value.trim();
+    const tipoIden = document.getElementById('id_tipo_iden').value;
     const status = document.getElementById('pacienteStatus');
+
+    // NEO: el número se genera server-side, no requiere búsqueda previa
+    if (tipoIden === 'NEO') {
+        status.innerHTML = '<span class="apple-status-not-found">Recién nacido (NEO): complete los datos del formulario.</span>';
+        document.getElementById('id_tipo_iden').disabled = false;
+        actualizarEstadoInputDNIsegunTipo();
+        habilitarTodosCampos();
+        document.getElementById('id_dni').disabled = true;
+        return;
+    }
     
     if (!dni) {
-        status.innerHTML = '<span class="apple-status-error">Ingrese un DNI</span>';
+        status.innerHTML = '<span class="apple-status-error">Ingrese un número de identificación</span>';
         return;
     }
     
     status.innerHTML = '<span class="apple-status-searching">Buscando...</span>';
     
     try {
-        const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${dni}`);
-        const data = await response.json();
         // Eliminar cartel previo si existe
         const cartelExistente = document.getElementById('cartel-turno-pendiente');
         if (cartelExistente) cartelExistente.remove();
+
+        // ── 1. Buscar paciente ──────────────────────────────────────
+        const response = await fetch(`/pacientes/api/buscar-paciente/?dni=${encodeURIComponent(dni)}&tipo_iden=${encodeURIComponent(tipoIden)}`);
+        const data = await response.json();
+
         if (data.found) {
             status.innerHTML = '<span class="apple-status-found">Paciente encontrado</span>';
+            // Autocompletar tipo_iden con lo que devuelve el servidor y deshabilitarlo
+            if (data.tipo_iden) {
+                document.getElementById('id_tipo_iden').value = data.tipo_iden;
+                if (hiddenTipoIden) hiddenTipoIden.value = data.tipo_iden;
+            }
+            document.getElementById('id_tipo_iden').disabled = true;
             document.getElementById('id_nombre').value = data.nombre;
             document.getElementById('id_apellido').value = data.apellido;
             document.getElementById('id_fecha_nacimiento').value = data.fecha_nacimiento;
@@ -208,23 +411,64 @@ document.getElementById('btnBuscarPaciente')?.addEventListener('click', async fu
             document.getElementById('id_observaciones_paciente').disabled = false;
             document.getElementById('id_observaciones_paciente').classList.remove('apple-input-disabled');
             document.getElementById('id_observaciones_paciente').classList.add('apple-input-enabled');
-            // Mostrar cartel si tiene turno pendiente
-            if (data.tiene_turno_pendiente && data.proximo_turno) {
+
+            // ── 2. Buscar órdenes pendientes ────────────────────────
+            const respOrden = await fetch(`${BUSCAR_ORDEN_PENDIENTE_URL}?dni=${dni}`);
+            const dataOrden = await respOrden.json();
+            ordenesPendientes = dataOrden.ordenes || [];
+
+            const tieneOrden = dataOrden.tiene_orden_pendiente;
+            const tieneTurno = data.tiene_turno_pendiente && data.proximo_turno;
+
+            // ── 3. Armar cartel combinado ───────────────────────────
+            if (tieneTurno || tieneOrden) {
                 const cartel = document.createElement('div');
                 cartel.id = 'cartel-turno-pendiente';
                 cartel.className = 'apple-warning-banner';
-                cartel.innerHTML = `El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b>.<br>¿Desea continuar con el turno de todos modos?<br><button id="btnContinuarTurno" class="apple-btn apple-btn-success apple-btn-sm">Sí</button> <button id="btnVerTurnosPendientes" class="apple-btn apple-btn-primary apple-btn-sm">Turnos pendientes</button>`;
+
+                let mensaje = '';
+                if (tieneTurno && tieneOrden) {
+                    const nOrdenes = ordenesPendientes.length;
+                    mensaje = `El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b> y <b>${nOrdenes} orden${nOrdenes > 1 ? 'es' : ''} de laboratorio pendiente${nOrdenes > 1 ? 's' : ''}</b>.`;
+                } else if (tieneTurno) {
+                    mensaje = `El paciente ya posee un turno pendiente para el <b>${data.proximo_turno}</b>.`;
+                } else {
+                    const nOrdenes = ordenesPendientes.length;
+                    mensaje = `El paciente tiene <b>${nOrdenes} orden${nOrdenes > 1 ? 'es' : ''} de laboratorio pendiente${nOrdenes > 1 ? 's' : ''}</b>.`;
+                }
+
+                let botones = '';
+                if (tieneTurno) {
+                    botones += `<button id="btnVerTurnosPendientes" class="apple-btn apple-btn-primary apple-btn-sm">Ver turnos pendientes</button> `;
+                }
+                if (tieneOrden) {
+                    botones += `<button id="btnVerOrdenesPendientes" class="apple-btn apple-btn-primary apple-btn-sm">Ver órdenes</button> `;
+                }
+                botones += `<button id="btnContinuarTurno" class="apple-btn apple-btn-success apple-btn-sm">Continuar de todos modos</button>`;
+
+                cartel.innerHTML = `${mensaje}<br><div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap;">${botones}</div>`;
+
                 const form = document.getElementById('turnoForm');
                 form.parentNode.insertBefore(cartel, form);
-                cartel.querySelector('#btnContinuarTurno').onclick = function() {
-                    cartel.remove();
-                };
-                cartel.querySelector('#btnVerTurnosPendientes').onclick = function() {
-                    window.location.href = `/turnos/buscar/?q=${dni}`;
-                };
+
+                cartel.querySelector('#btnContinuarTurno').onclick = () => cartel.remove();
+
+                if (tieneTurno) {
+                    cartel.querySelector('#btnVerTurnosPendientes').onclick = () => {
+                        window.location.href = `/turnos/buscar/?q=${dni}`;
+                    };
+                }
+                if (tieneOrden) {
+                    cartel.querySelector('#btnVerOrdenesPendientes').onclick = abrirModalOrdenes;
+                }
             }
+
         } else {
             status.innerHTML = '<span class="apple-status-not-found">Paciente no encontrado - Complete los datos para crear uno nuevo</span>';
+            // Habilitar select de tipo_iden para que pueda elegir el tipo correcto
+            document.getElementById('id_tipo_iden').disabled = false;
+            // Ajustar estado del input DNI según el tipo seleccionado (puede ser NEO)
+            actualizarEstadoInputDNIsegunTipo();
             document.getElementById('id_nombre').value = '';
             document.getElementById('id_apellido').value = '';
             document.getElementById('id_fecha_nacimiento').value = '';
@@ -241,6 +485,407 @@ document.getElementById('btnBuscarPaciente')?.addEventListener('click', async fu
     } catch (error) {
         status.innerHTML = '<span class="apple-status-error">Error al buscar</span>';
         habilitarTodosCampos();
+    }
+});
+
+// ===================================================================
+// AUTOCOMPLETADO DE PACIENTES EN TIEMPO REAL
+// ===================================================================
+
+(function() {
+    const inputDni = document.getElementById('id_dni');
+    const lista = document.getElementById('autocompletePacientes');
+    if (!inputDni || !lista) return;
+
+    let timeout = null;
+
+    inputDni.addEventListener('input', function() {
+        const texto = this.value.trim();
+        clearTimeout(timeout);
+
+        if (texto.length < 2) {
+            lista.style.display = 'none';
+            return;
+        }
+
+        timeout = setTimeout(async function() {
+            try {
+                const resp = await fetch(`/pacientes/api/buscar-pacientes/?q=${encodeURIComponent(texto)}`);
+                if (!resp.ok) return;
+                const pacientes = await resp.json();
+
+                if (!pacientes.length) {
+                    lista.innerHTML = '<div class="apple-autocomplete-empty">Sin resultados</div>';
+                    lista.style.display = 'block';
+                    return;
+                }
+
+                lista.innerHTML = pacientes.map(p => `
+                    <div class="apple-autocomplete-item-paciente"
+                         data-tipo-iden="${p.tipo_iden}"
+                         data-iden="${p.iden}">
+                        <span class="apple-autocomplete-tipo-badge">${p.tipo_iden}</span>
+                        <span class="apple-autocomplete-iden-pac">${p.iden}</span>
+                        <span class="apple-autocomplete-nombre-pac"> — ${p.nombre_completo}</span>
+                    </div>
+                `).join('');
+                lista.style.display = 'block';
+
+                lista.querySelectorAll('.apple-autocomplete-item-paciente').forEach(function(item) {
+                    item.addEventListener('click', function() {
+                        const tipoIden = this.dataset.tipoIden;
+                        const iden = this.dataset.iden;
+                        document.getElementById('id_tipo_iden').value = tipoIden;
+                        if (hiddenTipoIden) hiddenTipoIden.value = tipoIden;
+                        document.getElementById('id_tipo_iden').disabled = true;
+                        inputDni.value = iden;
+                        lista.style.display = 'none';
+                        // Disparar búsqueda completa
+                        document.getElementById('btnBuscarPaciente').click();
+                    });
+                });
+
+            } catch (e) {
+                lista.style.display = 'none';
+            }
+        }, 300);
+    });
+
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (!inputDni.contains(e.target) && !lista.contains(e.target)) {
+            lista.style.display = 'none';
+        }
+    });
+
+    // Navegar con teclado (↑ ↓ Enter Escape)
+    inputDni.addEventListener('keydown', function(e) {
+        const items = lista.querySelectorAll('.apple-autocomplete-item-paciente');
+        if (!items.length || lista.style.display === 'none') return;
+
+        const current = lista.querySelector('.apple-autocomplete-item-paciente.selected');
+        let idx = Array.from(items).indexOf(current);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (current) current.classList.remove('selected');
+            idx = (idx + 1) % items.length;
+            items[idx].classList.add('selected');
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (current) current.classList.remove('selected');
+            idx = (idx - 1 + items.length) % items.length;
+            items[idx].classList.add('selected');
+        } else if (e.key === 'Enter' && current) {
+            e.preventDefault();
+            current.click();
+        } else if (e.key === 'Escape') {
+            lista.style.display = 'none';
+        }
+    });
+})();
+
+// ===================================================================
+// MODAL DE ÓRDENES PENDIENTES
+// ===================================================================
+
+function abrirModalOrdenes() {
+    if (!ordenesPendientes.length) return;
+
+    // Mostrar botón "Unificar" solo cuando hay 2+ órdenes pendientes
+    const btnToggle = document.getElementById('btnToggleUnificar');
+    btnToggle.style.display = ordenesPendientes.length >= 2 ? 'inline-block' : 'none';
+
+    // Resetear a modo simple
+    modoUnificar = false;
+    ordenesSeleccionadas = [];
+    cambiarModoModal(false);
+
+    // Poblar select con todas las órdenes
+    const select = document.getElementById('selectOrdenPendiente');
+    select.innerHTML = ordenesPendientes.map((o, idx) =>
+        `<option value="${idx}">${o.numero_orden_lab} — ${o.fecha_creacion}</option>`
+    ).join('');
+
+    // Mostrar detalles de la primera
+    ordenSeleccionada = ordenesPendientes[0];
+    renderizarDetallesOrden(ordenSeleccionada);
+
+    document.getElementById('modalOrdenesPendientes').style.display = 'flex';
+}
+
+// ── Cambiar entre modo simple y modo unificación ───────────────────
+function cambiarModoModal(unificar) {
+    modoUnificar = unificar;
+
+    const selectorGroup  = document.getElementById('selectorOrdenesGroup');
+    const listaCheckbox  = document.getElementById('listaOrdenesCheckbox');
+    const detallesModal  = document.getElementById('detallesOrdenModal');
+    const btnToggle      = document.getElementById('btnToggleUnificar');
+    const textoModo      = document.getElementById('textoModoOrden');
+    const textoBoton     = document.getElementById('textoBotonIngresar');
+
+    if (unificar) {
+        selectorGroup.style.display = 'none';
+        listaCheckbox.style.display  = 'block';
+        detallesModal.style.display  = 'none';
+        btnToggle.textContent        = '← Volver a selección simple';
+        textoModo.textContent        = 'Unificar órdenes';
+        textoBoton.textContent       = 'Unificar y crear turno';
+        renderizarCheckboxesOrdenes();
+    } else {
+        selectorGroup.style.display = '';
+        listaCheckbox.style.display  = 'none';
+        detallesModal.style.display  = '';
+        btnToggle.textContent        = '🔗 Unificar órdenes';
+        textoModo.textContent        = 'Seleccionar una orden';
+        textoBoton.textContent       = 'Ingresar datos al turno';
+        ordenesSeleccionadas = [];
+        // Refrescar detalles del select actual
+        const select = document.getElementById('selectOrdenPendiente');
+        const idx = parseInt(select.value || 0);
+        ordenSeleccionada = ordenesPendientes[idx] || null;
+        if (ordenSeleccionada) renderizarDetallesOrden(ordenSeleccionada);
+    }
+}
+
+// ── Renderizar lista de checkboxes ─────────────────────────────────
+function renderizarCheckboxesOrdenes() {
+    const container = document.getElementById('checkboxOrdenesContainer');
+    container.innerHTML = ordenesPendientes.map((orden, idx) => {
+        const totalDets = orden.determinaciones.length + orden.determinaciones_complejas.length;
+        const obs = orden.observaciones ? `<div class="apple-orden-checkbox-detalles" style="font-style:italic;">${orden.observaciones}</div>` : '';
+        return `
+            <div class="apple-orden-checkbox-item" onclick="document.getElementById('chk_orden_${idx}').click(); event.stopPropagation();">
+                <input type="checkbox" id="chk_orden_${idx}" value="${idx}"
+                       onclick="event.stopPropagation(); toggleOrdenSeleccion(${idx});">
+                <label for="chk_orden_${idx}" class="apple-orden-checkbox-label" onclick="event.preventDefault();">
+                    <div class="apple-orden-checkbox-header">
+                        <span class="apple-orden-checkbox-numero">${orden.numero_orden_lab}</span>
+                        <span class="apple-orden-checkbox-fecha">${orden.fecha_creacion}</span>
+                    </div>
+                    <div class="apple-orden-checkbox-detalles">
+                        <strong>${orden.tipo_origen}</strong> · ${orden.medico || '—'} · ${totalDets} determinación${totalDets !== 1 ? 'es' : ''}
+                    </div>
+                    ${obs}
+                </label>
+            </div>
+        `;
+    }).join('');
+    actualizarContadorSeleccionadas();
+}
+
+// ── Toggle individual de orden en selección ────────────────────────
+function toggleOrdenSeleccion(idx) {
+    const checkbox = document.getElementById(`chk_orden_${idx}`);
+    if (checkbox.checked) {
+        if (!ordenesSeleccionadas.includes(idx)) ordenesSeleccionadas.push(idx);
+    } else {
+        ordenesSeleccionadas = ordenesSeleccionadas.filter(i => i !== idx);
+    }
+    actualizarContadorSeleccionadas();
+}
+
+function actualizarContadorSeleccionadas() {
+    const contador = document.getElementById('contadorSeleccionadas');
+    const n = ordenesSeleccionadas.length;
+    if (n === 0) {
+        contador.textContent = '0 órdenes seleccionadas';
+        contador.style.color = 'var(--apple-gray-dark, #666)';
+    } else if (n === 1) {
+        contador.textContent = '1 orden seleccionada (mínimo 2 para unificar)';
+        contador.style.color = 'var(--apple-orange, #ff9500)';
+    } else {
+        contador.textContent = `${n} órdenes seleccionadas ✓`;
+        contador.style.color = 'var(--apple-green, #34c759)';
+    }
+}
+
+function renderizarDetallesOrden(orden) {
+    const container = document.getElementById('detallesOrdenModal');
+
+    const detsSimples = orden.determinaciones.map(d =>
+        `<li><code class="apple-orden-det-codigo">${d.codigo}</code> ${d.nombre}</li>`
+    ).join('');
+    const detsComplejas = orden.determinaciones_complejas.map(d =>
+        `<li><code class="apple-orden-det-codigo apple-orden-det-codigo-compleja">${d.codigo}</code> ${d.nombre}</li>`
+    ).join('');
+    const totalDets = orden.determinaciones.length + orden.determinaciones_complejas.length;
+
+    container.innerHTML = `
+        <div class="apple-orden-card">
+            <div class="apple-orden-header">
+                <span style="background-color:var(--color-primary);color:white;padding:.2rem .6rem;border-radius:4px;font-weight:700;font-size:.85rem;">${orden.numero_orden_lab}</span>
+                <span style="font-size:.85rem;color:var(--apple-gray-dark);">Creada: ${orden.fecha_creacion}</span>
+            </div>
+            <div class="apple-orden-row">
+                <strong>Origen</strong>
+                <span>${orden.tipo_origen}</span>
+            </div>
+            ${orden.servicio ? `
+            <div class="apple-orden-row">
+                <strong>Servicio</strong>
+                <span>${orden.servicio}</span>
+            </div>` : ''}
+            <div class="apple-orden-row">
+                <strong>Médico solicitante</strong>
+                <span>${orden.medico}</span>
+            </div>
+            <div class="apple-orden-row">
+                <strong>Observaciones</strong>
+                <span style="font-style:italic;">${orden.observaciones || '—'}</span>
+            </div>
+            <div class="apple-orden-row">
+                <strong>Determinaciones (${totalDets})</strong>
+                <ul class="apple-det-list-modal">
+                    ${detsSimples}
+                    ${detsComplejas}
+                </ul>
+            </div>
+        </div>
+    `;
+}
+
+// Cambio de orden en el select (modo simple)
+document.getElementById('selectOrdenPendiente')?.addEventListener('change', function() {
+    const idx = parseInt(this.value);
+    ordenSeleccionada = ordenesPendientes[idx];
+    renderizarDetallesOrden(ordenSeleccionada);
+});
+
+// ── Botón toggle unificar ──────────────────────────────────────────
+document.getElementById('btnToggleUnificar')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    cambiarModoModal(!modoUnificar);
+});
+
+// Cerrar modal
+document.getElementById('cerrarModalOrdenes')?.addEventListener('click', () => {
+    document.getElementById('modalOrdenesPendientes').style.display = 'none';
+});
+document.getElementById('btnCancelarModalOrdenes')?.addEventListener('click', () => {
+    document.getElementById('modalOrdenesPendientes').style.display = 'none';
+});
+document.getElementById('modalOrdenesPendientes')?.addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+
+// ── Ingresar datos de la orden al formulario ──────────────────────
+document.getElementById('btnIngresarOrden')?.addEventListener('click', function() {
+
+    if (modoUnificar) {
+        // ═══════════ MODO UNIFICACIÓN ═══════════
+        if (ordenesSeleccionadas.length < 2) {
+            alert('Seleccioná al menos 2 órdenes para unificar.');
+            return;
+        }
+
+        const ordenesUnificar = ordenesSeleccionadas.map(idx => ordenesPendientes[idx]);
+
+        // 1. Cerrar modal y quitar cartel
+        document.getElementById('modalOrdenesPendientes').style.display = 'none';
+        const cartel = document.getElementById('cartel-turno-pendiente');
+        if (cartel) cartel.remove();
+
+        // 2. PKs de órdenes unificadas → campo hidden
+        const pksUnificadas = ordenesUnificar.map(o => o.pk).join(',');
+        document.getElementById('id_ordenes_pks').value = pksUnificadas;
+        document.getElementById('id_orden_pk').value = '';   // limpiar campo singular
+
+        // 3. Médico ← orden más reciente (mayor fecha_creacion_raw)
+        const ordenMasReciente = ordenesUnificar.reduce((max, o) =>
+            new Date(o.fecha_creacion_raw) > new Date(max.fecha_creacion_raw) ? o : max
+        );
+        const medicoInput = document.getElementById('id_medico');
+        if (medicoInput) medicoInput.value = ordenMasReciente.medico || '';
+
+        // 4. Nota interna ← "Orden LAB-XXX: observaciones | Orden LAB-YYY: observaciones"
+        const notasPartes = ordenesUnificar
+            .filter(o => o.observaciones && o.observaciones.trim())
+            .map(o => `Orden ${o.numero_orden_lab}: ${o.observaciones}`);
+        const notaInput = document.getElementById('id_nota_interna');
+        if (notaInput) {
+            notaInput.value = notasPartes.join(' | ');
+            notaInput.disabled = false;
+            notaInput.classList.remove('apple-input-disabled');
+            notaInput.classList.add('apple-input-enabled');
+        }
+
+        // 5. Determinaciones: unificar y deduplicar por código
+        determinaciones = [];
+        const codigosVistos = new Set();
+
+        ordenesUnificar.forEach(orden => {
+            orden.determinaciones.forEach(det => {
+                if (!codigosVistos.has(det.codigo)) {
+                    codigosVistos.add(det.codigo);
+                    determinaciones.push({ tipo: 'simple', codigo: det.codigo, nombre: det.nombre, stock: true });
+                }
+            });
+            orden.determinaciones_complejas.forEach(det => {
+                if (!codigosVistos.has(det.codigo)) {
+                    codigosVistos.add(det.codigo);
+                    determinaciones.push({ tipo: 'compleja', codigo: det.codigo, nombre: det.nombre, determinaciones: '', stock: true });
+                }
+            });
+        });
+
+        // 6. Actualizar lista visual y hidden input
+        actualizarListaDeterminaciones();
+        document.getElementById('id_determinaciones').value =
+            determinaciones.map(d => d.codigo).join(',');
+
+        // 7. Feedback
+        document.getElementById('pacienteStatus').innerHTML =
+            `<span class="apple-status-found">✓ ${ordenesSeleccionadas.length} órdenes unificadas correctamente</span>`;
+
+    } else {
+        // ═══════════ MODO SIMPLE ═══════════
+        if (!ordenSeleccionada) return;
+
+        // 1. Cerrar modal y quitar cartel
+        document.getElementById('modalOrdenesPendientes').style.display = 'none';
+        const cartel = document.getElementById('cartel-turno-pendiente');
+        if (cartel) cartel.remove();
+
+        // 2. Guardar pk de la orden en el form (para vincular al guardar)
+        document.getElementById('id_orden_pk').value = ordenSeleccionada.pk;
+        document.getElementById('id_ordenes_pks').value = '';  // limpiar campo múltiple
+
+        // 3. Nota interna ← observaciones de la orden
+        const notaInput = document.getElementById('id_nota_interna');
+        if (notaInput) {
+            notaInput.value = ordenSeleccionada.observaciones || '';
+            notaInput.disabled = false;
+            notaInput.classList.remove('apple-input-disabled');
+            notaInput.classList.add('apple-input-enabled');
+        }
+
+        // 4. Médico ← médico de la orden
+        const medicoInput = document.getElementById('id_medico');
+        if (medicoInput) {
+            medicoInput.value = ordenSeleccionada.medico || '';
+        }
+
+        // 5. Limpiar array de determinaciones y cargar las de la orden
+        determinaciones = [];
+
+        ordenSeleccionada.determinaciones.forEach(det => {
+            determinaciones.push({ tipo: 'simple', codigo: det.codigo, nombre: det.nombre, stock: true });
+        });
+
+        ordenSeleccionada.determinaciones_complejas.forEach(det => {
+            determinaciones.push({ tipo: 'compleja', codigo: det.codigo, nombre: det.nombre, determinaciones: '', stock: true });
+        });
+
+        // 6. Actualizar lista visual y hidden input
+        actualizarListaDeterminaciones();
+        document.getElementById('id_determinaciones').value =
+            determinaciones.map(d => d.codigo).join(',');
+
+        // 7. Feedback
+        document.getElementById('pacienteStatus').innerHTML =
+            '<span class="apple-status-found">✓ Datos de la orden cargados correctamente</span>';
     }
 });
 

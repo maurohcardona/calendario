@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'ordenes:detalle_orden' orden.pk %}" class="btn btn-outline-secondary">← Volver</a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-bold">Orden #{{ orden.pk }} — {{ orden.paciente.nombre_completo }}</div>
+  <div class="card-body">
+    <p><strong>Estado:</strong> {{ orden.get_estado_display }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header fw-bold">Vincular Turno</div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="text-danger">{{ field.errors }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Vincular</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

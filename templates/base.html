@@ -3,8 +3,24 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agendador</title>
   {% load static %}
+
+  <!-- ═══════ PWA META TAGS ═══════ -->
+  <meta name="theme-color" content="#248f8d">
+  <meta name="description" content="Sistema de gestión de turnos, órdenes y coordinación de laboratorio - Hospital Balestrini">
+  <!-- Apple PWA Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Lab Balestrini">
+  <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'icons/icon-192x192.png' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon.png' %}">
+  <link rel="shortcut icon" href="{% static 'icons/favicon.ico' %}">
+
+  <title>{% block title %}Laboratorio Hospital Balestrini{% endblock %}</title>
   <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'css/apple-design.css' %}" rel="stylesheet">
   <style>
@@ -46,6 +62,7 @@
         <a href="{% url 'turnos:generar_cupos_masivo' %}" class="apple-nav-link">Cupos</a>
         <a href="/admin/" class="apple-nav-link">Tablas</a>
         <a href="{% url 'informes:listado' %}" class="apple-nav-link">Informes</a>
+        <a href="{% url 'ordenes:cola_laboratorio' %}" class="apple-nav-link">Cola Lab</a>
       </nav>
     </div>
     
@@ -80,6 +97,32 @@
       </div>
     </div>
   </header>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- PWA INSTALL BANNER (oculto por defecto, JS lo muestra) -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="pwa-install-banner" style="display:none; background: linear-gradient(135deg, #248f8d 0%, #1a7270 100%); color: white; padding: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0 1rem;">
+      <div style="flex: 1; min-width: 280px; display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.8rem;">📲</span>
+        <div>
+          <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.2rem;">Instalar aplicación</strong>
+          <p style="margin: 0; opacity: 0.95; font-size: 0.9rem;">Accedé más rápido y trabajá sin conexión instalando la app</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button id="pwa-install-btn"
+                style="background: white; color: #248f8d; font-weight: 600; padding: 0.6rem 1.6rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95rem;">
+          Instalar ahora
+        </button>
+        <button id="pwa-dismiss-btn"
+                style="background: rgba(255,255,255,0.2); color: white; border: 1.5px solid rgba(255,255,255,0.6); padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem;">
+          Más tarde
+        </button>
+      </div>
+    </div>
+  </div>
+
   {% if messages %}
     <div class="apple-container mt-lg">
       {% for message in messages %}
@@ -116,7 +159,7 @@
         });
       }
 
-      // Cerrar ambos menús al hacer clic fuera
+      // ── Cerrar menús al hacer clic fuera ──────────────────────
       document.addEventListener('click', function(e) {
         if (opcionesMenu && !opcionesMenu.contains(e.target)) {
           opcionesMenu.classList.remove('active');
@@ -151,5 +194,98 @@
       }
     });
   </script>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- SERVICE WORKER REGISTRATION + PWA INSTALL PROMPT       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ── 1. Service Worker Registration ────────────────────────────
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/static/sw.js')
+            .then(function (registration) {
+              console.log('✅ Service Worker registrado:', registration.scope);
+
+              // Detectar actualizaciones del SW
+              registration.addEventListener('updatefound', function () {
+                var newWorker = registration.installing;
+                newWorker.addEventListener('statechange', function () {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    var updateNow = confirm(
+                      '🔄 Hay una actualización disponible.\n\n¿Recargar ahora para obtener la última versión?'
+                    );
+                    if (updateNow) {
+                      newWorker.postMessage({ type: 'SKIP_WAITING' });
+                      window.location.reload();
+                    }
+                  }
+                });
+              });
+            })
+            .catch(function (err) {
+              console.error('❌ Service Worker falló:', err);
+            });
+        });
+
+        // Recargar cuando el SW tome control (después de update)
+        var refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
+      }
+
+      // ── 2. PWA Install Banner ─────────────────────────────────────
+      var deferredPrompt;
+      var installBanner = document.getElementById('pwa-install-banner');
+      var installBtn = document.getElementById('pwa-install-btn');
+      var dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        var dismissed = localStorage.getItem('pwa-banner-dismissed');
+        var dismissedTime = dismissed ? parseInt(dismissed, 10) : 0;
+        var ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+        if (!dismissed || (Date.now() - dismissedTime) > ONE_DAY_MS) {
+          installBanner.style.display = 'block';
+        }
+      });
+
+      if (installBtn) {
+        installBtn.addEventListener('click', function () {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function (result) {
+            console.log(result.outcome === 'accepted' ? '✅ PWA instalada' : '❌ Instalación cancelada');
+            deferredPrompt = null;
+            installBanner.style.display = 'none';
+          });
+        });
+      }
+
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', function () {
+          localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
+          installBanner.style.display = 'none';
+        });
+      }
+
+      window.addEventListener('appinstalled', function () {
+        installBanner.style.display = 'none';
+        localStorage.removeItem('pwa-banner-dismissed');
+        console.log('✅ PWA instalada exitosamente');
+      });
+
+    }());
+  </script>
+
 </body>
 </html>

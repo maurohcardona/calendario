@@ -226,6 +226,7 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                     else:
                         # Extraer datos del formulario
                         agenda_form = form.cleaned_data.get("agenda")
+                        tipo_iden = form.cleaned_data.get("tipo_iden", "DNI")
                         dni = form.cleaned_data.get("dni")
                         nombre = form.cleaned_data.get("nombre")
                         apellido = form.cleaned_data.get("apellido")
@@ -247,10 +248,37 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                         nota_interna = form.cleaned_data.get("nota_interna", "")
                         determinaciones = form.cleaned_data.get("determinaciones", "")
 
+                        # Detectar modo: unificación (múltiples) vs. simple (una orden)
+                        ordenes_pks_raw = request.POST.get("ordenes_pks", "").strip()
+                        orden_pk_raw = request.POST.get("orden_pk", "").strip()
+
+                        ordenes_pks = None
+                        orden_pk = None
+
+                        if ordenes_pks_raw:
+                            try:
+                                ordenes_pks = [
+                                    int(pk.strip())
+                                    for pk in ordenes_pks_raw.split(",")
+                                    if pk.strip()
+                                ]
+                            except ValueError:
+                                form.add_error(
+                                    None,
+                                    ValidationError("Error en IDs de órdenes unificadas."),
+                                )
+                                ordenes_pks = None
+                        elif orden_pk_raw:
+                            try:
+                                orden_pk = int(orden_pk_raw)
+                            except ValueError:
+                                orden_pk = None
+
                         # Usar el servicio para crear el turno
                         exito, turno_nuevo, mensaje_error = TurnoService.crear_turno(
                             fecha=fecha,
                             agenda=agenda_form,
+                            tipo_iden=tipo_iden,
                             dni=dni,
                             nombre=nombre,
                             apellido=apellido,
@@ -265,6 +293,8 @@ def dia(request: HttpRequest, fecha: str | date) -> HttpResponse:
                             nota_interna=nota_interna,
                             determinaciones=determinaciones,
                             usuario=request.user,
+                            orden_pk=orden_pk,
+                            ordenes_pks=ordenes_pks,
                         )
 
                         if exito:
@@ -647,6 +677,15 @@ def eliminar_turno(request: HttpRequest, turno_id: int) -> HttpResponse:
     agenda_id = turno.agenda.id
 
     if request.method == "POST":
+        # Restaurar estado de órdenes vinculadas ANTES de eliminar el turno.
+        # on_delete=SET_NULL en OrdenLaboratorio.turno pone el campo en NULL
+        # automáticamente, pero NO cambia el estado → hay que hacerlo aquí.
+        from ordenes.models import OrdenLaboratorio
+
+        OrdenLaboratorio.objects.filter(turno=turno).update(
+            estado="PENDIENTE", turno=None
+        )
+
         turno.delete()
         return redirect(reverse("turnos:dia", args=[fecha]) + f"?agenda={agenda_id}")
 

@@ -2,14 +2,134 @@
 Servicio para lógica de negocio relacionada con turnos.
 """
 
-from datetime import date, datetime
-from typing import Dict, Any, Optional, Tuple
+import unicodedata
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from turnos.models import Turno, Cupo, Agenda, Feriados
 from pacientes.models import Paciente
 from medicos.models import Medico
 from instituciones.models import Institucion
+
+# Límite de edad en días para considerar a un paciente como recién nacido (NEO)
+NEO_LIMITE_DIAS = 90
+
+
+def _normalizar_texto(texto: str) -> str:
+    """
+    Normaliza un texto para generar el número NEO.
+
+    Elimina acentos, convierte Ñ→N, y conserva solo letras en mayúsculas.
+
+    Args:
+        texto: Texto a normalizar (nombre o apellido)
+
+    Returns:
+        Texto normalizado en mayúsculas, sin acentos ni caracteres especiales
+    """
+    texto = texto.replace("Ñ", "N").replace("ñ", "n")
+    texto = unicodedata.normalize("NFD", texto)
+    texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
+    texto = "".join(c for c in texto if c.isalpha())
+    return texto.upper()
+
+
+def generar_numero_neo_unico(
+    nombre: str, apellido: str, fecha_nacimiento
+) -> str:
+    """
+    Genera un número NEO único con formato: {2N}{2A}{DDMMAAAA}RN
+
+    Si el número base ya existe en la base de datos, agrega un sufijo
+    incremental: -1, -2, etc.
+
+    Normalización aplicada:
+    - Ñ → N
+    - Acentos eliminados: José → JOSE
+    - Solo primeras 2 letras del primer nombre: "Juan Carlos" → JU
+    - Relleno con X si tiene < 2 letras: "Li" → LIX
+
+    Args:
+        nombre: Nombre del paciente
+        apellido: Apellido del paciente
+        fecha_nacimiento: Objeto date o string 'YYYY-MM-DD'
+
+    Returns:
+        Número NEO único (ej: "CALO01042010RN" o "CALO01042010RN-1")
+
+    Raises:
+        ValueError: Si nombre o apellido no tienen ninguna letra
+        ValueError: Si no se puede generar número único en 100 intentos
+    """
+    nombre_limpio = _normalizar_texto(nombre.strip())
+    apellido_limpio = _normalizar_texto(apellido.strip())
+
+    if not nombre_limpio or not apellido_limpio:
+        raise ValueError(
+            "Nombre y apellido deben contener al menos una letra para generar el número NEO."
+        )
+
+    # Primeras 2 letras; rellenar con 'X' si tiene menos de 2
+    n = (nombre_limpio + "XX")[:2]
+    a = (apellido_limpio + "XX")[:2]
+
+    # Convertir fecha a objeto date si viene como string
+    if isinstance(fecha_nacimiento, str):
+        fecha_obj = datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date()
+    else:
+        fecha_obj = fecha_nacimiento
+
+    fecha_formateada = fecha_obj.strftime("%d%m%Y")
+    base = f"{n}{a}{fecha_formateada}RN"
+
+    # Buscar número libre con sufijo incremental en caso de colisión
+    sufijo = 0
+    while True:
+        numero_neo = base if sufijo == 0 else f"{base}-{sufijo}"
+
+        if not Paciente.objects.filter(tipo_iden="NEO", iden=numero_neo).exists():
+            return numero_neo
+
+        sufijo += 1
+
+        if sufijo > 100:
+            raise ValueError(
+                f"No se pudo generar número NEO único para '{base}' después de 100 intentos."
+            )
+
+
+def validar_edad_neo(fecha_nacimiento, limite_dias: int = NEO_LIMITE_DIAS) -> Tuple[bool, str]:
+    """
+    Valida que la fecha de nacimiento corresponda a un recién nacido.
+
+    Args:
+        fecha_nacimiento: Objeto date o string 'YYYY-MM-DD'
+        limite_dias: Edad máxima en días para considerar recién nacido (default: 90)
+
+    Returns:
+        Tupla (es_valido, mensaje_error). mensaje_error es vacío si es válido.
+    """
+    if isinstance(fecha_nacimiento, str):
+        fecha_obj = datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date()
+    else:
+        fecha_obj = fecha_nacimiento
+
+    hoy = date.today()
+    edad_dias = (hoy - fecha_obj).days
+
+    if edad_dias < 0:
+        return False, "La fecha de nacimiento no puede ser futura."
+
+    if edad_dias > limite_dias:
+        return (
+            False,
+            f"El tipo de identificación NEO es solo para recién nacidos "
+            f"(hasta {limite_dias} días de nacido). "
+            f"El paciente tiene {edad_dias} días. Use otro tipo de identificación.",
+        )
+
+    return True, ""
 
 
 class TurnoService:
@@ -64,6 +184,7 @@ class TurnoService:
         apellido: str,
         fecha_nacimiento: date,
         sexo: str,
+        tipo_iden: str = "DNI",
         telefono: str = "",
         email: str = "",
         observaciones_paciente: str = "",
@@ -73,9 +194,15 @@ class TurnoService:
         nota_interna: str = "",
         determinaciones: str = "",
         usuario: Any = None,
+        orden_pk: Optional[int] = None,
+        ordenes_pks: Optional[List[int]] = None,
     ) -> Tuple[bool, Optional[Turno], str]:
         """
         Crea un nuevo turno con validaciones.
+
+        Puede vincular una sola orden (orden_pk) o múltiples órdenes unificadas
+        (ordenes_pks). En ambos casos actualiza estado de las órdenes a 'TURNO'
+        y sincroniza la relación M2M turno.ordenes.
 
         Returns:
             Tupla (exito, turno, mensaje_error)
@@ -89,8 +216,17 @@ class TurnoService:
                 if not es_valido:
                     return False, None, mensaje
 
+                # ── Lógica especial para tipo NEO (recién nacidos) ──────────
+                if tipo_iden == "NEO":
+                    es_valido_edad, mensaje_edad = validar_edad_neo(fecha_nacimiento)
+                    if not es_valido_edad:
+                        return False, None, mensaje_edad
+                    # El número se genera siempre server-side; ignorar lo que venga del frontend
+                    dni = generar_numero_neo_unico(nombre, apellido, fecha_nacimiento)
+
                 # Obtener o crear paciente
                 paciente_obj, _ = Paciente.objects.update_or_create(
+                    tipo_iden=tipo_iden,
                     iden=dni,
                     defaults={
                         "nombre": nombre,
@@ -133,6 +269,51 @@ class TurnoService:
                     determinaciones=determinaciones,
                     usuario=usuario,
                 )
+
+                # ═══ VINCULACIÓN DE ÓRDENES ═══
+                from ordenes.models import OrdenLaboratorio
+
+                if ordenes_pks:
+                    # ── MODO UNIFICACIÓN: múltiples órdenes ──
+                    ordenes = OrdenLaboratorio.objects.filter(
+                        pk__in=ordenes_pks,
+                        paciente=paciente_obj,  # Seguridad: solo del mismo paciente
+                        estado__in=["PENDIENTE", "INGRESADA"],
+                    )
+
+                    if ordenes.count() != len(ordenes_pks):
+                        return (
+                            False,
+                            None,
+                            "Algunas órdenes no están disponibles para vincular "
+                            "(pueden haber sido asignadas a otro turno o no pertenecen al paciente).",
+                        )
+
+                    # Actualizar estado y FK de cada orden
+                    for orden in ordenes:
+                        orden.turno = turno
+                        orden.estado = "TURNO"
+                        orden.save(update_fields=["turno", "estado"])
+
+                    # Sincronizar relación M2M
+                    turno.ordenes.set(ordenes)
+
+                elif orden_pk:
+                    # ── MODO SIMPLE: una sola orden ──
+                    try:
+                        orden = OrdenLaboratorio.objects.get(
+                            pk=orden_pk,
+                            estado="PENDIENTE",  # Solo PENDIENTE (comportamiento original)
+                        )
+                        orden.turno = turno
+                        orden.estado = "TURNO"
+                        orden.save(update_fields=["turno", "estado"])
+
+                        # Sincronizar relación M2M para consistencia
+                        turno.ordenes.add(orden)
+
+                    except OrdenLaboratorio.DoesNotExist:
+                        pass  # Orden inexistente o ya no está pendiente → ignorar
 
                 return True, turno, ""
 
