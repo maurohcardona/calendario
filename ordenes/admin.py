@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Servicio, OrdenLaboratorio
+from .models import CoordinadosOrden, OrdenLaboratorio, Servicio
 from determinaciones.models import Determinacion, DeterminacionCompleja
 
 
@@ -32,3 +32,36 @@ class OrdenLaboratorioAdmin(admin.ModelAdmin):
     readonly_fields = ("fecha_creacion", "fecha_actualizacion", "creado_por")
     inlines = [DeterminacionesInline, DeterminacionesComplejasInline]
     exclude = ("determinaciones", "determinaciones_complejas")
+
+
+@admin.register(CoordinadosOrden)
+class CoordinadosOrdenAdmin(admin.ModelAdmin):
+    list_display = (
+        "orden",
+        "fecha_coordinacion",
+        "mensaje_tipo",
+        "ack_estado",
+        "usuario",
+    )
+    list_filter = ("mensaje_tipo", "ack_estado", "fecha_coordinacion")
+    search_fields = (
+        "orden__numero_orden_lab",
+        "orden__paciente__iden",
+        "orden__paciente__apellido",
+        "orden__paciente__nombre",
+    )
+    readonly_fields = ("fecha_coordinacion", "mensaje_hl7", "ack_recibido")
+    ordering = ("-fecha_coordinacion",)
+    fieldsets = (
+        (
+            "Información básica",
+            {"fields": ("orden", "fecha_coordinacion", "usuario", "determinaciones")},
+        ),
+        (
+            "Mensaje HL7",
+            {
+                "fields": ("mensaje_tipo", "mensaje_hl7", "ack_recibido", "ack_estado"),
+                "classes": ("collapse",),
+            },
+        ),
+    )

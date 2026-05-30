@@ -113,8 +113,37 @@
     <div class="card">
       <div class="card-header fw-bold">Ingresar al Laboratorio</div>
       <div class="card-body">
-        <form method="post">
+
+        {# ── SELECTOR DE IMPRESORA ── #}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Impresora / Etiquetadora</label>
+          <div class="d-flex flex-column gap-1" id="grupo-impresoras">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="nombre_impresora" id="imp-adm1" value="ADM1">
+              <label class="form-check-label" for="imp-adm1">ADM1</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="nombre_impresora" id="imp-adm2" value="ADM2">
+              <label class="form-check-label" for="imp-adm2">ADM2</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="nombre_impresora" id="imp-guardia" value="GUARDIA">
+              <label class="form-check-label" for="imp-guardia">GUARDIA</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="nombre_impresora" id="imp-hemato" value="HEMATO">
+              <label class="form-check-label" for="imp-hemato">HEMATO</label>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        {# ── FORMULARIO ── #}
+        <form method="post" id="form-ingresar">
           {% csrf_token %}
+          {# El valor de impresora se inyecta en el submit via JS #}
+          <input type="hidden" name="nombre_impresora" id="campo-impresora" value="ADM1">
           {% for field in form %}
             <div class="mb-3">
               <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -126,9 +155,49 @@
           {% endfor %}
           <button type="submit" class="btn btn-success w-100">Ingresar Orden</button>
         </form>
+
       </div>
     </div>
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const radios = document.querySelectorAll('#grupo-impresoras input[type=radio]');
+  const campoOculto = document.getElementById('campo-impresora');
+  const STORAGE_KEY = 'nombre_impresora';
+
+  // Restaurar selección previa desde localStorage (compartido con el navbar)
+  const seleccionPrevia = localStorage.getItem(STORAGE_KEY);
+  let restaurado = false;
+  if (seleccionPrevia) {
+    radios.forEach(function (r) {
+      if (r.value === seleccionPrevia) {
+        r.checked = true;
+        campoOculto.value = r.value;
+        restaurado = true;
+      }
+    });
+  }
+  // Si no había selección previa, marcar ADM1 como default
+  if (!restaurado) {
+    const adm1 = document.getElementById('imp-adm1');
+    if (adm1) {
+      adm1.checked = true;
+      campoOculto.value = adm1.value;
+    }
+  }
+
+  // Al cambiar radio: actualizar campo oculto y guardar en localStorage
+  radios.forEach(function (r) {
+    r.addEventListener('change', function () {
+      if (this.checked) {
+        campoOculto.value = this.value;
+        localStorage.setItem(STORAGE_KEY, this.value);
+      }
+    });
+  });
+});
+</script>
 {% endblock %}

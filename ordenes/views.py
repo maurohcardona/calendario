@@ -1,5 +1,6 @@
 import json
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -538,16 +539,83 @@ def cola_laboratorio(request):
 
 @operador_lab_requerido
 def ingresar_orden(request, pk):
-    """Vista para ingresar una orden (cambiar estado a INGRESADA)."""
+    """
+    Vista para ingresar una orden al laboratorio (cambia estado a INGRESADA).
+
+    Si USAR_HL7=True (default):
+      1. Genera mensaje HL7 OML^O21 a partir de la orden.
+      2. Envía al LIS por MLLP y espera ACK.
+      3. Registra la coordinación en CoordinadosOrden.
+      4. Cambia estado a INGRESADA.
+      Si el LIS no responde, el mensaje queda en ColaReintentos y se reintenta
+      automáticamente por el cron procesar_cola_hl7.
+
+    Si USAR_HL7=False:
+      Comportamiento legacy: solo cambia el estado sin enviar nada al LIS.
+    """
     orden = get_object_or_404(OrdenLaboratorio, pk=pk)
     if request.method == "POST":
         form = IngresarOrdenForm(request.POST, instance=orden)
         if form.is_valid():
-            orden.ingresar(
-                observaciones_lab=form.cleaned_data.get("observaciones_lab", ""),
-            )
-            messages.success(request, f"Orden #{orden.pk} ingresada al laboratorio.")
-            return redirect("ordenes:cola_laboratorio")
+            observaciones_lab = form.cleaned_data.get("observaciones_lab", "")
+
+            # Guardar observaciones antes de cualquier operación HL7
+            orden.observaciones_lab = observaciones_lab
+            orden.save(update_fields=["observaciones_lab"])
+
+            # Obtener impresora del POST; "ADM1" como fallback
+            nombre_impresora = request.POST.get("nombre_impresora", "").strip() or "ADM1"
+
+            if getattr(settings, "USAR_HL7", False):
+                from turnos.services import HL7Service, MLLPClient
+
+                # Paso 1: Generar mensaje OML^O21 desde la orden
+                exito_gen, ruta_archivo, mensaje_error = (
+                    HL7Service.generar_mensaje_oml_desde_orden(
+                        orden,
+                        nombre_impresora,
+                        request.user.username if request.user.is_authenticated else "",
+                    )
+                )
+
+                if not exito_gen:
+                    messages.error(request, f"Error al generar HL7: {mensaje_error}")
+                    return redirect("ordenes:ingresar_orden", pk=orden.pk)
+
+                # Paso 2: Leer el archivo generado
+                with open(ruta_archivo, "r", encoding="utf-8") as f:
+                    mensaje_er7 = f.read()
+
+                # Paso 3: Enviar al LIS por MLLP y esperar ACK
+                enviado, _ack_texto, error_envio = MLLPClient.enviar_y_esperar_ack(
+                    mensaje_er7,
+                    orden.pk,  # Se usa como referencia en logs y ColaReintentos
+                )
+
+                if enviado:
+                    orden.estado = "INGRESADA"
+                    orden.save(update_fields=["estado"])
+                    messages.success(
+                        request,
+                        f"Orden {orden.numero_orden_lab} ingresada y enviada al LIS correctamente.",
+                    )
+                else:
+                    # Mensaje en ColaReintentos; el cron lo reintentará
+                    messages.warning(
+                        request,
+                        f"Orden {orden.numero_orden_lab} generada pero no se pudo enviar al LIS: "
+                        f"{error_envio}. Se reintentará automáticamente.",
+                    )
+                return redirect("ordenes:cola_laboratorio")
+
+            else:
+                # Comportamiento legacy (USAR_HL7=False)
+                orden.ingresar(observaciones_lab=observaciones_lab)
+                messages.success(
+                    request,
+                    f"Orden {orden.numero_orden_lab} ingresada al laboratorio.",
+                )
+                return redirect("ordenes:cola_laboratorio")
     else:
         form = IngresarOrdenForm(instance=orden)
     return render(request, "ordenes/ingresar_orden.html", {"orden": orden, "form": form})

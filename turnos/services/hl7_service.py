@@ -28,7 +28,7 @@ Carpeta de destino: mensajes/hl7/enviados/
 import os
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -155,6 +155,95 @@ class HL7Service:
     def verificar_coordinado(turno_id: int) -> bool:
         """Retorna True si el turno ya fue coordinado."""
         return Coordinados.objects.filter(id_turno=turno_id).exists()
+
+    @staticmethod
+    def generar_mensaje_oml_desde_orden(
+        orden: "Any",
+        nombre_impresora: str,
+        usuario: str,
+    ) -> tuple[bool, str, str]:
+        """
+        Genera un archivo HL7 OML^O21 desde una OrdenLaboratorio.
+
+        Similar a generar_mensaje_oml() pero adaptado para OrdenLaboratorio:
+        - Usa orden.paciente en lugar de turno.dni.
+        - Convierte determinaciones M2M a CSV antes de procesarlas.
+        - Registra en CoordinadosOrden en lugar de Coordinados.
+        - NO valida duplicados: permite múltiples ingresos de la misma orden.
+
+        Args:
+            orden: Instancia de OrdenLaboratorio a coordinar.
+            nombre_impresora: Nombre de la impresora/etiquetadora seleccionada.
+            usuario: Username del operador que ingresa la orden.
+
+        Returns:
+            Tupla (exito, ruta_archivo, mensaje_error)
+        """
+        try:
+            from ordenes.models import CoordinadosOrden
+            from django.utils import timezone as tz
+
+            paciente = orden.paciente
+            if not paciente:
+                return False, "", "La orden no tiene paciente asociado"
+
+            if not (paciente.iden or "").strip():
+                return False, "", "El paciente no tiene DNI registrado. No se puede coordinar."
+
+            # Serializar determinaciones M2M → CSV para reutilizar la lógica HL7
+            determinaciones_csv = DeterminacionService.serializar_determinaciones_orden(orden)
+
+            if not determinaciones_csv:
+                return False, "", "La orden no tiene determinaciones registradas"
+
+            # Mapear determinaciones a formato HL7
+            determinaciones_hl7 = DeterminacionService.mapear_determinaciones_a_hl7(
+                determinaciones_csv
+            )
+
+            # Adapter: expone los mismos atributos que Turno espera en _construir_*
+            class _OrdenAdapter:
+                id = orden.pk
+                dni = paciente
+                determinaciones = determinaciones_csv
+                fecha = orden.fecha_programada or tz.localdate()
+                medico = orden.medico
+                nota_interna = orden.observaciones or ""
+                agenda = None
+                institucion = None
+
+            adapter = _OrdenAdapter()
+
+            # Construir mensaje reutilizando métodos privados existentes
+            ts = _timestamp()
+            msg = Message("OML_O21", version=_VERSION_HL7, validation_level=_VALIDATION)
+            HL7Service._construir_msh(msg, ts)
+            HL7Service._construir_pid(msg, paciente)
+            HL7Service._construir_pv1(msg, adapter)
+            HL7Service._construir_ordenes(msg, adapter, determinaciones_hl7, ts)
+
+            # Serializar y limpiar
+            er7 = HL7Service._limpiar_er7(msg.to_er7())
+
+            # Guardar archivo con prefijo "orden" para distinguirlo de turnos
+            ruta = HL7Service._guardar_archivo(er7, orden.pk, prefijo="orden")
+
+            # Obtener instancia User
+            usuario_obj = HL7Service._obtener_usuario(usuario)
+
+            # Registrar en CoordinadosOrden
+            CoordinadosOrden.objects.create(
+                orden=orden,
+                usuario=usuario_obj,
+                determinaciones=determinaciones_csv,
+                mensaje_tipo="HL7",
+                mensaje_hl7=er7,
+            )
+
+            return True, ruta, ""
+
+        except Exception as exc:
+            return False, "", f"Error al generar mensaje HL7 desde orden: {exc}"
 
     # ──────────────────────────────────────────────────────────────────────────
     # Construcción del mensaje
@@ -418,17 +507,23 @@ class HL7Service:
         return separador.join(resultado)
 
     @staticmethod
-    def _guardar_archivo(er7: str, turno_id: int) -> str:
+    def _guardar_archivo(er7: str, ref_id: int, prefijo: str = "oml") -> str:
         """
         Persiste el mensaje HL7 en mensajes/hl7/enviados/.
 
-        Formato de nombre: oml_{turno_id}_{timestamp}.hl7
+        Args:
+            er7: Mensaje en formato ER7.
+            ref_id: ID de referencia (turno_id u orden_id).
+            prefijo: Prefijo para el nombre del archivo.
+                     "oml" para turnos (default), "orden" para OrdenLaboratorio.
+
+        Formato de nombre: {prefijo}_{ref_id}_{timestamp}.hl7
         Retorna la ruta completa del archivo creado.
         """
         carpeta = os.path.join(settings.BASE_DIR, "mensajes", "hl7", "enviados")
         os.makedirs(carpeta, exist_ok=True)
 
-        nombre = f"oml_{turno_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.hl7"
+        nombre = f"{prefijo}_{ref_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.hl7"
         ruta = os.path.join(carpeta, nombre)
 
         # Los mensajes HL7 usan \r como separador de segmentos (CR, 0x0D)

@@ -329,3 +329,34 @@ class DeterminacionService:
                 ])
         
         return max(tiempos) if tiempos else 0
+
+    @staticmethod
+    def serializar_determinaciones_orden(orden: "Any") -> str:
+        """
+        Convierte las determinaciones M2M de una OrdenLaboratorio a formato CSV.
+
+        Genera la misma cadena que se usa en Turno.determinaciones (TextField CSV),
+        necesaria para pasarle a mapear_determinaciones_a_hl7().
+
+        Args:
+            orden: Instancia de OrdenLaboratorio con sus relaciones M2M cargadas.
+
+        Returns:
+            String de códigos separados por coma.
+            Determinaciones simples: código directo (ej: "GLUCEMIA").
+            Determinaciones complejas: código con prefijo "/" (ej: "/HEPATO").
+
+        Ejemplo:
+            "GLUCEMIA,UREA,/HEPATO"
+        """
+        codigos: List[str] = []
+
+        for det in orden.determinaciones.all():
+            codigos.append(det.codigo)
+
+        for det_c in orden.determinaciones_complejas.all():
+            # Los códigos complejos ya incluyen "/" en la BD; asegurar prefijo.
+            codigo = det_c.codigo if det_c.codigo.startswith("/") else f"/{det_c.codigo}"
+            codigos.append(codigo)
+
+        return ",".join(codigos)

@@ -103,3 +103,78 @@ class OrdenLaboratorio(models.Model):
         if motivo:
             self.observaciones_lab = motivo
         self.save()
+
+
+class CoordinadosOrden(models.Model):
+    """
+    Registro de coordinación de órdenes de laboratorio vía HL7/ASTM.
+
+    Análogo al modelo Coordinados de turnos, pero para OrdenLaboratorio.
+    A diferencia de Coordinados, no valida duplicados: una orden puede
+    registrar múltiples coordinaciones (reintentos, re-ingresos).
+    """
+
+    orden = models.ForeignKey(
+        OrdenLaboratorio,
+        on_delete=models.CASCADE,
+        related_name="coordinaciones",
+        verbose_name="Orden de laboratorio",
+    )
+    fecha_coordinacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de coordinación",
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Usuario coordinador",
+    )
+    determinaciones = models.TextField(
+        blank=True,
+        verbose_name="Determinaciones (CSV)",
+        help_text="Códigos de determinaciones enviadas separados por coma",
+    )
+    mensaje_tipo = models.CharField(
+        max_length=10,
+        choices=[("ASTM", "ASTM (legacy)"), ("HL7", "HL7 v2.5")],
+        default="HL7",
+        verbose_name="Tipo de mensaje",
+        help_text="HL7 o ASTM según el protocolo utilizado",
+    )
+    mensaje_hl7 = models.TextField(
+        blank=True,
+        verbose_name="Mensaje HL7 enviado",
+    )
+    ack_recibido = models.TextField(
+        blank=True,
+        verbose_name="ACK recibido del LIS",
+    )
+    ack_estado = models.CharField(
+        max_length=10,
+        blank=True,
+        choices=[
+            ("AA", "Aceptado"),
+            ("AE", "Error"),
+            ("AR", "Rechazado"),
+        ],
+        verbose_name="Estado del ACK",
+        help_text="AA=aceptado, AE=error, AR=rechazado",
+    )
+
+    class Meta:
+        verbose_name = "Coordinación de orden"
+        verbose_name_plural = "Coordinaciones de órdenes"
+        ordering = ["-fecha_coordinacion"]
+        indexes = [
+            models.Index(fields=["orden"]),
+            models.Index(fields=["-fecha_coordinacion"]),
+            models.Index(fields=["mensaje_tipo"]),
+        ]
+
+    def __str__(self) -> str:
+        return (
+            f"Orden {self.orden.numero_orden_lab} — "
+            f"{self.fecha_coordinacion.strftime('%Y-%m-%d %H:%M')}"
+        )
