@@ -458,12 +458,14 @@ class MLLPClient:
                         )
                     # No enviamos ACK al ORL — Navify no lo espera y responde
                     # con error 42114 ("Channel ACK to IN not configured").
-                    # Cerrar listener después del ORL (opción A: flujo síncrono)
+                    # NO cerramos el listener al recibir el ORL porque Navify puede
+                    # entregar primero un ORL pendiente de un turno anterior.
+                    # Seguimos escuchando hasta el timeout para recibir el ORL
+                    # del turno actual también.
                     logger.info(
-                        "MLLP | Cerrando listener tras recibir ORL^O22 para turno_id=%d",
+                        "MLLP | ORL^O22 recibido para turno_id=%d, siguiendo escucha...",
                         turno_id,
                     )
-                    break
 
         except Exception as exc:
             logger.exception(
