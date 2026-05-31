@@ -79,12 +79,18 @@ class MLLPClient:
         turno_id: int,
     ) -> Tuple[bool, str, str]:
         """
-        Envía un mensaje HL7 OML^O21 al LIS y espera el ACK.
+        Envía un mensaje HL7 OML^O21 al LIS y espera la respuesta.
 
         Abre una conexión TCP al LIS, envía el mensaje con wrapping MLLP,
-        espera el ACK y actualiza el registro Coordinados con el resultado.
-        Si el ACK indica aceptación (AA), lanza un thread listener para ORU.
-        Si falla cualquier paso, registra en ColaReintentos.
+        espera la respuesta del LIS (ORL^O22 o ACK^O21), y actualiza el
+        registro Coordinados con el resultado.
+
+        Navify/cobas infinity responde directamente con ORL^O22 (no hay
+        ACK^O21 previo). Cuando se detecta ORL, se envía el ACK^O22
+        correspondiente en el mismo ciclo y se lanza el listener para
+        mensajes posteriores (ORU u otro ORL).
+
+        Si el envío falla, registra en ColaReintentos.
 
         Args:
             mensaje_er7: Mensaje HL7 en formato ER7 (segmentos separados por \\r)
@@ -92,8 +98,8 @@ class MLLPClient:
 
         Returns:
             (exito, ack_texto, mensaje_error)
-            - exito:          True si el LIS devolvió ACK con estado AA
-            - ack_texto:      Texto completo del ACK recibido (o vacío si falló)
+            - exito:          True si el LIS devolvió ACK/ORL con estado AA
+            - ack_texto:      Texto completo de la respuesta (o vacío si falló)
             - mensaje_error:  Descripción del error (o vacío si fue exitoso)
         """
         host = getattr(settings, "LIS_HOST", "192.168.211.128")
@@ -129,14 +135,17 @@ class MLLPClient:
                 len(datos),
             )
 
-            # 3. Recibir ACK
+            # 3. Recibir respuesta del LIS (puede ser ACK^O21 o directamente ORL^O22)
+            # Navify/cobas infinity responde con ORL^O22 directamente (sin ACK previo).
             ack_raw = MLLPClient._recibir_mensaje(sock)
             ack_texto = MLLPClient._unwrap_mllp(ack_raw)
 
-            # Guardar auditoría del ACK
-            MLLPClient._guardar_recibido(ack_texto, turno_id, "ACK")
+            # Determinar tipo de respuesta para guardar con nombre correcto
+            es_orl = "ORL" in ack_texto[:200]
+            tipo_recibido = "ORL" if es_orl else "ACK"
+            MLLPClient._guardar_recibido(ack_texto, turno_id, tipo_recibido)
 
-            # 4. Parsear ACK
+            # 4. Parsear estado (funciona tanto para ACK como para ORL, ambos tienen MSA)
             resultado_ack = HL7Parser.parsear_ack(ack_texto)
 
             if not resultado_ack.valido:
@@ -146,7 +155,8 @@ class MLLPClient:
 
             estado = resultado_ack.estado  # AA / AE / AR
             logger.info(
-                "MLLP | ACK recibido para turno_id=%d: estado=%s mensaje=%s",
+                "MLLP | %s recibido para turno_id=%d: estado=%s mensaje=%s",
+                tipo_recibido,
                 turno_id,
                 estado,
                 resultado_ack.mensaje,
@@ -155,7 +165,29 @@ class MLLPClient:
             # 5. Actualizar Coordinados
             MLLPClient._actualizar_coordinados(turno_id, ack_texto, estado)
 
-            # 6. Si LIS aceptó la orden: lanzar listener ORU en segundo plano
+            # 5b. Si recibimos ORL^O22 directamente, procesarlo y enviar ACK ahora mismo.
+            # Navify no envía un ACK^O21 previo — el ORL es la única respuesta al OML.
+            # Sin este ACK, Navify deja la orden en estado "Pendiente" en la traza.
+            if es_orl:
+                resultado_orl = HL7Parser.parsear_orl(ack_texto)
+                if resultado_orl.valido:
+                    MLLPClient._actualizar_estado_orl(turno_id, resultado_orl)
+                    logger.info(
+                        "MLLP | ORL^O22 (respuesta directa) para turno_id=%d: "
+                        "orden_estado=%s",
+                        turno_id,
+                        resultado_orl.orden_estado,
+                    )
+                else:
+                    logger.warning(
+                        "MLLP | ORL^O22 con error de parseo para turno_id=%d: %s",
+                        turno_id,
+                        resultado_orl.error_parsing,
+                    )
+                MLLPClient._enviar_ack_orl(sock, ack_texto)
+
+            # 6. Si LIS aceptó la orden: lanzar listener para mensajes adicionales
+            # (por si el LIS envía ORU u otro ORL a continuación)
             if resultado_ack.aceptado:
                 thread = threading.Thread(
                     target=MLLPClient._escuchar_oru_async,
