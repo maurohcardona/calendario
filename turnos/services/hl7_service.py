@@ -303,10 +303,7 @@ class HL7Service:
         PID-5:  Patient Name → APELLIDO^NOMBRE
         PID-7:  Date of Birth → YYYYMMDD
         PID-8:  Administrative Sex → M/F/U
-        PID-11: Address → vacío (no usar para email)
-        PID-13: Phone/Email en formato XTN (repeticiones separadas por ~)
-                Teléfono: {numero}
-                Email:    ^^NET^Internet^{email}
+        PID-13: Phone/Email (opcional)
         """
         pid = Segment("PID", version=_VERSION_HL7)
         pid.pid_1 = "1"
@@ -315,18 +312,10 @@ class HL7Service:
         pid.pid_6 = ""
         pid.pid_7 = paciente.fecha_nacimiento.strftime("%Y%m%d")
         pid.pid_8 = _sexo_hl7(paciente.sexo)
-        pid.pid_11 = ""  # Dirección postal — no usar para email
+        pid.pid_11 = paciente.email
 
-        # PID-13: teléfono y/o email en formato XTN
-        # XTN componente 1 = número de teléfono (formato local)
-        # XTN repetidor 2 = email → ^^NET^Internet^<email>
-        contactos = []
         if paciente.telefono:
-            contactos.append(paciente.telefono)  # XTN-1: número local
-        if paciente.email:
-            contactos.append(f"^^NET^Internet^{paciente.email}")
-        if contactos:
-            pid.pid_13 = "~".join(contactos)  # ~ = separador de repeticiones HL7
+            pid.pid_13 = f"^^^^^^^^^^^{paciente.telefono}"                         # Solo ^^^telefono
 
         msg.add(pid)
 
@@ -346,8 +335,8 @@ class HL7Service:
         PV1-19: Visit Number → {turno_id}^^^^^^^^{institucion}
         """
         pv1 = Segment("PV1", version=_VERSION_HL7)
-        pv1.pv1_2 = "I" 
-        pv1.pv1_3 = "^^69"                                      # Outpatient (ambulatorio)
+        pv1.pv1_2 = "O" 
+        pv1.pv1_3 = "^^200"                                      # Outpatient (ambulatorio)
         # PV1-3, PV1-4, PV1-20 → vacíos (no asignar)
         pv1.pv1_19 = f"{turno.id}"      # Visit Number
         #pv1.pv1_19 = ""                             # Visit Number (solo id para evitar problemas de formato)
@@ -400,16 +389,16 @@ class HL7Service:
 
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
-        orc.orc_1 = "NW"       # NW = New Order
+        orc.orc_1 = "OR"       # NW = New Order
         #orc.orc_2 = "1"        # ActionCode → Navify transforma: "1" → "O1" (nueva orden)
-        orc.orc_2 = f"{turno.id}"  # ExtSampleID ^ SystemName
+        orc.orc_2 = f"{turno.id}^TURNOS"  # ExtSampleID ^ SystemName
         orc.orc_9 = ts         # Date/Time of Transaction
         # ORC-12 → vacío
         if medico_hl7:
             orc.orc_12 = medico_hl7   # Ordering Provider: matricula^nombre
         orc.orc_16 = f"{turno.nota_interna}"
         # ORC-17 → vacío
-        orc.orc_17 = "2^Adultos-Guardia"
+        orc.orc_17 = "7"
         msg.add(orc)
 
         # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
@@ -450,7 +439,7 @@ class HL7Service:
 
         # ── SPM (Specimen) ────────────────────────────────────────────────────
         spm = Segment("SPM", version=_VERSION_HL7)
-        spm.spm_4 = ""
+        spm.spm_4 = "1^SUERO"
         msg.add(spm)
 
     @staticmethod
@@ -466,7 +455,8 @@ class HL7Service:
         pierda el TestName en su XML interno. Se mantiene codigo^nombre en campo 4.
         """
         obr = Segment("OBR", version=_VERSION_HL7)
-        obr.obr_1 = str(set_id)
+        #obr.obr_1 = str(set_id)
+        obr.obr_1 = ""
         if codigo:
             obr.obr_4 = f"{codigo}^{nombre}"
         else:
