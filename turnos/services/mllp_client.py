@@ -447,7 +447,7 @@ class MLLPClient:
                             turno_id,
                             resultado_orl.orden_estado,
                             resultado_orl.orden_estado_desc,
-                        )
+                         )
                         MLLPClient._actualizar_estado_orl(turno_id, resultado_orl)
                     else:
                         logger.warning(
@@ -455,9 +455,8 @@ class MLLPClient:
                             turno_id,
                             resultado_orl.error_parsing,
                         )
-                    # Enviar ACK^O22 con MSH-3=HOST para que coincida con el OML enviado.
-                    # Sin este ACK Navify deja mensajes "Pendiente" en la traza.
-                    MLLPClient._enviar_ack_orl(sock, oru_texto)
+                    # No enviamos ACK al ORL — Navify no lo espera y responde
+                    # con error 42114 ("Channel ACK to IN not configured").
                     # Cerrar listener después del ORL (opción A: flujo síncrono)
                     logger.info(
                         "MLLP | Cerrando listener tras recibir ORL^O22 para turno_id=%d",
