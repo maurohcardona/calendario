@@ -186,18 +186,19 @@ class MLLPClient:
                     )
                 # No enviamos ACK al ORL — Navify no lo espera en esta conexión.
 
-            # 6. Si LIS aceptó la orden: lanzar listener para mensajes adicionales
-            # (por si el LIS envía ORU u otro ORL a continuación)
-            if resultado_ack.aceptado:
-                thread = threading.Thread(
-                    target=MLLPClient._escuchar_oru_async,
-                    args=(sock, turno_id, timeout_oru),
-                    name=f"oru-listener-turno-{turno_id}",
-                    daemon=True,
-                )
-                thread.start()
-                # La responsabilidad de cerrar el socket pasa al thread
-                sock = None
+            # 6. Lanzar listener para mensajes adicionales (siempre, independientemente
+            # del estado del ORL). Esto mantiene la conexión abierta LIS_TIMEOUT_ORU
+            # segundos por si Navify envía reintentos del ORL u otros mensajes.
+            # PRUEBA: setear LIS_TIMEOUT_ORU=300 en .env para conexión larga.
+            thread = threading.Thread(
+                target=MLLPClient._escuchar_oru_async,
+                args=(sock, turno_id, timeout_oru),
+                name=f"oru-listener-turno-{turno_id}",
+                daemon=True,
+            )
+            thread.start()
+            # La responsabilidad de cerrar el socket pasa al thread
+            sock = None
 
             exito = resultado_ack.aceptado
             error = "" if exito else f"LIS rechazó la orden: estado={estado} — {resultado_ack.mensaje}"
