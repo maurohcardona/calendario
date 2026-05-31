@@ -106,7 +106,7 @@ class MLLPClient:
         puerto = _settings_int("LIS_PORT", 50000)
         timeout_conexion = _settings_int("LIS_TIMEOUT_CONEXION", 5)
         timeout_ack = _settings_int("LIS_TIMEOUT_ACK", 30)
-        timeout_oru = _settings_int("LIS_TIMEOUT_ORU", 30)
+        timeout_oru = _settings_int("LIS_TIMEOUT_ORU", 120)  # PRUEBA: 120s para capturar reintentos
 
         sock: Optional[socket.socket] = None
 
