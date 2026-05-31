@@ -303,7 +303,10 @@ class HL7Service:
         PID-5:  Patient Name → APELLIDO^NOMBRE
         PID-7:  Date of Birth → YYYYMMDD
         PID-8:  Administrative Sex → M/F/U
-        PID-13: Phone/Email (opcional)
+        PID-11: Address → vacío (no usar para email)
+        PID-13: Phone/Email en formato XTN (repeticiones separadas por ~)
+                Teléfono: {numero}
+                Email:    ^^NET^Internet^{email}
         """
         pid = Segment("PID", version=_VERSION_HL7)
         pid.pid_1 = "1"
@@ -312,10 +315,18 @@ class HL7Service:
         pid.pid_6 = ""
         pid.pid_7 = paciente.fecha_nacimiento.strftime("%Y%m%d")
         pid.pid_8 = _sexo_hl7(paciente.sexo)
-        pid.pid_11 = paciente.email
+        pid.pid_11 = ""  # Dirección postal — no usar para email
 
+        # PID-13: teléfono y/o email en formato XTN
+        # XTN componente 1 = número de teléfono (formato local)
+        # XTN repetidor 2 = email → ^^NET^Internet^<email>
+        contactos = []
         if paciente.telefono:
-            pid.pid_13 = f"^^^^^^^^^^^{paciente.telefono}"                         # Solo ^^^telefono
+            contactos.append(paciente.telefono)  # XTN-1: número local
+        if paciente.email:
+            contactos.append(f"^^NET^Internet^{paciente.email}")
+        if contactos:
+            pid.pid_13 = "~".join(contactos)  # ~ = separador de repeticiones HL7
 
         msg.add(pid)
 
