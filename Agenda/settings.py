@@ -198,7 +198,7 @@ LIS_HOST = os.getenv("LIS_HOST", "192.168.211.128")
 LIS_PORT = int(os.getenv("LIS_PORT", "50000"))
 LIS_TIMEOUT_CONEXION = int(os.getenv("LIS_TIMEOUT_CONEXION", "5"))
 LIS_TIMEOUT_ACK = int(os.getenv("LIS_TIMEOUT_ACK", "10"))
-LIS_TIMEOUT_ORU = int(os.getenv("LIS_TIMEOUT_ORU", "30"))
+LIS_TIMEOUT_ORU = int(os.getenv("LIS_TIMEOUT_ORU", "60"))
 LIS_MAX_REINTENTOS = int(os.getenv("LIS_MAX_REINTENTOS", "3"))
 
 # ── Servidor MLLP (modo servidor — escucha conexiones entrantes del LIS) ───────
