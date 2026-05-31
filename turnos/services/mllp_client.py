@@ -165,9 +165,9 @@ class MLLPClient:
             # 5. Actualizar Coordinados
             MLLPClient._actualizar_coordinados(turno_id, ack_texto, estado)
 
-            # 5b. Si recibimos ORL^O22 directamente, procesarlo y enviar ACK ahora mismo.
-            # Navify no envía un ACK^O21 previo — el ORL es la única respuesta al OML.
-            # Sin este ACK, Navify deja la orden en estado "Pendiente" en la traza.
+            # 5b. Si recibimos ORL^O22 directamente, procesarlo.
+            # Navify no espera ACK de nuestra parte para el ORL — enviarlo
+            # causa error 42114 ("Channel ACK to IN not configured").
             if es_orl:
                 resultado_orl = HL7Parser.parsear_orl(ack_texto)
                 if resultado_orl.valido:
@@ -184,7 +184,7 @@ class MLLPClient:
                         turno_id,
                         resultado_orl.error_parsing,
                     )
-                MLLPClient._enviar_ack_orl(sock, ack_texto)
+                # No enviamos ACK al ORL — Navify no lo espera en esta conexión.
 
             # 6. Si LIS aceptó la orden: lanzar listener para mensajes adicionales
             # (por si el LIS envía ORU u otro ORL a continuación)
