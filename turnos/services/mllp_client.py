@@ -314,12 +314,18 @@ class MLLPClient:
         timeout: int,
     ) -> None:
         """
-        Escucha mensajes ORU^R01 en la conexión existente tras recibir el ACK.
+        Escucha mensajes ORL^O22 / ORU^R01 en la conexión existente tras recibir el ACK.
 
         El LIS reutiliza la misma conexión TCP para enviar resultados;
         este método corre en un thread daemon durante `timeout` segundos.
 
-        Al recibir un ORU:
+        Al recibir un ORL^O22:
+          - Guarda el archivo en mensajes/hl7/recibidos/ORL_{turno_id}_{ts}.hl7
+          - Parsea con HL7Parser.parsear_orl() y actualiza Coordinados.orden_estado
+          - Envía ACK^O22 con MSH-3=HOST (mismo sending app que el OML original)
+          - Cierra el listener (el ORL es la respuesta final de Navify)
+
+        Al recibir un ORU^R01:
           - Guarda el archivo en mensajes/hl7/recibidos/ORU_{turno_id}_{ts}.hl7
           - Parsea con HL7Parser.parsear_oru() y logea el resumen
           - Envía ACK de confirmación al LIS (AA simple)
@@ -417,10 +423,9 @@ class MLLPClient:
                             turno_id,
                             resultado_orl.error_parsing,
                         )
-                    # ACK^O22 deshabilitado: Navify no tiene canal de entrada configurado
-                    # para este mensaje (error 42114). Se omite el envío hasta confirmar
-                    # si Navify lo requiere o no.
-                    # MLLPClient._enviar_ack_orl(sock, oru_texto)
+                    # Enviar ACK^O22 con MSH-3=HOST para que coincida con el OML enviado.
+                    # Sin este ACK Navify deja mensajes "Pendiente" en la traza.
+                    MLLPClient._enviar_ack_orl(sock, oru_texto)
                     # Cerrar listener después del ORL (opción A: flujo síncrono)
                     logger.info(
                         "MLLP | Cerrando listener tras recibir ORL^O22 para turno_id=%d",
@@ -486,8 +491,10 @@ class MLLPClient:
         try:
             control_id = MLLPClient._extraer_control_id(orl_texto)
             ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            # MSH-3 debe coincidir con el SendingApplication del OML (HOST),
+            # de lo contrario Navify rechaza con error 42114 (unknown application).
             ack = (
-                f"MSH|^~\\&|TURNOS|HTAL_BALESTRINI|LIS|ROCHE|{ts}||ACK^O22|ACK{ts}|P|2.5\r"
+                f"MSH|^~\\&|HOST|HTAL_BALESTRINI|LIS|ROCHE|{ts}||ACK^O22|ACK{ts}|P|2.5\r"
                 f"MSA|AA|{control_id}\r"
             )
             ack_wrapped = MLLPClient._wrap_mllp(ack)
