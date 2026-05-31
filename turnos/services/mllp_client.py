@@ -525,8 +525,10 @@ class MLLPClient:
             ts = datetime.now().strftime("%Y%m%d%H%M%S")
             # MSH-3 debe coincidir con el SendingApplication del OML (HOST),
             # de lo contrario Navify rechaza con error 42114 (unknown application).
+            # MSH-9: usar tipo genérico ACK (no ACK^O22) para coincidir con el
+            # canal "HL7-AMBU Rec. ACK" configurado en cobas infinity.
             ack = (
-                f"MSH|^~\\&|HOST|HTAL_BALESTRINI|LIS|ROCHE|{ts}||ACK^O22|ACK{ts}|P|2.5\r"
+                f"MSH|^~\\&|HOST|HTAL_BALESTRINI|LIS|ROCHE|{ts}||ACK|ACK{ts}|P|2.5\r"
                 f"MSA|AA|{control_id}\r"
             )
             ack_wrapped = MLLPClient._wrap_mllp(ack)
