@@ -13,13 +13,33 @@ Mapeo ASTM → HL7:
 Estructura del mensaje (formato Navify):
   MSH  → Cabecera del mensaje
   PID  → Identificación del paciente
-  PV1  → Visita del paciente (ambulatorio)
+  PV1  → Visita del paciente
   ORC  → Orden común (UN solo segmento por mensaje)
-  TQ1  → Timing/Prioridad (UN solo segmento, prioridad Routine)
+  TQ1  → Timing/Prioridad (R o S según tipo y origen)
   OBR  → Un segmento por cada determinación (solo campo 4: codigo^nombre)
   NTE  → Comentario de la orden (opcional)
   DG1  → Diagnóstico (opcional)
   SPM  → Tipo de muestra (opcional)
+
+Lógica condicional según tipo y origen:
+
+  Identificadores (ORC-2, PV1-19):
+    Turnos  → T{id}
+    Órdenes → O{id}
+
+  PV1-2 Patient Class:
+    Turno / Orden AMBULATORIO          → O (Outpatient)
+    Orden GUARDIA / INTERNACION / PROGRAMADAS → I (Inpatient)
+
+  TQ1-9 Prioridad:
+    Turno / Orden AMBULATORIO / PROGRAMADAS → R (Routine)
+    Orden GUARDIA                           → S (Stat)
+    Orden INTERNACION 07:00–12:30           → R (Routine)
+    Orden INTERNACION 12:31–06:59           → S (Stat)
+
+  PV1-3 Patient Location:
+    Si orden.sala tiene valor → ^^{sala}
+    Si está vacío             → ^^
 
 Formato de archivo: .hl7 (ER7, separado por \\r)
 Carpeta de destino: mensajes/hl7/enviados/
@@ -49,6 +69,89 @@ _SISTEMA_ORIGEN = "HOST"
 _INSTITUCION = "HTAL_BALESTRINI"
 _SISTEMA_DESTINO = "LIS"
 _VERSION_HL7 = "2.5"
+
+
+def _calcular_prioridad(obj: Any) -> str:
+    """
+    Calcula la prioridad HL7 (TQ1-9) según tipo y origen del objeto.
+
+    Reglas:
+      - Turno (sin tipo_origen):                  siempre R
+      - Orden AMBULATORIO:                         siempre R
+      - Orden ORDENES_PROGRAMADAS:                 siempre R
+      - Orden GUARDIA:                             siempre S
+      - Orden INTERNACION 07:00–12:30:             R
+      - Orden INTERNACION 12:31–06:59:             S
+
+    Args:
+        obj: Turno o _OrdenAdapter (duck-typing)
+
+    Returns:
+        'R' (Routine) o 'S' (Stat/Urgente)
+    """
+    from datetime import time
+
+    if not hasattr(obj, "tipo_origen"):
+        return "R"
+
+    origen = obj.tipo_origen
+
+    if origen in ("AMBULATORIO", "ORDENES_PROGRAMADAS"):
+        return "R"
+
+    if origen == "GUARDIA":
+        return "S"
+
+    if origen == "INTERNACION":
+        hora = obj.fecha_creacion.time()
+        if time(7, 0) <= hora <= time(12, 30):
+            return "R"
+        return "S"
+
+    return "R"
+
+
+def _calcular_patient_class(obj: Any) -> str:
+    """
+    Calcula PV1-2 (Patient Class) según tipo y origen del objeto.
+
+    Reglas:
+      - Turno (sin tipo_origen):   O (Outpatient)
+      - Orden AMBULATORIO:         O (Outpatient)
+      - Resto (GUARDIA, INTERNACION, ORDENES_PROGRAMADAS): I (Inpatient)
+
+    Args:
+        obj: Turno o _OrdenAdapter (duck-typing)
+
+    Returns:
+        'O' (Outpatient) o 'I' (Inpatient)
+    """
+    if not hasattr(obj, "tipo_origen"):
+        return "O"
+
+    if obj.tipo_origen == "AMBULATORIO":
+        return "O"
+
+    return "I"
+
+
+def _generar_identificador(obj: Any) -> str:
+    """
+    Genera el identificador con prefijo T (turno) u O (orden).
+
+    - Turno (sin tipo_origen): T{id}
+    - OrdenAdapter (con tipo_origen): O{id}
+
+    Usado en ORC-2, OBR-2 y PV1-19.
+
+    Args:
+        obj: Turno o _OrdenAdapter (duck-typing)
+
+    Returns:
+        str: 'T{id}' o 'O{id}'
+    """
+    prefijo = "O" if hasattr(obj, "tipo_origen") else "T"
+    return f"{prefijo}{obj.id}"
 
 
 def _sexo_hl7(sexo: str) -> str:
@@ -211,6 +314,10 @@ class HL7Service:
                 nota_interna = orden.observaciones or ""
                 agenda = None
                 institucion = None
+                # Campos para lógica condicional HL7
+                tipo_origen = orden.tipo_origen
+                sala = orden.sala or ""
+                fecha_creacion = orden.fecha_creacion
 
             adapter = _OrdenAdapter()
 
@@ -320,26 +427,23 @@ class HL7Service:
         msg.add(pid)
 
     @staticmethod
-    def _construir_pv1(msg: Message, turno: Turno) -> None:
+    def _construir_pv1(msg: Message, turno: Any) -> None:
         """
         PV1 – Patient Visit
 
         Requerido por el LIS Navify entre PID y ORC.
 
-        PV1-2:  Patient Class → O (Outpatient/Ambulatorio)
-                Valores posibles para el futuro:
-                  O = Outpatient (Ambulatorio)
-                  I = Inpatient (Internación)
-                  E = Emergency (Guardia)
-        PV1-3:  Assigned Patient Location → ^^69 (código de ubicación fijo)
-        PV1-19: Visit Number → {turno_id}^^^^^^^^{institucion}
+        PV1-2:  Patient Class
+                  O = Outpatient (Turno / Orden Ambulatorio)
+                  I = Inpatient  (Orden Guardia / Internación / Programadas)
+        PV1-3:  Assigned Patient Location → ^^{sala} si existe, sino ^^
+        PV1-19: Visit Number → T{id} para turnos, O{id} para órdenes
         """
         pv1 = Segment("PV1", version=_VERSION_HL7)
-        pv1.pv1_2 = "O" 
-        pv1.pv1_3 = "^^200"                                      # Outpatient (ambulatorio)
-        # PV1-3, PV1-4, PV1-20 → vacíos (no asignar)
-        pv1.pv1_19 = f"{turno.id}"      # Visit Number
-        #pv1.pv1_19 = ""                             # Visit Number (solo id para evitar problemas de formato)
+        pv1.pv1_2 = _calcular_patient_class(turno)
+        sala = getattr(turno, "sala", "") or ""
+        pv1.pv1_3 = f"^^{sala}" if sala else "^^"
+        pv1.pv1_19 = _generar_identificador(turno)
         msg.add(pv1)
 
     @staticmethod
@@ -385,26 +489,24 @@ class HL7Service:
         SPM: SPM-1 → 1^SUERO
         """
         turno_id = str(turno.id)
+        identificador = _generar_identificador(turno)
         medico_hl7 = HL7Service._formatear_medico(turno)
 
         # ── ORC (Common Order) ───────────────────────────────────────────────
         orc = Segment("ORC", version=_VERSION_HL7)
-        orc.orc_1 = "OR"       # NW = New Order
-        #orc.orc_2 = "1"        # ActionCode → Navify transforma: "1" → "O1" (nueva orden)
-        orc.orc_2 = f"{turno.id}^TURNOS"  # ExtSampleID ^ SystemName
-        orc.orc_9 = ts         # Date/Time of Transaction
-        # ORC-12 → vacío
+        orc.orc_1 = "OR"
+        orc.orc_2 = f"{identificador}^TURNOS"  # T{id} o O{id} ^ SystemName
+        orc.orc_9 = ts
         if medico_hl7:
-            orc.orc_12 = medico_hl7   # Ordering Provider: matricula^nombre
+            orc.orc_12 = medico_hl7
         orc.orc_16 = f"{turno.nota_interna}"
-        # ORC-17 → vacío
         orc.orc_17 = "7"
         msg.add(orc)
 
         # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
-        # Ejemplo del manual: TQ1|||||||||R → prioridad en campo 9
+        # TQ1-9: R (Routine) o S (Stat/Urgente) según reglas de negocio
         tq1 = Segment("TQ1", version=_VERSION_HL7)
-        tq1.tq1_9 = "R"       # Priority: R (Routine)
+        tq1.tq1_9 = _calcular_prioridad(turno)
         msg.add(tq1)
 
         # ── OBR(s) (Observation Request) ──────────────────────────────────────
