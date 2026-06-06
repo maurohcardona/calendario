@@ -135,6 +135,59 @@ def _calcular_patient_class(obj: Any) -> str:
     return "I"
 
 
+def _calcular_origen_orc13(obj: Any) -> str:
+    """
+    Calcula ORC-13 (código de origen) según tipo y origen del objeto.
+
+    Reglas:
+      - Turno (sin tipo_origen):   1
+      - Orden AMBULATORIO:         1
+      - Orden INTERNACION:         2
+      - Orden ORDENES_PROGRAMADAS: 2
+      - Orden GUARDIA:             3
+
+    Args:
+        obj: Turno o _OrdenAdapter (duck-typing)
+
+    Returns:
+        str: '1', '2' o '3'
+    """
+    if not hasattr(obj, "tipo_origen"):
+        return "1"
+
+    origen = obj.tipo_origen
+
+    if origen == "AMBULATORIO":
+        return "1"
+    if origen in ("INTERNACION", "ORDENES_PROGRAMADAS"):
+        return "2"
+    if origen == "GUARDIA":
+        return "3"
+
+    return "1"
+
+
+def _calcular_servicio_orc17(obj: Any) -> str:
+    """
+    Calcula ORC-17 (ID de servicio) según tipo y origen del objeto.
+
+    Reglas:
+      - Turno (sin tipo_origen):         siempre '1'
+      - Orden con servicio asignado:     str(orden.servicio.id)
+      - Orden sin servicio (None):       '1'
+
+    Args:
+        obj: Turno o _OrdenAdapter (duck-typing)
+
+    Returns:
+        str: ID del servicio o '1' como fallback
+    """
+    servicio = getattr(obj, "servicio", None)
+    if servicio and servicio.id:
+        return str(servicio.id)
+    return "1"
+
+
 def _generar_identificador(obj: Any) -> str:
     """
     Genera el identificador con prefijo T (turno) u O (orden).
@@ -318,6 +371,7 @@ class HL7Service:
                 tipo_origen = orden.tipo_origen
                 sala = orden.sala or ""
                 fecha_creacion = orden.fecha_creacion
+                servicio = orden.servicio  # FK a Servicio (puede ser None)
 
             adapter = _OrdenAdapter()
 
@@ -499,9 +553,9 @@ class HL7Service:
         orc.orc_9 = ts
         if medico_hl7:
             orc.orc_12 = medico_hl7
-        orc.orc_13 = "1"
+        orc.orc_13 = _calcular_origen_orc13(turno)   # 1=Amb, 2=Int/Prog, 3=Guardia
         orc.orc_16 = f"{turno.nota_interna}"
-        orc.orc_17 = "7"
+        orc.orc_17 = _calcular_servicio_orc17(turno)  # ID servicio o '1' como fallback
         msg.add(orc)
 
         # ── TQ1 (Timing/Quantity) ────────────────────────────────────────────
@@ -542,7 +596,7 @@ class HL7Service:
 
         # ── SPM (Specimen) ────────────────────────────────────────────────────
         spm = Segment("SPM", version=_VERSION_HL7)
-        spm.spm_4 = "1^SUERO"
+        spm.spm_4 = ""
         msg.add(spm)
 
     @staticmethod
