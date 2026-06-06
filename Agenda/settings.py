@@ -188,13 +188,13 @@ USAR_HL7 = os.getenv("USAR_HL7", "True").lower() in ("true", "1", "yes")
 # mensajes OML^O21 y recibir ACK + ORU^R01 en la misma conexión.
 #
 # Variables de entorno disponibles en .env:
-#   LIS_HOST              IP del LIS (default: 192.168.211.128)
+#   LIS_HOST              IP del LIS (default: 150.150.150.115)
 #   LIS_PORT              Puerto TCP del LIS (default: 50000)
 #   LIS_TIMEOUT_CONEXION  Segundos máx para abrir conexión TCP (default: 5)
 #   LIS_TIMEOUT_ACK       Segundos máx esperando ACK tras enviar OML (default: 10)
 #   LIS_TIMEOUT_ORU       Segundos listener post-ACK esperando ORU (default: 30)
 #   LIS_MAX_REINTENTOS    Intentos antes de marcar error permanente (default: 3)
-LIS_HOST = os.getenv("LIS_HOST", "192.168.211.128")
+LIS_HOST = os.getenv("LIS_HOST", "150.150.150.115")
 LIS_PORT = int(os.getenv("LIS_PORT", "50000"))
 LIS_TIMEOUT_CONEXION = int(os.getenv("LIS_TIMEOUT_CONEXION", "5"))
 LIS_TIMEOUT_ACK = int(os.getenv("LIS_TIMEOUT_ACK", "10"))

@@ -148,9 +148,9 @@ def _generar_identificador(obj: Any) -> str:
         obj: Turno o _OrdenAdapter (duck-typing)
 
     Returns:
-        str: 'T{id}' o 'O{id}'
+        str: 'T{id}' o 'OR{id}'
     """
-    prefijo = "O" if hasattr(obj, "tipo_origen") else "T"
+    prefijo = "OR" if hasattr(obj, "tipo_origen") else "T"
     return f"{prefijo}{obj.id}"
 
 
@@ -499,6 +499,7 @@ class HL7Service:
         orc.orc_9 = ts
         if medico_hl7:
             orc.orc_12 = medico_hl7
+        orc.orc_13 = "1"
         orc.orc_16 = f"{turno.nota_interna}"
         orc.orc_17 = "7"
         msg.add(orc)

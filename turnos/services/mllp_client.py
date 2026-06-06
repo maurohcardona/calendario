@@ -19,7 +19,7 @@ Recepción ORU:
   - Por ahora solo auditoría (procesamiento de resultados: módulo futuro)
 
 Configuración (settings.py / .env):
-  LIS_HOST              IP del LIS           (default: 192.168.211.128)
+  LIS_HOST              IP del LIS           (default: 150.150.150.115)
   LIS_PORT              Puerto TCP            (default: 50000)
   LIS_TIMEOUT_CONEXION  Timeout conexión TCP  (default: 5s)
   LIS_TIMEOUT_ACK       Timeout espera ACK    (default: 10s)
@@ -102,7 +102,7 @@ class MLLPClient:
             - ack_texto:      Texto completo de la respuesta (o vacío si falló)
             - mensaje_error:  Descripción del error (o vacío si fue exitoso)
         """
-        host = getattr(settings, "LIS_HOST", "192.168.211.128")
+        host = getattr(settings, "LIS_HOST", "150.150.150.115")
         puerto = _settings_int("LIS_PORT", 50000)
         timeout_conexion = _settings_int("LIS_TIMEOUT_CONEXION", 5)
         timeout_ack = _settings_int("LIS_TIMEOUT_ACK", 30)
