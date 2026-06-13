@@ -223,7 +223,7 @@ def _construir_ack(mensaje_er7: str, estado: str = "AA") -> str:
     estado_msa = "CA" if estado == "AA" else "AE"
 
     ack = (
-        f"MSH|^~\\&|HOST|HTAL_BALESTRINI|LIS|ROCHE|{ts}||ACK|ACK{ts}|P|2.5\r"
+        f"MSH|^~\\&|HOST||LIS||{ts}||ACK^R01"
         f"MSA|{estado_msa}|{control_id}\r"
     )
     return ack
