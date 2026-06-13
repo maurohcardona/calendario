@@ -500,10 +500,9 @@ class MLLPClient:
             ts = datetime.now().strftime("%Y%m%d%H%M%S")
 
             ack = (
-                # MSH-3=HOST, MSH-4=vacío, MSH-5=LIS, MSH-6=vacío
-                f"MSH|^~\\&|HOST||LIS||{ts}||ACK^R01|ACK{ts}|P|2.5\r"
-                # MSA-1=CA (Commit Accept) en lugar de AA
-                f"MSA|CA|{control_id}\r"
+                f"MSH|^~\\&|LIS|HTAL_BALESTRINI|TURNOS|HTAL_BALESTRINI|"
+                f"{ts}||ACK^R01|ACK{ts}|P|2.5\r"
+                f"MSA|AA|{control_id}|Mensaje recibido correctamente\r"
             )
             sock.sendall(MLLPClient._wrap_mllp(ack))
             logger.debug("MLLP | ACK ORU enviado al LIS (control_id=%s)", control_id)

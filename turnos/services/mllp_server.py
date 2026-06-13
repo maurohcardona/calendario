@@ -203,7 +203,11 @@ def _guardar_recibido(mensaje: str, tipo: str, identificador: str = "srv") -> No
 
 def _construir_ack(mensaje_er7: str, estado: str = "AA") -> str:
     """
-    Construye un ACK HL7 v2.5 para responder al LIS.
+    Construye un ACK HL7 v2.5 para responder al LIS, adaptado para Navify.
+
+    Formato Navify:
+      - MSH-3=HOST, MSH-4=vacío, MSH-5=LIS, MSH-6=vacío
+      - MSA-1=CA (Commit Accept) para éxito, AE para error
 
     Args:
         mensaje_er7: Mensaje original (para extraer el control ID)
@@ -215,9 +219,12 @@ def _construir_ack(mensaje_er7: str, estado: str = "AA") -> str:
     control_id = _extraer_control_id(mensaje_er7)
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
 
+    # Mapear estado genérico a estado específico de Navify
+    estado_msa = "CA" if estado == "AA" else "AE"
+
     ack = (
-        f"MSH|^~\\&|TURNOS|HTAL_BALESTRINI|LIS|ROCHE|{ts}||ACK|ACK{ts}|P|2.5\r"
-        f"MSA|{estado}|{control_id}|Mensaje recibido correctamente\r"
+        f"MSH|^~\\&|HOST||LIS||{ts}||ACK|ACK{ts}|P|2.5\r"
+        f"MSA|{estado_msa}|{control_id}\r"
     )
     return ack
 
