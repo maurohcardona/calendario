@@ -440,6 +440,7 @@ def filtrar_mis_ordenes_ajax(request):
             "fecha_creacion": orden.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
             "fecha_programada": orden.fecha_programada.strftime("%d/%m/%Y") if orden.fecha_programada else None,
             "url": reverse("ordenes:detalle_orden", args=[orden.pk]),
+            "informe_pdf": orden.informe_pdf,
         })
 
     return JsonResponse({"ordenes": ordenes_data, "total": len(ordenes_data)})

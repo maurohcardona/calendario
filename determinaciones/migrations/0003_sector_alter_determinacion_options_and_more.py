@@ -126,22 +126,6 @@ class Migration(migrations.Migration):
             name='nombre',
             field=models.CharField(default='Perfil de determinación', help_text='Nombre descriptivo del perfil de determinación', max_length=50, verbose_name='Nombre'),
         ),
-        migrations.AddIndex(
-            model_name='determinacion',
-            index=models.Index(fields=['codigo'], name='determinaci_codigo_0cfce8_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='determinacion',
-            index=models.Index(fields=['activa', 'visible'], name='determinaci_activa_23adc0_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='determinacioncompleja',
-            index=models.Index(fields=['codigo'], name='determinaci_codigo_871bf5_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='determinacioncompleja',
-            index=models.Index(fields=['activa', 'visible'], name='determinaci_activa_36f8d6_idx'),
-        ),
         migrations.AddField(
             model_name='determinacion',
             name='sector',

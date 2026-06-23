@@ -48,6 +48,7 @@
         <th>Médico</th>
         <th>Estado</th>
         <th>Fecha</th>
+        <th>Informe</th>
       </tr>
     </thead>
     <tbody>
@@ -83,6 +84,16 @@
           {% endif %}
         </td>
         <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+        <td onclick="event.stopPropagation()">
+          {% with inf=orden.informe_pdf %}
+            {% if inf %}
+              {% if inf.estado == 'CON_RESULTADOS' or inf.estado == 'FINALIZADO' %}
+                <a href="{% url 'informes:servir_pdf_orden' inf.tipo inf.pk %}"
+                   class="btn btn-sm btn-success" target="_blank">📄 PDF</a>
+              {% else %}—{% endif %}
+            {% else %}—{% endif %}
+          {% endwith %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

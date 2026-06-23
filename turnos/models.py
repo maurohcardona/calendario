@@ -343,8 +343,39 @@ class Coordinados(models.Model):
         max_length=100,
         blank=True,
         default="",
+        db_index=True,
         verbose_name="Número de protocolo LIS",
         help_text="Filler Order Number asignado por el LIS (Navify) en el ORU^R01",
+    )
+
+    # ── Campos para monitoreo de PDF ──────────────────────────────────────────
+    nombre_archivo_pdf = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Nombre del archivo PDF",
+        help_text="Nombre del archivo PDF generado por Navify (ej: Ambulatorio_12345678_98765_T001.pdf)",
+    )
+    estado_informe = models.CharField(
+        max_length=20,
+        choices=[
+            ("PENDIENTE", "Pendiente"),
+            ("CON_RESULTADOS", "Con Resultados"),
+            ("FINALIZADO", "Finalizado"),
+        ],
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Estado del Informe PDF",
+        help_text="Estado del informe PDF generado por Navify",
+    )
+    ruta_archivo_pdf = models.CharField(
+        max_length=512,
+        blank=True,
+        default="",
+        verbose_name="Ruta del archivo PDF",
+        help_text="Ruta relativa del archivo para ser servido desde la UI",
     )
 
     class Meta:
@@ -354,6 +385,7 @@ class Coordinados(models.Model):
         indexes = [
             models.Index(fields=["id_turno"]),
             models.Index(fields=["-fecha_coordinacion"]),
+            models.Index(fields=["nombre_archivo_pdf"]),
         ]
 
     def __str__(self) -> str:

@@ -82,6 +82,56 @@ class OrdenLaboratorio(models.Model):
     def puede_vincular_turno(self):
         return self.estado in ("PENDIENTE", "INGRESADA")
 
+    @property
+    def informe_pdf(self) -> dict | None:
+        """
+        Retorna la información del informe PDF si hay uno disponible.
+
+        Busca primero en las CoordinadosOrden de la orden (órdenes directas),
+        luego en Coordinados vía el turno vinculado (turnos ambulatorios).
+
+        Returns:
+            Dict con claves 'estado', 'nombre_archivo', 'ruta', 'pk', 'tipo'
+            — o None si no hay informe PDF registrado.
+        """
+        # Buscar en coordinaciones directas de la orden
+        ultima = (
+            self.coordinaciones
+            .filter(estado_informe__in=["PENDIENTE", "CON_RESULTADOS", "FINALIZADO"])
+            .order_by("-fecha_coordinacion")
+            .first()
+        )
+        if ultima:
+            return {
+                "estado": ultima.estado_informe,
+                "nombre_archivo": ultima.nombre_archivo_pdf,
+                "ruta": ultima.ruta_archivo_pdf,
+                "pk": ultima.pk,
+                "tipo": "orden",
+            }
+
+        # Fallback: buscar en Coordinados del turno vinculado
+        if self.turno_id:
+            from turnos.models import Coordinados
+            coord = (
+                Coordinados.objects
+                .filter(
+                    id_turno=self.turno_id,
+                    estado_informe__in=["PENDIENTE", "CON_RESULTADOS", "FINALIZADO"],
+                )
+                .first()
+            )
+            if coord:
+                return {
+                    "estado": coord.estado_informe,
+                    "nombre_archivo": coord.nombre_archivo_pdf,
+                    "ruta": coord.ruta_archivo_pdf,
+                    "pk": coord.pk,
+                    "tipo": "turno",
+                }
+
+        return None
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         # Generar numero_orden_lab la primera vez (único, basado en pk)
@@ -163,6 +213,44 @@ class CoordinadosOrden(models.Model):
         help_text="AA=aceptado, AE=error, AR=rechazado",
     )
 
+    # ── Campos para monitoreo de PDF ──────────────────────────────────────────
+    numero_protocolo_lis = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Número de protocolo LIS",
+        help_text="Filler Order Number asignado por el LIS (Navify) en el ORU^R01",
+    )
+    nombre_archivo_pdf = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Nombre del archivo PDF",
+        help_text="Nombre del archivo PDF generado por Navify",
+    )
+    estado_informe = models.CharField(
+        max_length=20,
+        choices=[
+            ("PENDIENTE", "Pendiente"),
+            ("CON_RESULTADOS", "Con Resultados"),
+            ("FINALIZADO", "Finalizado"),
+        ],
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Estado del Informe PDF",
+        help_text="Estado del informe PDF generado por Navify",
+    )
+    ruta_archivo_pdf = models.CharField(
+        max_length=512,
+        blank=True,
+        default="",
+        verbose_name="Ruta del archivo PDF",
+        help_text="Ruta relativa del archivo para ser servido desde la UI",
+    )
+
     class Meta:
         verbose_name = "Coordinación de orden"
         verbose_name_plural = "Coordinaciones de órdenes"
@@ -171,6 +259,7 @@ class CoordinadosOrden(models.Model):
             models.Index(fields=["orden"]),
             models.Index(fields=["-fecha_coordinacion"]),
             models.Index(fields=["mensaje_tipo"]),
+            models.Index(fields=["nombre_archivo_pdf"]),
         ]
 
     def __str__(self) -> str:

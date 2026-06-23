@@ -80,6 +80,7 @@
           <th>Obs.</th>
           <th>Estado</th>
           <th>Fecha</th>
+          <th>Informe</th>
         </tr>
       </thead>
       <tbody id="ordenes-tbody">
@@ -125,9 +126,19 @@
             {% endif %}
           </td>
           <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
+          <td onclick="event.stopPropagation()">
+            {% with inf=orden.informe_pdf %}
+              {% if inf %}
+                {% if inf.estado == 'CON_RESULTADOS' or inf.estado == 'FINALIZADO' %}
+                  <a href="{% url 'informes:servir_pdf_orden' inf.tipo inf.pk %}"
+                     class="btn btn-sm btn-success" target="_blank">📄 PDF</a>
+                {% else %}—{% endif %}
+              {% else %}—{% endif %}
+            {% endwith %}
+          </td>
         </tr>
         {% empty %}
-        <tr id="fila-vacia"><td colspan="7" class="text-center text-muted py-3">No hay órdenes registradas.</td></tr>
+        <tr id="fila-vacia"><td colspan="9" class="text-center text-muted py-3">No hay órdenes registradas.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -162,7 +173,12 @@
 
 <script>
 const FILTRAR_URL = "{% url 'ordenes:filtrar_mis_ordenes_ajax' %}";
+const PDF_URL_TMPL = "{% url 'informes:servir_pdf_orden' 'PTIPO' 0 %}";
 const paginador = document.getElementById('paginador');
+
+function buildPdfUrl(tipo, pk) {
+  return PDF_URL_TMPL.replace('PTIPO', tipo).replace('/0/', `/${pk}/`);
+}
 
 const ESTADO_LABELS = {
   PENDIENTE: '<span class="badge bg-warning text-dark">Pendiente</span>',
@@ -208,6 +224,14 @@ function renderFila(o) {
   const obsCell = o.tiene_observaciones
     ? `<span title="${o.observaciones.replace(/"/g,'&quot;')}" style="color: var(--color-teal-dark); font-size: 1.1rem;">💬</span>`
     : '—';
+
+  // Columna Informe
+  let informeCell = '—';
+  if (o.informe_pdf && (o.informe_pdf.estado === 'CON_RESULTADOS' || o.informe_pdf.estado === 'FINALIZADO')) {
+    const url = buildPdfUrl(o.informe_pdf.tipo, o.informe_pdf.pk);
+    informeCell = `<a href="${url}" class="btn btn-sm btn-success" target="_blank" onclick="event.stopPropagation()">📄 PDF</a>`;
+  }
+
   return `
     <tr style="cursor:pointer;" onclick="window.location='${o.url}'">
       <td><span class="badge" style="background-color: var(--color-primary);">${o.numero_orden_lab}</span></td>
@@ -218,6 +242,7 @@ function renderFila(o) {
       <td>${obsCell}</td>
       <td>${ESTADO_LABELS[o.estado] || o.estado_display}</td>
       <td>${o.fecha_creacion}</td>
+      <td>${informeCell}</td>
     </tr>`;
 }
 

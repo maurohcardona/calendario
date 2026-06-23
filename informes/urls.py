@@ -17,4 +17,10 @@ urlpatterns = [
         views.actualizar_email_paciente,
         name="actualizar_email",
     ),
+    # Sirve PDFs por coordinación (turno o orden) — requiere autenticación
+    path(
+        "pdf/<str:tipo>/<int:pk>/",
+        views.servir_informe_orden,
+        name="servir_pdf_orden",
+    ),
 ]

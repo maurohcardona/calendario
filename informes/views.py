@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -513,3 +513,51 @@ def actualizar_email_paciente(request: HttpRequest, dni: str) -> HttpResponse:
         messages.warning(request, error)
 
     return _redirect_listado(request)
+
+
+@login_required
+def servir_informe_orden(request: HttpRequest, tipo: str, pk: int) -> FileResponse:
+    """
+    Sirve el archivo PDF de un informe de coordinación de forma segura.
+
+    Busca el registro de coordinación por pk y tipo, valida la existencia
+    del archivo y lo sirve como FileResponse.
+
+    Args:
+        request: Objeto HttpRequest (requiere autenticación).
+        tipo: Tipo de coordinación — 'turno' o 'orden'.
+        pk: PK del registro de Coordinados o CoordinadosOrden.
+
+    Returns:
+        FileResponse con el contenido del PDF para visualizar en el navegador.
+
+    Raises:
+        Http404: Si el tipo es inválido, el registro no existe,
+                 no tiene ruta de archivo, o el archivo no existe en disco.
+
+    Security:
+        Requiere autenticación. No expone la ruta del filesystem en la URL.
+
+    Example:
+        GET /informes/pdf/turno/42/   → sirve el PDF del Coordinados pk=42
+        GET /informes/pdf/orden/17/   → sirve el PDF del CoordinadosOrden pk=17
+    """
+    if tipo == "turno":
+        from turnos.models import Coordinados
+        coord = get_object_or_404(Coordinados, pk=pk)
+        ruta = coord.ruta_archivo_pdf
+    elif tipo == "orden":
+        from ordenes.models import CoordinadosOrden
+        coord = get_object_or_404(CoordinadosOrden, pk=pk)
+        ruta = coord.ruta_archivo_pdf
+    else:
+        raise Http404("Tipo de coordinación inválido")
+
+    if not ruta:
+        raise Http404("No hay archivo PDF asociado a esta coordinación")
+
+    ruta_path = Path(ruta)
+    if not ruta_path.exists() or not ruta_path.is_file():
+        raise Http404("El archivo PDF no se encuentra en el servidor")
+
+    return FileResponse(open(ruta_path, "rb"), content_type="application/pdf")
