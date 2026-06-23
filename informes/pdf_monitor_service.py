@@ -6,7 +6,7 @@ sobre la carpeta INFORMES_PENDIENTES_DIR.
 
 Formato de nombre de archivo esperado:
     [Origen]_[DNI]_[NPeticion]_[NumeroProtocolo].pdf
-    Ejemplo: Ambulatorio_12345678_98765_T001.pdf
+    Ejemplo: Ambulatorio_12345678_98765_T3894.pdf
 
 Flujo de estados:
     on_created  → estado_informe = 'PENDIENTE'      (Navify creó el PDF)
@@ -14,10 +14,14 @@ Flujo de estados:
     on_moved    → estado_informe = 'FINALIZADO'     (Navify renombró/movió el PDF)
 
 Estrategia de búsqueda:
-    El campo NumeroProtocolo del nombre de archivo (partes[3]) se corresponde
-    con el campo numero_protocolo_lis en los modelos Coordinados y CoordinadosOrden.
-    Si partes[3] no existe, se intenta con partes[2] (NPeticion).
-    Se busca primero en Coordinados (turnos), luego en CoordinadosOrden (órdenes).
+    El campo NumeroProtocolo del nombre de archivo (partes[3]) es el identificador
+    que nuestro sistema envió a Navify en el ORC-2 del mensaje HL7 OML^O21:
+        T{turno_id}   → Coordinados (turno ambulatorio)
+        OR{orden_pk}  → CoordinadosOrden (orden directa: guardia, internación, programada)
+
+    Se resuelve directamente el ID sin depender del campo numero_protocolo_lis,
+    que se poblaba únicamente al recibir el ORU^R01. El valor de partes[3]
+    se guarda en numero_protocolo_lis al procesar el PDF.
 """
 
 import logging
@@ -60,33 +64,55 @@ def _parsear_nombre_archivo(nombre_archivo: str) -> dict | None:
         return None
 
 
-def _buscar_coordinacion(numero_protocolo: str) -> tuple | None:
+def _buscar_coordinacion(protocolo: str) -> tuple | None:
     """
-    Busca el registro de coordinación por numero_protocolo_lis.
+    Resuelve el protocolo del nombre de archivo al registro de coordinación.
 
-    Busca primero en Coordinados (turnos), luego en CoordinadosOrden (órdenes).
+    El protocolo (partes[3]) es el identificador generado por nuestro sistema
+    y enviado al LIS en el ORC-2 del OML^O21:
+        T{turno_id}  → busca en Coordinados por id_turno
+        OR{orden_pk} → busca en CoordinadosOrden por orden_id (más reciente)
+
+    No depende del campo numero_protocolo_lis (que requería recibir el ORU).
 
     Args:
-        numero_protocolo: Valor de NumeroProtocolo del nombre del archivo.
+        protocolo: Valor de partes[3] del nombre del archivo, e.g. 'T3894' o 'OR4'.
 
     Returns:
         Tupla (instancia, tipo) donde tipo es 'turno' u 'orden', o None si no se encuentra.
     """
-    # Importación diferida para evitar problemas de inicialización de Django
     from turnos.models import Coordinados
     from ordenes.models import CoordinadosOrden
 
-    if not numero_protocolo:
+    if not protocolo:
         return None
 
-    coord = Coordinados.objects.filter(numero_protocolo_lis=numero_protocolo).first()
-    if coord:
-        return (coord, "turno")
+    # Turno ambulatorio: T{turno_id}
+    if protocolo.startswith("T"):
+        try:
+            turno_id = int(protocolo[1:])
+        except ValueError:
+            logger.warning("Protocolo con formato inesperado (esperado T<int>): %s", protocolo)
+            return None
+        coord = Coordinados.objects.filter(id_turno=turno_id).first()
+        return (coord, "turno") if coord else None
 
-    coord_orden = CoordinadosOrden.objects.filter(numero_protocolo_lis=numero_protocolo).first()
-    if coord_orden:
-        return (coord_orden, "orden")
+    # Orden directa (guardia, internación, programada): OR{orden_pk}
+    if protocolo.startswith("OR"):
+        try:
+            orden_pk = int(protocolo[2:])
+        except ValueError:
+            logger.warning("Protocolo con formato inesperado (esperado OR<int>): %s", protocolo)
+            return None
+        coord = (
+            CoordinadosOrden.objects
+            .filter(orden_id=orden_pk)
+            .order_by("-fecha_coordinacion")
+            .first()
+        )
+        return (coord, "orden") if coord else None
 
+    logger.warning("Protocolo con prefijo desconocido (esperado T... o OR...): %s", protocolo)
     return None
 
 
@@ -145,8 +171,8 @@ class PDFInformeEventHandler(FileSystemEventHandler):
             logger.warning("Nombre de archivo con formato inválido, ignorado: %s", nombre)
             return
 
-        # Buscar por protocolo (partes[3]), con fallback a orden (partes[2])
-        resultado = _buscar_coordinacion(datos["protocolo"]) or _buscar_coordinacion(datos["orden"])
+        # Buscar por protocolo (partes[3]): T{turno_id} o OR{orden_pk}
+        resultado = _buscar_coordinacion(datos["protocolo"])
 
         if not resultado:
             logger.warning(
@@ -161,7 +187,13 @@ class PDFInformeEventHandler(FileSystemEventHandler):
         instancia.nombre_archivo_pdf = nombre
         instancia.estado_informe = "PENDIENTE"
         instancia.ruta_archivo_pdf = str(ruta)
-        instancia.save(update_fields=["nombre_archivo_pdf", "estado_informe", "ruta_archivo_pdf"])
+        instancia.numero_protocolo_lis = datos["protocolo"]  # tomado del PDF, no del ORU
+        instancia.save(update_fields=[
+            "nombre_archivo_pdf",
+            "estado_informe",
+            "ruta_archivo_pdf",
+            "numero_protocolo_lis",
+        ])
 
         logger.info(
             "Coordinación actualizada a PENDIENTE — tipo=%s id=%d archivo=%s",
