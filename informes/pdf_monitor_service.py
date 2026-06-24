@@ -187,7 +187,7 @@ class PDFInformeEventHandler(FileSystemEventHandler):
         instancia.nombre_archivo_pdf = nombre
         instancia.estado_informe = "PENDIENTE"
         instancia.ruta_archivo_pdf = str(ruta)
-        instancia.numero_protocolo_lis = datos["protocolo"]  # tomado del PDF, no del ORU
+        instancia.numero_protocolo_lis = datos["orden"]  # número de orden (partes[2] del nombre del PDF)
         instancia.save(update_fields=[
             "nombre_archivo_pdf",
             "estado_informe",
