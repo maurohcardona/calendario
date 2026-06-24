@@ -4,11 +4,16 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Orden #{{ orden.pk }}</h2>
-  {% if tiene_medico %}
-    <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">← Mis órdenes</a>
-  {% else %}
-    <a href="{% url 'ordenes:cola_laboratorio' %}" class="btn btn-outline-secondary">← Cola Lab</a>
-  {% endif %}
+  <div class="d-flex gap-2">
+    {% if tiene_medico %}
+      {% if orden.estado == 'PENDIENTE' or orden.estado == 'TURNO' %}
+        <a href="{% url 'ordenes:modificar_orden' orden.pk %}" class="btn btn-warning">✏️ Modificar</a>
+      {% endif %}
+      <a href="{% url 'ordenes:mis_ordenes' %}" class="btn btn-outline-secondary">← Mis órdenes</a>
+    {% else %}
+      <a href="{% url 'ordenes:cola_laboratorio' %}" class="btn btn-outline-secondary">← Cola Lab</a>
+    {% endif %}
+  </div>
 </div>
 
 <div class="row g-4">

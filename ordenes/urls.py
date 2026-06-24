@@ -10,6 +10,7 @@ urlpatterns = [
     path("mis-ordenes/", views.mis_ordenes, name="mis_ordenes"),
     path("todas/", views.todas_ordenes, name="todas_ordenes"),
     path("<int:pk>/", views.detalle_orden, name="detalle_orden"),
+    path("<int:pk>/modificar/", views.modificar_orden, name="modificar_orden"),
     # AJAX
     path("ajax/filtrar-mis-ordenes/", views.filtrar_mis_ordenes_ajax, name="filtrar_mis_ordenes_ajax"),
     path("ajax/buscar-paciente/", views.buscar_paciente, name="buscar_paciente"),

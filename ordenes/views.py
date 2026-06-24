@@ -146,10 +146,10 @@ def crear_orden(request):
 
     from determinaciones.models import Determinacion, DeterminacionCompleja, Sector
     guardia_pks_simples = set(
-        str(pk) for pk in Determinacion.objects.filter(guardia=True).values_list("pk", flat=True)
+        str(p) for p in Determinacion.objects.filter(guardia=True).values_list("pk", flat=True)
     )
     guardia_pks_complejas = set(
-        str(pk) for pk in DeterminacionCompleja.objects.filter(guardia=True).values_list("pk", flat=True)
+        str(p) for p in DeterminacionCompleja.objects.filter(guardia=True).values_list("pk", flat=True)
     )
 
     # Sectores con sus PKs para agrupar en el template
@@ -165,11 +165,11 @@ def crear_orden(request):
     sectores_raw = []
     for sector in Sector.objects.all():
         pks_simples = set(
-            str(pk) for pk in Determinacion.objects.filter(sector=sector, activa=True, visible=True)
+            str(p) for p in Determinacion.objects.filter(sector=sector, activa=True, visible=True)
             .values_list("pk", flat=True)
         )
         pks_complejas = set(
-            str(pk) for pk in DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
+            str(p) for p in DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
             .values_list("pk", flat=True)
         )
         sectores_raw.append({
@@ -188,7 +188,7 @@ def crear_orden(request):
     sectores = sorted(sectores_raw, key=sector_sort_key)
     # Determinaciones sin sector
     pks_sin_sector_simples = set(
-        str(pk) for pk in Determinacion.objects.filter(sector__isnull=True, activa=True, visible=True)
+        str(p) for p in Determinacion.objects.filter(sector__isnull=True, activa=True, visible=True)
         .values_list("pk", flat=True)
     )
     if pks_sin_sector_simples:
@@ -306,10 +306,10 @@ def crear_orden_programada(request):
     from determinaciones.models import Determinacion, DeterminacionCompleja, Sector
 
     guardia_pks_simples = set(
-        str(pk) for pk in Determinacion.objects.filter(guardia=True).values_list("pk", flat=True)
+        str(p) for p in Determinacion.objects.filter(guardia=True).values_list("pk", flat=True)
     )
     guardia_pks_complejas = set(
-        str(pk) for pk in DeterminacionCompleja.objects.filter(guardia=True).values_list("pk", flat=True)
+        str(p) for p in DeterminacionCompleja.objects.filter(guardia=True).values_list("pk", flat=True)
     )
 
     ORDEN_SECTORES = [
@@ -324,11 +324,11 @@ def crear_orden_programada(request):
     sectores_raw = []
     for sector in Sector.objects.all():
         pks_simples = set(
-            str(pk) for pk in Determinacion.objects.filter(sector=sector, activa=True, visible=True)
+            str(p) for p in Determinacion.objects.filter(sector=sector, activa=True, visible=True)
             .values_list("pk", flat=True)
         )
         pks_complejas = set(
-            str(pk) for pk in DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
+            str(p) for p in DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
             .values_list("pk", flat=True)
         )
         sectores_raw.append({
@@ -346,7 +346,7 @@ def crear_orden_programada(request):
 
     sectores = sorted(sectores_raw, key=sector_sort_key)
     pks_sin_sector_simples = set(
-        str(pk) for pk in Determinacion.objects.filter(sector__isnull=True, activa=True, visible=True)
+        str(p) for p in Determinacion.objects.filter(sector__isnull=True, activa=True, visible=True)
         .values_list("pk", flat=True)
     )
     if pks_sin_sector_simples:
@@ -464,6 +464,124 @@ def detalle_orden(request, pk):
             "es_operador_lab": es_operador_lab,
             "tiene_medico": tiene_medico,
             "base_template": base_template,
+        },
+    )
+
+
+@medico_requerido
+def modificar_orden(request, pk):
+    """Vista para modificar una orden de laboratorio (solo si está PENDIENTE o TURNO).
+
+    Solo el médico creador puede modificar su propia orden. La validación de estado
+    se aplica tanto en GET (redirige si ya fue ingresada) como en POST (guard de backend).
+    """
+    orden = get_object_or_404(
+        OrdenLaboratorio.objects.select_related("paciente", "servicio"),
+        pk=pk,
+        medico=request.user.medico,
+    )
+
+    ESTADOS_MODIFICABLES = ("PENDIENTE", "TURNO")
+    if orden.estado not in ESTADOS_MODIFICABLES:
+        messages.error(
+            request,
+            f"La orden #{orden.pk} ya fue ingresada al laboratorio y no puede modificarse.",
+        )
+        return redirect("ordenes:detalle_orden", pk=orden.pk)
+
+    if request.method == "POST":
+        # Re-verificar estado en POST (guard de backend contra manipulación)
+        if orden.estado not in ESTADOS_MODIFICABLES:
+            messages.error(request, "La orden no puede modificarse.")
+            return redirect("ordenes:detalle_orden", pk=orden.pk)
+        orden_form = OrdenForm(request.POST, instance=orden)
+        if orden_form.is_valid():
+            orden_form.save()
+            messages.success(request, f"Orden #{orden.pk} actualizada correctamente.")
+            return redirect("ordenes:detalle_orden", pk=orden.pk)
+    else:
+        orden_form = OrdenForm(instance=orden)
+
+    # Agregar clases Bootstrap a los widgets del formulario
+    orden_form.fields["sala"].widget.attrs.update({
+        "class": "form-control",
+        "placeholder": "Ej: Cama 12 UCO",
+    })
+    orden_form.fields["observaciones"].widget.attrs.update({
+        "class": "form-control",
+        "rows": "3",
+        "placeholder": "Diagnóstico, notas clínicas...",
+    })
+
+    from determinaciones.models import Determinacion, DeterminacionCompleja, Sector
+
+    guardia_pks_simples = set(
+        str(p) for p in Determinacion.objects.filter(guardia=True).values_list("pk", flat=True)
+    )
+    guardia_pks_complejas = set(
+        str(p) for p in DeterminacionCompleja.objects.filter(guardia=True).values_list("pk", flat=True)
+    )
+
+    ORDEN_SECTORES = [
+        "hematologia",
+        "hemostasia",
+        "quimica",
+        "enzimas cardiacas",
+        "serologia",
+        "endocrinologia",
+    ]
+
+    sectores_raw = []
+    for sector in Sector.objects.all():
+        pks_simples = set(
+            str(p) for p in Determinacion.objects.filter(sector=sector, activa=True, visible=True)
+            .values_list("pk", flat=True)
+        )
+        pks_complejas = set(
+            str(p) for p in DeterminacionCompleja.objects.filter(sector=sector, activa=True, visible=True)
+            .values_list("pk", flat=True)
+        )
+        sectores_raw.append({
+            "nombre": sector.nombre,
+            "pks_simples": pks_simples,
+            "pks_complejas": pks_complejas,
+        })
+
+    def sector_sort_key(s):
+        nombre = s["nombre"].lower()
+        try:
+            return ORDEN_SECTORES.index(nombre)
+        except ValueError:
+            return len(ORDEN_SECTORES)
+
+    sectores = sorted(sectores_raw, key=sector_sort_key)
+    pks_sin_sector_simples = set(
+        str(p) for p in Determinacion.objects.filter(sector__isnull=True, activa=True, visible=True)
+        .values_list("pk", flat=True)
+    )
+    if pks_sin_sector_simples:
+        sectores.append({
+            "nombre": "Otros",
+            "pks_simples": pks_sin_sector_simples,
+            "pks_complejas": set(),
+        })
+
+    # Valores iniciales para pre-selección en el template/JS
+    tipo_origen_inicial = request.POST.get("tipo_origen", orden.tipo_origen)
+    servicio_inicial_pk = orden.servicio_id
+
+    return render(
+        request,
+        "ordenes/modificar_orden.html",
+        {
+            "orden": orden,
+            "orden_form": orden_form,
+            "guardia_orden": json.dumps(NOMBRES_GUARDIA_ORDENADOS),
+            "guardia_pks_simples": guardia_pks_simples,
+            "guardia_pks_complejas": guardia_pks_complejas,
+            "sectores": sectores,
+            "tipo_origen_inicial": tipo_origen_inicial,
+            "servicio_inicial_pk": servicio_inicial_pk,
         },
     )
 

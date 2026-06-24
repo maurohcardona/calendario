@@ -70,30 +70,41 @@
           {% if orden.sala %}<br><small class="text-muted">Cama: {{ orden.sala }}</small>{% endif %}
         </td>
         <td>{{ orden.medico }}</td>
+        {# ── Estado + Informe comparten el mismo with para evitar doble query ── #}
+        {% with inf=orden.informe_pdf %}
         <td>
-          {% if orden.estado == 'PENDIENTE' %}
-            <span class="badge bg-warning text-dark">Pendiente</span>
-          {% elif orden.estado == 'TURNO' %}
-            <span class="badge" style="background-color:#fd7e14;color:white;">Turno Asignado</span>
-          {% elif orden.estado == 'INGRESADA' %}
-            <span class="badge bg-info text-dark">Ingresada</span>
-          {% elif orden.estado == 'COMPLETADA' %}
-            <span class="badge bg-success">Completada</span>
-          {% elif orden.estado == 'CANCELADA' %}
-            <span class="badge bg-danger">Cancelada</span>
+          {% if inf %}
+            {% if inf.estado == 'PENDIENTE' %}
+              <span class="badge bg-warning text-dark">Pendiente</span>
+            {% elif inf.estado == 'CON_RESULTADOS' %}
+              <span class="badge bg-info text-dark">Con Resultados</span>
+            {% elif inf.estado == 'FINALIZADO' %}
+              <span class="badge bg-success">Finalizada</span>
+            {% endif %}
+          {% else %}
+            {% if orden.estado == 'PENDIENTE' %}
+              <span class="badge bg-warning text-dark">Pendiente</span>
+            {% elif orden.estado == 'TURNO' %}
+              <span class="badge" style="background-color:#fd7e14;color:white;">Turno Asignado</span>
+            {% elif orden.estado == 'INGRESADA' %}
+              <span class="badge bg-info text-dark">Ingresada</span>
+            {% elif orden.estado == 'COMPLETADA' %}
+              <span class="badge bg-success">Completada</span>
+            {% elif orden.estado == 'CANCELADA' %}
+              <span class="badge bg-danger">Cancelada</span>
+            {% endif %}
           {% endif %}
         </td>
         <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td>
         <td onclick="event.stopPropagation()">
-          {% with inf=orden.informe_pdf %}
-            {% if inf %}
-              {% if inf.estado == 'CON_RESULTADOS' or inf.estado == 'FINALIZADO' %}
-                <a href="{% url 'informes:servir_pdf_orden' inf.tipo inf.pk %}"
-                   class="btn btn-sm btn-success" target="_blank">📄 PDF</a>
-              {% else %}—{% endif %}
+          {% if inf %}
+            {% if inf.estado == 'CON_RESULTADOS' or inf.estado == 'FINALIZADO' %}
+              <a href="{% url 'informes:servir_pdf_orden' inf.tipo inf.pk %}"
+                 class="btn btn-sm btn-success" target="_blank">📄 PDF</a>
             {% else %}—{% endif %}
-          {% endwith %}
+          {% else %}—{% endif %}
         </td>
+        {% endwith %}
       </tr>
       {% endfor %}
     </tbody>
